@@ -21,53 +21,41 @@ export default async function DashboardPage() {
   const session = await auth();
   if (!session) redirect("/login");
 
-  const [
-    totalPieces,
-    availablePieces,
-    assignedPieces,
-    maintenancePieces,
-    totalItems,
-    totalLocations,
-    activeProjects,
-    totalPerformers,
-    recentActivity,
-    upcomingProjects,
-  ] = await Promise.all([
-    prisma.piece.count(),
-    prisma.piece.count({ where: { status: "AVAILABLE" } }),
-    prisma.piece.count({ where: { status: "ASSIGNED" } }),
-    prisma.piece.count({ where: { status: "MAINTENANCE" } }),
-    prisma.item.count(),
-    prisma.warehouseLocation.count(),
-    prisma.project.count({
-      where: { status: { in: ["CONFIRMED", "PACKING", "IN_TRANSIT", "ACTIVE"] } },
-    }),
-    prisma.performer.count({ where: { active: true } }),
-    prisma.pieceHistory.findMany({
-      orderBy: { createdAt: "desc" },
-      take: 10,
-      include: {
-        piece: { select: { humanReadableId: true, id: true } },
-        performedBy: { select: { name: true } },
-      },
-    }),
-    prisma.project.findMany({
-      where: {
-        status: { notIn: ["COMPLETED", "CANCELLED"] },
-        startDate: { gte: new Date() },
-      },
-      orderBy: { startDate: "asc" },
-      take: 5,
-      select: {
-        id: true,
-        name: true,
-        status: true,
-        startDate: true,
-        endDate: true,
-        _count: { select: { assignments: true, bookings: true } },
-      },
-    }),
-  ]);
+  // Run queries sequentially to avoid exhausting the Supabase connection pool
+  const totalPieces = await prisma.piece.count();
+  const availablePieces = await prisma.piece.count({ where: { status: "AVAILABLE" } });
+  const assignedPieces = await prisma.piece.count({ where: { status: "ASSIGNED" } });
+  const maintenancePieces = await prisma.piece.count({ where: { status: "MAINTENANCE" } });
+  const totalItems = await prisma.item.count();
+  const totalLocations = await prisma.warehouseLocation.count();
+  const activeProjects = await prisma.project.count({
+    where: { status: { in: ["CONFIRMED", "PACKING", "IN_TRANSIT", "ACTIVE"] } },
+  });
+  const totalPerformers = await prisma.performer.count({ where: { active: true } });
+  const recentActivity = await prisma.pieceHistory.findMany({
+    orderBy: { createdAt: "desc" },
+    take: 10,
+    include: {
+      piece: { select: { humanReadableId: true, id: true } },
+      performedBy: { select: { name: true } },
+    },
+  });
+  const upcomingProjects = await prisma.project.findMany({
+    where: {
+      status: { notIn: ["COMPLETED", "CANCELLED"] },
+      startDate: { gte: new Date() },
+    },
+    orderBy: { startDate: "asc" },
+    take: 5,
+    select: {
+      id: true,
+      name: true,
+      status: true,
+      startDate: true,
+      endDate: true,
+      _count: { select: { assignments: true, bookings: true } },
+    },
+  });
 
   const stats = [
     {
