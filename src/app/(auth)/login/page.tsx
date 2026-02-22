@@ -1,12 +1,11 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { signIn } from "next-auth/react";
+import { useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
 
+import { loginAction } from "@/actions/auth";
 import { loginSchema, type LoginInput } from "@/lib/validators/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,8 +26,8 @@ import {
 } from "@/components/ui/form";
 
 export default function LoginPage() {
-  const router = useRouter();
   const [error, setError] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
 
   const form = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
@@ -38,24 +37,14 @@ export default function LoginPage() {
     },
   });
 
-  const isSubmitting = form.formState.isSubmitting;
-
-  async function onSubmit(values: LoginInput) {
+  function onSubmit(values: LoginInput) {
     setError(null);
-
-    const result = await signIn("credentials", {
-      email: values.email,
-      password: values.password,
-      redirect: false,
+    startTransition(async () => {
+      const result = await loginAction(values.email, values.password);
+      if (result?.error) {
+        setError(result.error);
+      }
     });
-
-    if (result?.error) {
-      setError("Invalid email or password. Please try again.");
-      return;
-    }
-
-    router.push("/dashboard");
-    router.refresh();
   }
 
   return (
@@ -111,8 +100,8 @@ export default function LoginPage() {
               )}
             />
 
-            <Button type="submit" className="w-full" disabled={isSubmitting}>
-              {isSubmitting && (
+            <Button type="submit" className="w-full" disabled={isPending}>
+              {isPending && (
                 <Loader2 className="mr-2 size-4 animate-spin" />
               )}
               Sign in
