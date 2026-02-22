@@ -21,18 +21,32 @@ export default async function DashboardPage() {
   const session = await auth();
   if (!session) redirect("/login");
 
+  let totalPieces = 0,
+    availablePieces = 0,
+    assignedPieces = 0,
+    maintenancePieces = 0,
+    totalItems = 0,
+    totalLocations = 0,
+    activeProjects = 0,
+    totalPerformers = 0;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let recentActivity: any[] = [];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let upcomingProjects: any[] = [];
+
+  try {
   // Run queries sequentially to avoid exhausting the Supabase connection pool
-  const totalPieces = await prisma.piece.count();
-  const availablePieces = await prisma.piece.count({ where: { status: "AVAILABLE" } });
-  const assignedPieces = await prisma.piece.count({ where: { status: "ASSIGNED" } });
-  const maintenancePieces = await prisma.piece.count({ where: { status: "MAINTENANCE" } });
-  const totalItems = await prisma.item.count();
-  const totalLocations = await prisma.warehouseLocation.count();
-  const activeProjects = await prisma.project.count({
+  totalPieces = await prisma.piece.count();
+  availablePieces = await prisma.piece.count({ where: { status: "AVAILABLE" } });
+  assignedPieces = await prisma.piece.count({ where: { status: "ASSIGNED" } });
+  maintenancePieces = await prisma.piece.count({ where: { status: "MAINTENANCE" } });
+  totalItems = await prisma.item.count();
+  totalLocations = await prisma.warehouseLocation.count();
+  activeProjects = await prisma.project.count({
     where: { status: { in: ["CONFIRMED", "PACKING", "IN_TRANSIT", "ACTIVE"] } },
   });
-  const totalPerformers = await prisma.performer.count({ where: { active: true } });
-  const recentActivity = await prisma.pieceHistory.findMany({
+  totalPerformers = await prisma.performer.count({ where: { active: true } });
+  recentActivity = await prisma.pieceHistory.findMany({
     orderBy: { createdAt: "desc" },
     take: 10,
     include: {
@@ -40,7 +54,7 @@ export default async function DashboardPage() {
       performedBy: { select: { name: true } },
     },
   });
-  const upcomingProjects = await prisma.project.findMany({
+  upcomingProjects = await prisma.project.findMany({
     where: {
       status: { notIn: ["COMPLETED", "CANCELLED"] },
       startDate: { gte: new Date() },
@@ -56,6 +70,9 @@ export default async function DashboardPage() {
       _count: { select: { assignments: true, bookings: true } },
     },
   });
+  } catch (error) {
+    console.error("Dashboard query error:", error);
+  }
 
   const stats = [
     {

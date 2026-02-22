@@ -54,6 +54,14 @@ export const DEFAULT_ROLES: Record<string, RoleDefinition> = {
     isSystem: true,
     permissions: "*",
   },
+  MANAGER: {
+    name: "Manager",
+    description: "Full access except user and role management",
+    isSystem: true,
+    permissions: ALL_PERMISSIONS.filter(
+      (p) => !p.startsWith("users:") && !p.startsWith("roles:")
+    ),
+  },
   WAREHOUSE: {
     name: "Warehouse",
     description: "Inventory management, packing, check-in/check-out",

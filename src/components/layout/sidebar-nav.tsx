@@ -18,10 +18,12 @@ import {
   Shield,
   UserCog,
   Timer,
+  Flag,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usePermissions } from "@/hooks/use-permissions";
+import { useFeatureFlags } from "@/hooks/use-feature-flags";
 import {
   Tooltip,
   TooltipContent,
@@ -38,6 +40,8 @@ interface NavItem {
   icon: LucideIcon;
   /** Permission required to see this link. Omit for always-visible. */
   permission?: string;
+  /** Feature flag key required to see this link. Omit for always-visible. */
+  featureFlag?: string;
   /** If true the link renders but is visually disabled (future feature). */
   disabled?: boolean;
 }
@@ -164,6 +168,12 @@ const navigation: NavGroup[] = [
         icon: Timer,
         permission: "role:read",
       },
+      {
+        label: "Feature Flags",
+        href: "/admin/feature-flags",
+        icon: Flag,
+        permission: "admin:read",
+      },
     ],
   },
 ];
@@ -180,6 +190,7 @@ interface SidebarNavProps {
 export function SidebarNav({ collapsed = false, onNavigate }: SidebarNavProps) {
   const pathname = usePathname();
   const { hasPermission } = usePermissions();
+  const { hasFeatureAccess } = useFeatureFlags();
 
   function isActive(href: string): boolean {
     if (href === "/dashboard") return pathname === "/dashboard";
@@ -189,8 +200,9 @@ export function SidebarNav({ collapsed = false, onNavigate }: SidebarNavProps) {
   /** Filter items the user cannot access. */
   function filterItems(items: NavItem[]): NavItem[] {
     return items.filter((item) => {
-      if (!item.permission) return true;
-      return hasPermission(item.permission);
+      if (item.permission && !hasPermission(item.permission)) return false;
+      if (item.featureFlag && !hasFeatureAccess(item.featureFlag)) return false;
+      return true;
     });
   }
 

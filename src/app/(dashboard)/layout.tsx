@@ -1,5 +1,6 @@
 import { Sidebar } from "@/components/layout/sidebar";
 import { Header } from "@/components/layout/header";
+import { FeatureFlagProvider } from "@/components/providers/feature-flag-provider";
 
 export default function DashboardLayout({
   children,
@@ -7,15 +8,17 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex h-screen overflow-hidden">
-      {/* Desktop sidebar */}
-      <Sidebar />
+    <FeatureFlagProvider>
+      <div className="flex h-screen overflow-hidden">
+        {/* Desktop sidebar */}
+        <Sidebar />
 
-      {/* Main area */}
-      <div className="flex flex-1 flex-col overflow-hidden">
-        <Header />
-        <main className="flex-1 overflow-y-auto p-4 lg:p-6">{children}</main>
+        {/* Main area */}
+        <div className="flex flex-1 flex-col overflow-hidden">
+          <Header />
+          <main className="flex-1 overflow-y-auto p-4 lg:p-6">{children}</main>
+        </div>
       </div>
-    </div>
+    </FeatureFlagProvider>
   );
 }

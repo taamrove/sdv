@@ -31,6 +31,7 @@ model User {
   pieceHistories      PieceHistory[]
   containerPackedBy   ContainerItem[]     @relation("PackedBy")
   containerVerifiedBy ContainerItem[]     @relation("VerifiedBy")
+  betaFlags           FeatureFlagUser[]
 
   @@map("users")
 }
@@ -72,6 +73,41 @@ model RolePermission {
 
   @@id([roleId, permissionId])
   @@map("role_permissions")
+}
+
+// ============================================================
+// FEATURE FLAGS
+// ============================================================
+
+enum FeatureFlagStage {
+  ALPHA
+  BETA
+  PRODUCTION
+}
+
+model FeatureFlag {
+  id          String           @id @default(uuid())
+  key         String           @unique
+  name        String
+  description String?
+  stage       FeatureFlagStage @default(ALPHA)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  betaUsers FeatureFlagUser[]
+
+  @@map("feature_flags")
+}
+
+model FeatureFlagUser {
+  flagId String
+  userId String
+
+  flag FeatureFlag @relation(fields: [flagId], references: [id], onDelete: Cascade)
+  user User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([flagId, userId])
+  @@map("feature_flag_users")
 }
 
 // ============================================================
