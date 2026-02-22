@@ -1,0 +1,630 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// AUTH DOMAIN
+// ============================================================
+
+model User {
+  id           String    @id @default(uuid())
+  email        String    @unique
+  name         String
+  passwordHash String
+  roleId       String
+  active       Boolean   @default(true)
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  role                Role               @relation(fields: [roleId], references: [id])
+  maintenanceAssigned MaintenanceTicket[] @relation("AssignedTo")
+  maintenanceReported MaintenanceTicket[] @relation("ReportedBy")
+  maintenanceComments MaintenanceComment[]
+  maintenancePhotos   MaintenancePhoto[]
+  pieceHistories      PieceHistory[]
+  containerPackedBy   ContainerItem[]     @relation("PackedBy")
+  containerVerifiedBy ContainerItem[]     @relation("VerifiedBy")
+
+  @@map("users")
+}
+
+model Role {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  isDefault   Boolean  @default(false)
+  isSystem    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  users       User[]
+  permissions RolePermission[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id          String   @id @default(uuid())
+  resource    String
+  action      String
+  description String?
+  createdAt   DateTime @default(now())
+
+  roles RolePermission[]
+
+  @@unique([resource, action])
+  @@map("permissions")
+}
+
+model RolePermission {
+  roleId       String
+  permissionId String
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+// ============================================================
+// INVENTORY DOMAIN
+// ============================================================
+
+model Category {
+  id          String   @id @default(uuid())
+  code        String   @unique @db.Char(1)
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  items              Item[]
+  pieces             Piece[]
+  quarantineDefaults CategoryQuarantineDefault[]
+
+  @@map("categories")
+}
+
+/// Item = a design/type (e.g. "Angel Shoe"). Was called "Product" before restructure.
+model Item {
+  id                    String   @id @default(uuid())
+  categoryId            String
+  number                Int
+  name                  String
+  description           String?
+  imageUrl              String?
+  size                  String?
+  allowsSizeFlexibility Boolean  @default(true)
+  active                Boolean  @default(true)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  category      Category             @relation(fields: [categoryId], references: [id])
+  pieces        Piece[]
+  variantItems  ProductVariantItem[]
+
+  @@unique([categoryId, number])
+  @@map("items")
+}
+
+/// Piece = an individual physical copy (e.g. "Angel Shoe size 38", barcode S-001-003).
+/// Was called "Item" before restructure.
+model Piece {
+  id                  String         @id @default(uuid())
+  categoryId          String
+  itemId              String
+  sequence            Int
+  humanReadableId     String         @unique
+  status              PieceStatus    @default(AVAILABLE)
+  condition           PieceCondition @default(NEW)
+  sizes               Json?
+  color               String?
+  purchaseDate        DateTime?
+  purchasePrice       Decimal?       @db.Decimal(10, 2)
+  notes               String?
+  warehouseLocationId String?
+  imageUrl            String?
+  isExternal          Boolean        @default(false)
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+
+  category           Category           @relation(fields: [categoryId], references: [id])
+  item               Item               @relation(fields: [itemId], references: [id])
+  warehouseLocation  WarehouseLocation? @relation(fields: [warehouseLocationId], references: [id])
+  bookingPieces      BookingPiece[]
+  containerItems     ContainerItem[]
+  maintenanceTickets MaintenanceTicket[]
+  history            PieceHistory[]
+
+  @@unique([itemId, sequence])
+  @@index([status])
+  @@index([humanReadableId])
+  @@map("pieces")
+}
+
+enum PieceStatus {
+  AVAILABLE
+  ASSIGNED
+  PACKED
+  IN_USE
+  MAINTENANCE
+  RETIRED
+  LOST
+}
+
+enum PieceCondition {
+  NEW
+  EXCELLENT
+  GOOD
+  FAIR
+  POOR
+}
+
+// ============================================================
+// PRODUCT DOMAIN (kits / compositions)
+// ============================================================
+
+/// Product = a kit/set (e.g. "Angel Costume") composed of multiple Items.
+model Product {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  imageUrl    String?
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  variants ProductVariant[]
+  themes   ProductTheme[]
+  bookings ProjectBooking[]
+
+  @@map("products")
+}
+
+/// ProductVariant = a version of a product (e.g. "Angel Costume — Blue").
+model ProductVariant {
+  id          String   @id @default(uuid())
+  productId   String
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  product  Product              @relation(fields: [productId], references: [id], onDelete: Cascade)
+  items    ProductVariantItem[]
+  bookings ProjectBooking[]
+
+  @@map("product_variants")
+}
+
+/// ProductVariantItem = which Items (and how many) compose a variant.
+model ProductVariantItem {
+  id        String  @id @default(uuid())
+  variantId String
+  itemId    String
+  quantity  Int     @default(1)
+  required  Boolean @default(true)
+  notes     String?
+
+  variant ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  item    Item           @relation(fields: [itemId], references: [id])
+
+  @@unique([variantId, itemId])
+  @@map("product_variant_items")
+}
+
+/// ProductTheme = many-to-many join between Product and Theme.
+model ProductTheme {
+  productId String
+  themeId   String
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  theme   Theme   @relation(fields: [themeId], references: [id], onDelete: Cascade)
+
+  @@id([productId, themeId])
+  @@map("product_themes")
+}
+
+// ============================================================
+// WAREHOUSE DOMAIN
+// ============================================================
+
+model WarehouseLocation {
+  id          String   @id @default(uuid())
+  zone        String
+  rack        String?
+  shelf       String?
+  bin         String?
+  label       String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  pieces Piece[]
+
+  @@map("warehouse_locations")
+}
+
+// ============================================================
+// PERFORMER DOMAIN
+// ============================================================
+
+model Performer {
+  id                String        @id @default(uuid())
+  name              String
+  email             String?
+  phone             String?
+  type              PerformerType @default(DANCER)
+  sizes             Json?
+  notes             String?
+  externalId        String?       @unique
+  active            Boolean       @default(true)
+  requiresExactSize Boolean       @default(false)
+  sizeFlexDirection String?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  assignments PerformerAssignment[]
+
+  @@map("performers")
+}
+
+enum PerformerType {
+  DANCER
+  VOCALIST
+  MUSICIAN
+  ACROBAT
+  ACTOR
+  OTHER
+}
+
+// ============================================================
+// THEME DOMAIN
+// ============================================================
+
+/// Theme = a branding tag for Products (many-to-many).
+model Theme {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  imageUrl    String?
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  products ProductTheme[]
+
+  @@map("themes")
+}
+
+// ============================================================
+// PROJECT DOMAIN
+// ============================================================
+
+model Project {
+  id          String        @id @default(uuid())
+  name        String
+  description String?
+  venue       String?
+  city        String?
+  country     String?
+  startDate   DateTime?
+  endDate     DateTime?
+  status      ProjectStatus @default(PLANNING)
+  externalId  String?       @unique
+  notes       String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  assignments PerformerAssignment[]
+  bookings    ProjectBooking[]
+  containers  Container[]
+
+  @@index([status])
+  @@index([startDate])
+  @@map("projects")
+}
+
+enum ProjectStatus {
+  PLANNING
+  CONFIRMED
+  PACKING
+  IN_TRANSIT
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+model PerformerAssignment {
+  id          String   @id @default(uuid())
+  performerId String
+  projectId   String
+  role        String?
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  performer    Performer              @relation(fields: [performerId], references: [id])
+  project      Project                @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  bookingNotes PerformerBookingNote[]
+
+  @@unique([performerId, projectId])
+  @@map("performer_assignments")
+}
+
+// ============================================================
+// BOOKING DOMAIN (replaces Suit system)
+// ============================================================
+
+enum BookingStatus {
+  DRAFT
+  CONFIRMED
+  PARTIALLY_FULFILLED
+  FULFILLED
+  CANCELLED
+}
+
+/// ProjectBooking = "Book 6 Angel Costumes for Project X".
+model ProjectBooking {
+  id               String        @id @default(uuid())
+  projectId        String
+  productId        String
+  productVariantId String?
+  quantity         Int           @default(1)
+  status           BookingStatus @default(DRAFT)
+  notes            String?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  project        Project              @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  product        Product              @relation(fields: [productId], references: [id])
+  variant        ProductVariant?      @relation(fields: [productVariantId], references: [id])
+  pieces         BookingPiece[]
+  performerNotes PerformerBookingNote[]
+
+  @@map("project_bookings")
+}
+
+/// BookingPiece = a concrete Piece assigned to fulfill a booking.
+model BookingPiece {
+  id         String   @id @default(uuid())
+  bookingId  String
+  pieceId    String
+  assignedAt DateTime @default(now())
+  notes      String?
+
+  booking ProjectBooking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  piece   Piece          @relation(fields: [pieceId], references: [id])
+
+  @@unique([bookingId, pieceId])
+  @@map("booking_pieces")
+}
+
+/// PerformerBookingNote = notes about a performer's specific booking needs.
+model PerformerBookingNote {
+  id                    String   @id @default(uuid())
+  performerAssignmentId String
+  bookingId             String?
+  notes                 String
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  performerAssignment PerformerAssignment @relation(fields: [performerAssignmentId], references: [id], onDelete: Cascade)
+  booking             ProjectBooking?     @relation(fields: [bookingId], references: [id])
+
+  @@map("performer_booking_notes")
+}
+
+// ============================================================
+// CONTAINER / PACKING DOMAIN
+// ============================================================
+
+model Container {
+  id          String          @id @default(uuid())
+  name        String
+  type        ContainerType   @default(SUITCASE)
+  description String?
+  projectId   String?
+  status      ContainerStatus @default(EMPTY)
+  notes       String?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  project Project?       @relation(fields: [projectId], references: [id])
+  items   ContainerItem[]
+
+  @@map("containers")
+}
+
+enum ContainerType {
+  SUITCASE
+  BAG
+  BOX
+  GARMENT_BAG
+  SHOE_BOX
+  HAT_BOX
+  CUSTOM
+}
+
+enum ContainerStatus {
+  EMPTY
+  PACKING
+  PACKED
+  IN_TRANSIT
+  AT_VENUE
+  RETURNED
+  UNPACKED
+}
+
+model ContainerItem {
+  id           String    @id @default(uuid())
+  containerId  String
+  pieceId      String
+  packedAt     DateTime  @default(now())
+  packedById   String?
+  verifiedAt   DateTime?
+  verifiedById String?
+
+  container  Container @relation(fields: [containerId], references: [id], onDelete: Cascade)
+  piece      Piece     @relation(fields: [pieceId], references: [id])
+  packedBy   User?     @relation("PackedBy", fields: [packedById], references: [id])
+  verifiedBy User?     @relation("VerifiedBy", fields: [verifiedById], references: [id])
+
+  @@unique([containerId, pieceId])
+  @@map("container_items")
+}
+
+// ============================================================
+// MAINTENANCE DOMAIN
+// ============================================================
+
+model MaintenanceTicket {
+  id                  String               @id @default(uuid())
+  pieceId             String
+  reportedById        String
+  assignedToId        String?
+  status              MaintenanceStatus    @default(REPORTED)
+  priority            MaintenancePriority  @default(MEDIUM)
+  severity            MaintenanceSeverity?
+  title               String
+  description         String?
+  estimatedCompletion DateTime?
+  completedAt         DateTime?
+  quarantineEndsAt    DateTime?
+  quarantineType      QuarantineType       @default(NONE)
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+
+  piece      Piece                @relation(fields: [pieceId], references: [id])
+  reportedBy User                 @relation("ReportedBy", fields: [reportedById], references: [id])
+  assignedTo User?                @relation("AssignedTo", fields: [assignedToId], references: [id])
+  photos     MaintenancePhoto[]
+  comments   MaintenanceComment[]
+
+  @@index([status])
+  @@index([pieceId])
+  @@map("maintenance_tickets")
+}
+
+model CategoryQuarantineDefault {
+  id                    String              @id @default(uuid())
+  categoryId            String
+  severity              MaintenanceSeverity
+  defaultQuarantineDays Int
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+
+  category Category @relation(fields: [categoryId], references: [id])
+
+  @@unique([categoryId, severity])
+  @@map("category_quarantine_defaults")
+}
+
+enum MaintenanceStatus {
+  REPORTED
+  ASSESSED
+  IN_PROGRESS
+  AWAITING_PARTS
+  COMPLETED
+  CANCELLED
+}
+
+enum MaintenancePriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum MaintenanceSeverity {
+  MINOR
+  MODERATE
+  UNUSABLE
+}
+
+enum QuarantineType {
+  NONE
+  AUTO
+  MANUAL
+}
+
+model MaintenancePhoto {
+  id           String   @id @default(uuid())
+  ticketId     String
+  url          String
+  caption      String?
+  uploadedById String
+  createdAt    DateTime @default(now())
+
+  ticket     MaintenanceTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  uploadedBy User              @relation(fields: [uploadedById], references: [id])
+
+  @@map("maintenance_photos")
+}
+
+model MaintenanceComment {
+  id        String   @id @default(uuid())
+  ticketId  String
+  userId    String
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  ticket MaintenanceTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  user   User              @relation(fields: [userId], references: [id])
+
+  @@map("maintenance_comments")
+}
+
+// ============================================================
+// AUDIT / HISTORY DOMAIN
+// ============================================================
+
+model PieceHistory {
+  id            String        @id @default(uuid())
+  pieceId       String
+  action        HistoryAction
+  performedById String?
+  details       Json?
+  previousState Json?
+  newState      Json?
+  createdAt     DateTime      @default(now())
+
+  piece       Piece @relation(fields: [pieceId], references: [id])
+  performedBy User? @relation(fields: [performedById], references: [id])
+
+  @@index([pieceId, createdAt])
+  @@index([action])
+  @@map("piece_history")
+}
+
+enum HistoryAction {
+  CREATED
+  UPDATED
+  STATUS_CHANGED
+  ASSIGNED_TO_BOOKING
+  REMOVED_FROM_BOOKING
+  PACKED
+  UNPACKED
+  CHECKED_OUT
+  CHECKED_IN
+  CHECKED_IN_TO_INVENTORY
+  SENT_TO_MAINTENANCE
+  LOCATION_CHANGED
+  MAINTENANCE_STARTED
+  MAINTENANCE_COMPLETED
+  CONDITION_CHANGED
+  QUARANTINE_STARTED
+  QUARANTINE_ENDED
+  RETIRED
+  LOST
+  FOUND
+  CROSSLOADED
+}
