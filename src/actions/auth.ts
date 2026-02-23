@@ -15,9 +15,13 @@ export async function loginAction(email: string, password: string) {
       switch (error.type) {
         case "CredentialsSignin":
           return { error: "Invalid email or password." };
-        default:
-          console.error("Auth error:", error.type, error.message, error.cause);
-          return { error: `Auth error: ${error.type} — ${error.message}` };
+        default: {
+          const cause = error.cause as Error | undefined;
+          const rootCause = cause?.cause as Error | undefined;
+          const detail = rootCause?.message ?? cause?.message ?? error.message;
+          console.error("Auth error:", error.type, detail, error.cause);
+          return { error: `Auth error: ${detail}` };
+        }
       }
     }
     // signIn redirects by throwing a NEXT_REDIRECT error — rethrow it
