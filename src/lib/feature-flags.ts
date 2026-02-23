@@ -79,7 +79,14 @@ export async function requireFeatureFlag(key: string): Promise<void> {
   }
 }
 
-export async function getAccessibleFlagKeys(): Promise<string[]> {
+export type FlagStage = "DEVELOPMENT" | "ALPHA" | "BETA" | "PRODUCTION";
+
+export interface AccessibleFlag {
+  key: string;
+  stage: FlagStage;
+}
+
+export async function getAccessibleFlags(): Promise<AccessibleFlag[]> {
   const session = await auth();
   if (!session?.user) return [];
 
@@ -109,5 +116,11 @@ export async function getAccessibleFlagKeys(): Promise<string[]> {
           return false;
       }
     })
-    .map((flag) => flag.key);
+    .map((flag) => ({ key: flag.key, stage: flag.stage }));
+}
+
+/** @deprecated Use getAccessibleFlags() instead */
+export async function getAccessibleFlagKeys(): Promise<string[]> {
+  const flags = await getAccessibleFlags();
+  return flags.map((f) => f.key);
 }

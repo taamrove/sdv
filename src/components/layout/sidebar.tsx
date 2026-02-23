@@ -67,11 +67,13 @@ export function Sidebar() {
             )}
           >
             {collapsed ? (
-              <span title={`Build: ${BUILD_ID}`}>v0.1</span>
+              <span className="font-mono" title={`Build: ${BUILD_ID}`}>
+                {BUILD_ID.startsWith("dev-") ? "dev" : BUILD_ID}
+              </span>
             ) : (
               <>
-                <span>SDV Lager v0.1</span>
-                <span className="font-mono opacity-50" title={`Build: ${BUILD_ID}`}>
+                <span>SDV Lager</span>
+                <span className="font-mono opacity-50">
                   {BUILD_ID.startsWith("dev-") ? "local" : BUILD_ID}
                 </span>
               </>
@@ -103,7 +105,7 @@ export function MobileSidebarContent({
         <div className="mt-auto">
           <Separator />
           <div className="flex items-center justify-between px-4 py-3 text-xs text-muted-foreground">
-            <span>SDV Lager v0.1</span>
+            <span>SDV Lager</span>
             <span className="font-mono opacity-50">
               {BUILD_ID.startsWith("dev-") ? "local" : BUILD_ID}
             </span>

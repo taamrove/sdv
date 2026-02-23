@@ -29,6 +29,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import type { FlagStage } from "@/lib/feature-flags";
 
 // ---------------------------------------------------------------------------
 // Navigation definition
@@ -193,6 +194,29 @@ const navigation: NavGroup[] = [
 ];
 
 // ---------------------------------------------------------------------------
+// Stage badge config
+// ---------------------------------------------------------------------------
+
+const STAGE_BADGE: Record<
+  FlagStage,
+  { label: string; className: string } | null
+> = {
+  PRODUCTION: null, // No badge for production
+  BETA: {
+    label: "BETA",
+    className: "bg-blue-500/15 text-blue-600 dark:text-blue-400",
+  },
+  ALPHA: {
+    label: "ALPHA",
+    className: "bg-purple-500/15 text-purple-600 dark:text-purple-400",
+  },
+  DEVELOPMENT: {
+    label: "DEV",
+    className: "bg-amber-500/15 text-amber-600 dark:text-amber-400",
+  },
+};
+
+// ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
@@ -204,7 +228,7 @@ interface SidebarNavProps {
 export function SidebarNav({ collapsed = false, onNavigate }: SidebarNavProps) {
   const pathname = usePathname();
   const { hasPermission } = usePermissions();
-  const { hasFeatureAccess } = useFeatureFlags();
+  const { hasFeatureAccess, getFlagStage } = useFeatureFlags();
 
   function isActive(href: string): boolean {
     if (href === "/dashboard") return pathname === "/dashboard";
@@ -239,6 +263,10 @@ export function SidebarNav({ collapsed = false, onNavigate }: SidebarNavProps) {
             {visibleItems.map((item) => {
               const active = isActive(item.href);
               const Icon = item.icon;
+              const stage = item.featureFlag
+                ? getFlagStage(item.featureFlag)
+                : null;
+              const badge = stage ? STAGE_BADGE[stage] : null;
 
               const linkContent = (
                 <Link
@@ -256,7 +284,21 @@ export function SidebarNav({ collapsed = false, onNavigate }: SidebarNavProps) {
                   )}
                 >
                   <Icon className="size-4 shrink-0" />
-                  {!collapsed && <span>{item.label}</span>}
+                  {!collapsed && (
+                    <>
+                      <span className="flex-1">{item.label}</span>
+                      {badge && (
+                        <span
+                          className={cn(
+                            "rounded px-1.5 py-0.5 text-[10px] font-semibold leading-none",
+                            badge.className
+                          )}
+                        >
+                          {badge.label}
+                        </span>
+                      )}
+                    </>
+                  )}
                 </Link>
               );
 
@@ -265,7 +307,19 @@ export function SidebarNav({ collapsed = false, onNavigate }: SidebarNavProps) {
                   <Tooltip key={item.href} delayDuration={0}>
                     <TooltipTrigger asChild>{linkContent}</TooltipTrigger>
                     <TooltipContent side="right" sideOffset={8}>
-                      {item.label}
+                      <span className="flex items-center gap-2">
+                        {item.label}
+                        {badge && (
+                          <span
+                            className={cn(
+                              "rounded px-1.5 py-0.5 text-[10px] font-semibold leading-none",
+                              badge.className
+                            )}
+                          >
+                            {badge.label}
+                          </span>
+                        )}
+                      </span>
                     </TooltipContent>
                   </Tooltip>
                 );

@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/sheet";
 import { MobileSidebarContent } from "@/components/layout/sidebar";
 import { usePermissions } from "@/hooks/use-permissions";
+import { ThemeToggle } from "@/components/shared/theme-toggle";
 
 export function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -59,6 +60,9 @@ export function Header() {
 
         {/* Spacer */}
         <div className="flex-1" />
+
+        {/* Theme toggle */}
+        <ThemeToggle />
 
         {/* User dropdown */}
         <DropdownMenu>

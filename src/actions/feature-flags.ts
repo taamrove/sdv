@@ -3,7 +3,11 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/rbac";
-import { getAccessibleFlagKeys, invalidateFlagCache } from "@/lib/feature-flags";
+import {
+  getAccessibleFlags,
+  invalidateFlagCache,
+  type AccessibleFlag,
+} from "@/lib/feature-flags";
 import {
   createFeatureFlagSchema,
   updateFeatureFlagSchema,
@@ -21,10 +25,12 @@ type ActionResult<T> = { data: T } | { error: string };
 // getMyFeatureFlags — NO permission check (needed by all authenticated users)
 // ---------------------------------------------------------------------------
 
-export async function getMyFeatureFlags(): Promise<ActionResult<string[]>> {
+export async function getMyFeatureFlags(): Promise<
+  ActionResult<AccessibleFlag[]>
+> {
   try {
-    const keys = await getAccessibleFlagKeys();
-    return { data: keys };
+    const flags = await getAccessibleFlags();
+    return { data: flags };
   } catch (error) {
     if (error instanceof Error && error.message.startsWith("Forbidden")) {
       throw error;
