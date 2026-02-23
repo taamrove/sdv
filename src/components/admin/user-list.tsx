@@ -15,11 +15,19 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { Pagination } from "@/components/shared/pagination";
 import { UserFormDialog } from "@/components/admin/user-form-dialog";
-import { deleteUser } from "@/actions/admin";
-import { Plus, Pencil, Trash2, Search } from "lucide-react";
+import { deleteUser, updateUser } from "@/actions/admin";
+import { Plus, Pencil, Trash2, RotateCcw, Search } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface User {
   id: string;
@@ -57,17 +65,23 @@ export function UserList({ users, roles, pagination }: UserListProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [search, setSearch] = useState(searchParams.get("search") ?? "");
+  const [statusFilter, setStatusFilter] = useState(searchParams.get("status") ?? "all");
   const [formOpen, setFormOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<User | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  function applySearch() {
+  function applyFilters() {
     const sp = new URLSearchParams(searchParams.toString());
     if (search) {
       sp.set("search", search);
     } else {
       sp.delete("search");
+    }
+    if (statusFilter !== "all") {
+      sp.set("status", statusFilter);
+    } else {
+      sp.delete("status");
     }
     sp.set("page", "1");
     router.push(`?${sp.toString()}`);
@@ -102,21 +116,58 @@ export function UserList({ users, roles, pagination }: UserListProps) {
     }
   }
 
+  async function handleReactivate(user: User) {
+    try {
+      const result = await updateUser(user.id, { active: true });
+      if ("error" in result) {
+        toast.error(result.error);
+      } else {
+        toast.success(`User "${user.name}" has been reactivated`);
+        router.refresh();
+      }
+    } catch {
+      toast.error("Failed to reactivate user");
+    }
+  }
+
   return (
     <>
       <Card>
         <CardContent>
           <div className="flex items-center justify-between gap-4 mb-4">
-            <div className="flex gap-2 flex-1 max-w-sm">
+            <div className="flex gap-2 flex-1 max-w-lg">
               <Input
                 placeholder="Search users..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter") applySearch();
+                  if (e.key === "Enter") applyFilters();
                 }}
               />
-              <Button variant="outline" size="icon" onClick={applySearch}>
+              <Select
+                value={statusFilter}
+                onValueChange={(value) => {
+                  setStatusFilter(value);
+                  // Auto-apply when filter changes
+                  const sp = new URLSearchParams(searchParams.toString());
+                  if (search) sp.set("search", search);
+                  else sp.delete("search");
+                  if (value !== "all") sp.set("status", value);
+                  else sp.delete("status");
+                  sp.set("page", "1");
+                  router.push(`?${sp.toString()}`);
+                }}
+              >
+                <SelectTrigger className="w-[140px]">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Users</SelectItem>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="inactive">Inactive</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button variant="outline" size="icon" onClick={applyFilters}>
                 <Search className="h-4 w-4" />
               </Button>
             </div>
@@ -145,7 +196,7 @@ export function UserList({ users, roles, pagination }: UserListProps) {
                 </TableRow>
               ) : (
                 users.map((user) => (
-                  <TableRow key={user.id}>
+                  <TableRow key={user.id} className={cn(!user.active && "opacity-50")}>
                     <TableCell className="font-medium">{user.name}</TableCell>
                     <TableCell>{user.email}</TableCell>
                     <TableCell>
@@ -167,14 +218,23 @@ export function UserList({ users, roles, pagination }: UserListProps) {
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => setDeleteTarget(user)}
-                          disabled={!user.active}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        {user.active ? (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setDeleteTarget(user)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleReactivate(user)}
+                          >
+                            <RotateCcw className="h-4 w-4" />
+                          </Button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>

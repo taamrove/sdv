@@ -1,11 +1,17 @@
 import { prisma } from "./prisma";
 import { auth } from "./auth";
 
+const ADMIN_ROLES = ["Admin", "Developer"];
+
+function isAdminRole(role: string | undefined | null): boolean {
+  return !!role && ADMIN_ROLES.includes(role);
+}
+
 interface CachedFlag {
   flag: {
     id: string;
     key: string;
-    stage: "ALPHA" | "BETA" | "PRODUCTION";
+    stage: "DEVELOPMENT" | "ALPHA" | "BETA" | "PRODUCTION";
     betaUserIds: string[];
   };
   expiresAt: number;
@@ -56,10 +62,12 @@ export async function checkFeatureFlag(key: string): Promise<boolean> {
     case "PRODUCTION":
       return true;
     case "ALPHA":
-      return session.user.role === "Admin";
+      return isAdminRole(session.user.role);
     case "BETA":
-      if (session.user.role === "Admin") return true;
+      if (isAdminRole(session.user.role)) return true;
       return flag.betaUserIds.includes(session.user.id);
+    case "DEVELOPMENT":
+      return session.user.role === "Developer";
     default:
       return false;
   }
@@ -89,12 +97,14 @@ export async function getAccessibleFlagKeys(): Promise<string[]> {
         case "PRODUCTION":
           return true;
         case "ALPHA":
-          return session.user.role === "Admin";
+          return isAdminRole(session.user.role);
         case "BETA":
           return (
-            session.user.role === "Admin" ||
+            isAdminRole(session.user.role) ||
             flag.betaUsers.some((bu) => bu.userId === session.user.id)
           );
+        case "DEVELOPMENT":
+          return session.user.role === "Developer";
         default:
           return false;
       }

@@ -16,6 +16,7 @@ model User {
   id           String    @id @default(uuid())
   email        String    @unique
   name         String
+  image        String?
   passwordHash String
   roleId       String
   active       Boolean   @default(true)
@@ -80,6 +81,7 @@ model RolePermission {
 // ============================================================
 
 enum FeatureFlagStage {
+  DEVELOPMENT
   ALPHA
   BETA
   PRODUCTION
@@ -90,7 +92,7 @@ model FeatureFlag {
   key         String           @unique
   name        String
   description String?
-  stage       FeatureFlagStage @default(ALPHA)
+  stage       FeatureFlagStage @default(DEVELOPMENT)
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
 

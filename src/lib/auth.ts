@@ -49,12 +49,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         );
 
         // Check if role is Admin (gets wildcard)
-        const isAdmin = user.role.name === "Admin";
+        const isAdmin = user.role.name === "Admin" || user.role.name === "Developer";
 
         return {
           id: user.id,
           email: user.email,
           name: user.name,
+          image: user.image,
           role: user.role.name,
           permissions: isAdmin ? ["*"] : permissions,
         };

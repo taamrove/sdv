@@ -62,6 +62,12 @@ export const DEFAULT_ROLES: Record<string, RoleDefinition> = {
       (p) => !p.startsWith("users:") && !p.startsWith("roles:")
     ),
   },
+  DEVELOPER: {
+    name: "Developer",
+    description: "Full admin access with developer capabilities",
+    isSystem: true,
+    permissions: "*",
+  },
   WAREHOUSE: {
     name: "Warehouse",
     description: "Inventory management, packing, check-in/check-out",

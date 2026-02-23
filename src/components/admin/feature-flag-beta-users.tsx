@@ -49,7 +49,7 @@ interface FeatureFlag {
   id: string;
   key: string;
   name: string;
-  stage: "ALPHA" | "BETA" | "PRODUCTION";
+  stage: "DEVELOPMENT" | "ALPHA" | "BETA" | "PRODUCTION";
 }
 
 interface SearchUser {

@@ -8,6 +8,7 @@ interface SearchParams {
   page?: string;
   search?: string;
   roleId?: string;
+  status?: string;
 }
 
 export default async function UsersPage({
@@ -26,6 +27,7 @@ export default async function UsersPage({
     getUsers({
       search: params.search,
       roleId: params.roleId,
+      status: params.status,
       page,
       limit,
     }),

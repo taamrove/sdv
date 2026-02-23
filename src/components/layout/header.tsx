@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import { signOut } from "next-auth/react";
+import Link from "next/link";
 import { Menu, LogOut, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -67,6 +68,9 @@ export function Header() {
               className="relative flex items-center gap-2 px-2"
             >
               <Avatar size="sm">
+                {user?.image && (
+                  <AvatarImage src={user.image} alt={user.name ?? "User"} />
+                )}
                 <AvatarFallback className="text-xs">
                   {getInitials(user?.name)}
                 </AvatarFallback>
@@ -94,9 +98,11 @@ export function Header() {
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem disabled>
-                <User className="mr-2 size-4" />
-                Profile
+              <DropdownMenuItem asChild>
+                <Link href="/profile">
+                  <User className="mr-2 size-4" />
+                  Profile
+                </Link>
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />

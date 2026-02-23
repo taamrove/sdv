@@ -17,7 +17,7 @@ export const createFeatureFlagSchema = z.object({
     .string()
     .max(1000, "Description must be 1000 characters or less")
     .optional(),
-  stage: z.enum(["ALPHA", "BETA", "PRODUCTION"]).default("ALPHA"),
+  stage: z.enum(["DEVELOPMENT", "ALPHA", "BETA", "PRODUCTION"]).default("DEVELOPMENT"),
 });
 
 export const updateFeatureFlagSchema = z.object({
@@ -31,7 +31,7 @@ export const updateFeatureFlagSchema = z.object({
     .max(1000, "Description must be 1000 characters or less")
     .optional()
     .nullable(),
-  stage: z.enum(["ALPHA", "BETA", "PRODUCTION"]).optional(),
+  stage: z.enum(["DEVELOPMENT", "ALPHA", "BETA", "PRODUCTION"]).optional(),
 });
 
 export type CreateFeatureFlagInput = z.infer<typeof createFeatureFlagSchema>;

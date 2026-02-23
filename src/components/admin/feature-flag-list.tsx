@@ -38,7 +38,7 @@ interface FeatureFlag {
   key: string;
   name: string;
   description: string | null;
-  stage: "ALPHA" | "BETA" | "PRODUCTION";
+  stage: "DEVELOPMENT" | "ALPHA" | "BETA" | "PRODUCTION";
   createdAt: string;
   updatedAt: string;
   _count: { betaUsers: number };
@@ -54,14 +54,15 @@ interface FeatureFlagListProps {
 
 const STAGE_BADGE_VARIANT: Record<
   FeatureFlag["stage"],
-  "destructive" | "secondary" | "default"
+  "outline" | "destructive" | "secondary" | "default"
 > = {
+  DEVELOPMENT: "outline",
   ALPHA: "destructive",
   BETA: "secondary",
   PRODUCTION: "default",
 };
 
-const STAGE_OPTIONS: FeatureFlag["stage"][] = ["ALPHA", "BETA", "PRODUCTION"];
+const STAGE_OPTIONS: FeatureFlag["stage"][] = ["DEVELOPMENT", "ALPHA", "BETA", "PRODUCTION"];
 
 // ---------------------------------------------------------------------------
 // Component

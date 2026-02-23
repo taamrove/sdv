@@ -8,6 +8,8 @@ import { Separator } from "@/components/ui/separator";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { SidebarNav } from "@/components/layout/sidebar-nav";
 
+const BUILD_ID = process.env.NEXT_PUBLIC_BUILD_ID ?? "dev";
+
 // ---------------------------------------------------------------------------
 // Desktop Sidebar
 // ---------------------------------------------------------------------------
@@ -61,10 +63,19 @@ export function Sidebar() {
           <div
             className={cn(
               "flex items-center px-4 py-3 text-xs text-muted-foreground",
-              collapsed ? "justify-center" : ""
+              collapsed ? "justify-center" : "justify-between"
             )}
           >
-            {collapsed ? "v0.1" : "SDV Lager v0.1"}
+            {collapsed ? (
+              <span title={`Build: ${BUILD_ID}`}>v0.1</span>
+            ) : (
+              <>
+                <span>SDV Lager v0.1</span>
+                <span className="font-mono opacity-50" title={`Build: ${BUILD_ID}`}>
+                  {BUILD_ID.startsWith("dev-") ? "local" : BUILD_ID}
+                </span>
+              </>
+            )}
           </div>
         </div>
       </aside>
@@ -91,8 +102,11 @@ export function MobileSidebarContent({
         </div>
         <div className="mt-auto">
           <Separator />
-          <div className="flex items-center px-4 py-3 text-xs text-muted-foreground">
-            SDV Lager v0.1
+          <div className="flex items-center justify-between px-4 py-3 text-xs text-muted-foreground">
+            <span>SDV Lager v0.1</span>
+            <span className="font-mono opacity-50">
+              {BUILD_ID.startsWith("dev-") ? "local" : BUILD_ID}
+            </span>
           </div>
         </div>
       </div>

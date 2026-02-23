@@ -36,7 +36,7 @@ interface FeatureFlag {
   key: string;
   name: string;
   description: string | null;
-  stage: "ALPHA" | "BETA" | "PRODUCTION";
+  stage: "DEVELOPMENT" | "ALPHA" | "BETA" | "PRODUCTION";
 }
 
 interface FeatureFlagFormDialogProps {
@@ -60,7 +60,7 @@ export function FeatureFlagFormDialog({
   const [key, setKey] = useState("");
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [stage, setStage] = useState<"ALPHA" | "BETA" | "PRODUCTION">("ALPHA");
+  const [stage, setStage] = useState<"DEVELOPMENT" | "ALPHA" | "BETA" | "PRODUCTION">("DEVELOPMENT");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -74,7 +74,7 @@ export function FeatureFlagFormDialog({
         setKey("");
         setName("");
         setDescription("");
-        setStage("ALPHA");
+        setStage("DEVELOPMENT");
       }
     }
   }, [open, flag]);
@@ -181,13 +181,14 @@ export function FeatureFlagFormDialog({
               <Select
                 value={stage}
                 onValueChange={(v) =>
-                  setStage(v as "ALPHA" | "BETA" | "PRODUCTION")
+                  setStage(v as "DEVELOPMENT" | "ALPHA" | "BETA" | "PRODUCTION")
                 }
               >
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select a stage" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="DEVELOPMENT">Development (Developers only)</SelectItem>
                   <SelectItem value="ALPHA">Alpha (Admins only)</SelectItem>
                   <SelectItem value="BETA">
                     Beta (Admins + selected users)

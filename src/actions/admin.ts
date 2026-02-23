@@ -24,6 +24,7 @@ interface Pagination {
 interface UserListParams {
   search?: string;
   roleId?: string;
+  status?: string;
   page?: number;
   limit?: number;
 }
@@ -61,6 +62,12 @@ export async function getUsers(
         { name: { contains: params.search, mode: "insensitive" } },
         { email: { contains: params.search, mode: "insensitive" } },
       ];
+    }
+
+    if (params?.status === "active") {
+      where.active = true;
+    } else if (params?.status === "inactive") {
+      where.active = false;
     }
 
     const [users, total] = await Promise.all([
