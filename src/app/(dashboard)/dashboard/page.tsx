@@ -35,41 +35,65 @@ export default async function DashboardPage() {
   let upcomingProjects: any[] = [];
 
   try {
-  // Run queries sequentially to avoid exhausting the Supabase connection pool
-  totalPieces = await prisma.piece.count();
-  availablePieces = await prisma.piece.count({ where: { status: "AVAILABLE" } });
-  assignedPieces = await prisma.piece.count({ where: { status: "ASSIGNED" } });
-  maintenancePieces = await prisma.piece.count({ where: { status: "MAINTENANCE" } });
-  totalItems = await prisma.item.count();
-  totalLocations = await prisma.warehouseLocation.count();
-  activeProjects = await prisma.project.count({
-    where: { status: { in: ["CONFIRMED", "PACKING", "IN_TRANSIT", "ACTIVE"] } },
-  });
-  totalPerformers = await prisma.performer.count({ where: { active: true } });
-  recentActivity = await prisma.pieceHistory.findMany({
-    orderBy: { createdAt: "desc" },
-    take: 10,
-    include: {
-      piece: { select: { humanReadableId: true, id: true } },
-      performedBy: { select: { name: true } },
-    },
-  });
-  upcomingProjects = await prisma.project.findMany({
-    where: {
-      status: { notIn: ["COMPLETED", "CANCELLED"] },
-      startDate: { gte: new Date() },
-    },
-    orderBy: { startDate: "asc" },
-    take: 5,
-    select: {
-      id: true,
-      name: true,
-      status: true,
-      startDate: true,
-      endDate: true,
-      _count: { select: { assignments: true, bookings: true } },
-    },
-  });
+    // Batch all queries into a single transaction to use ONE connection
+    const [
+      _totalPieces,
+      _availablePieces,
+      _assignedPieces,
+      _maintenancePieces,
+      _totalItems,
+      _totalLocations,
+      _activeProjects,
+      _totalPerformers,
+      _recentActivity,
+      _upcomingProjects,
+    ] = await prisma.$transaction([
+      prisma.piece.count(),
+      prisma.piece.count({ where: { status: "AVAILABLE" } }),
+      prisma.piece.count({ where: { status: "ASSIGNED" } }),
+      prisma.piece.count({ where: { status: "MAINTENANCE" } }),
+      prisma.item.count(),
+      prisma.warehouseLocation.count(),
+      prisma.project.count({
+        where: { status: { in: ["CONFIRMED", "PACKING", "IN_TRANSIT", "ACTIVE"] } },
+      }),
+      prisma.performer.count({ where: { active: true } }),
+      prisma.pieceHistory.findMany({
+        orderBy: { createdAt: "desc" },
+        take: 10,
+        include: {
+          piece: { select: { humanReadableId: true, id: true } },
+          performedBy: { select: { name: true } },
+        },
+      }),
+      prisma.project.findMany({
+        where: {
+          status: { notIn: ["COMPLETED", "CANCELLED"] },
+          startDate: { gte: new Date() },
+        },
+        orderBy: { startDate: "asc" },
+        take: 5,
+        select: {
+          id: true,
+          name: true,
+          status: true,
+          startDate: true,
+          endDate: true,
+          _count: { select: { assignments: true, bookings: true } },
+        },
+      }),
+    ]);
+
+    totalPieces = _totalPieces;
+    availablePieces = _availablePieces;
+    assignedPieces = _assignedPieces;
+    maintenancePieces = _maintenancePieces;
+    totalItems = _totalItems;
+    totalLocations = _totalLocations;
+    activeProjects = _activeProjects;
+    totalPerformers = _totalPerformers;
+    recentActivity = _recentActivity;
+    upcomingProjects = _upcomingProjects;
   } catch (error) {
     console.error("Dashboard query error:", error);
   }

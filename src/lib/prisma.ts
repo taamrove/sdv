@@ -8,7 +8,10 @@ export const prisma =
   globalForPrisma.prisma ??
   new PrismaClient({
     log: process.env.NODE_ENV === "development" ? ["warn", "error"] : ["error"],
+    datasourceUrl: process.env.DATABASE_URL,
   });
 
 // Cache on globalThis in all environments (prevents connection leaks on serverless)
-globalForPrisma.prisma = prisma;
+if (!globalForPrisma.prisma) {
+  globalForPrisma.prisma = prisma;
+}
