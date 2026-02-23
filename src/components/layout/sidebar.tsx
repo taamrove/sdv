@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { PanelLeftClose, PanelLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -9,6 +10,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { SidebarNav } from "@/components/layout/sidebar-nav";
 
 const BUILD_ID = process.env.NEXT_PUBLIC_BUILD_ID ?? "dev";
+const displayBuildId = BUILD_ID.startsWith("dev-") ? "local" : BUILD_ID;
 
 // ---------------------------------------------------------------------------
 // Desktop Sidebar
@@ -67,15 +69,22 @@ export function Sidebar() {
             )}
           >
             {collapsed ? (
-              <span className="font-mono" title={`Build: ${BUILD_ID}`}>
-                {BUILD_ID.startsWith("dev-") ? "dev" : BUILD_ID}
-              </span>
+              <Link
+                href="/changelog"
+                className="font-mono hover:text-foreground transition-colors"
+                title={`Build: ${BUILD_ID}`}
+              >
+                {displayBuildId === "local" ? "dev" : displayBuildId}
+              </Link>
             ) : (
               <>
                 <span>SDV Lager</span>
-                <span className="font-mono opacity-50">
-                  {BUILD_ID.startsWith("dev-") ? "local" : BUILD_ID}
-                </span>
+                <Link
+                  href="/changelog"
+                  className="font-mono opacity-50 hover:opacity-100 hover:text-foreground transition-all"
+                >
+                  {displayBuildId}
+                </Link>
               </>
             )}
           </div>
@@ -106,9 +115,13 @@ export function MobileSidebarContent({
           <Separator />
           <div className="flex items-center justify-between px-4 py-3 text-xs text-muted-foreground">
             <span>SDV Lager</span>
-            <span className="font-mono opacity-50">
-              {BUILD_ID.startsWith("dev-") ? "local" : BUILD_ID}
-            </span>
+            <Link
+              href="/changelog"
+              onClick={onNavigate}
+              className="font-mono opacity-50 hover:opacity-100 hover:text-foreground transition-all"
+            >
+              {displayBuildId}
+            </Link>
           </div>
         </div>
       </div>

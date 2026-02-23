@@ -667,3 +667,19 @@ enum HistoryAction {
   FOUND
   CROSSLOADED
 }
+
+// ============================================================
+// CHANGELOG DOMAIN
+// ============================================================
+
+model ChangelogEntry {
+  id        String   @id @default(uuid())
+  version   String
+  title     String
+  changes   String   // Markdown content
+  buildId   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("changelog_entries")
+}
