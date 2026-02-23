@@ -16,11 +16,18 @@ export async function loginAction(email: string, password: string) {
         case "CredentialsSignin":
           return { error: "Invalid email or password." };
         default: {
-          const cause = error.cause as Error | undefined;
-          const rootCause = cause?.cause as Error | undefined;
-          const detail = rootCause?.message ?? cause?.message ?? error.message;
-          console.error("Auth error:", error.type, detail, error.cause);
-          return { error: `Auth error: ${detail}` };
+          // Walk the entire cause chain to find the deepest error message
+          let detail = error.message;
+          let current: unknown = error.cause;
+          while (current && typeof current === "object") {
+            const err = current as Record<string, unknown>;
+            if (err.message && typeof err.message === "string") {
+              detail = err.message;
+            }
+            current = err.cause ?? err.err ?? err.error;
+          }
+          console.error("Auth error:", error.type, "detail:", detail);
+          return { error: `Login error: ${detail}` };
         }
       }
     }

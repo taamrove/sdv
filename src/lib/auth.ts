@@ -15,51 +15,58 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        const { email, password } = credentials as {
-          email: string;
-          password: string;
-        };
+        try {
+          const { email, password } = credentials as {
+            email: string;
+            password: string;
+          };
 
-        if (!email || !password) return null;
+          if (!email || !password) return null;
 
-        const user = await prisma.user.findUnique({
-          where: { email },
-          include: {
-            role: {
-              include: {
-                permissions: { include: { permission: true } },
+          const user = await prisma.user.findUnique({
+            where: { email },
+            include: {
+              role: {
+                include: {
+                  permissions: { include: { permission: true } },
+                },
               },
             },
-          },
-        });
+          });
 
-        if (!user || !user.active) return null;
+          if (!user || !user.active) return null;
 
-        const isValid = await bcrypt.compare(password, user.passwordHash);
-        if (!isValid) return null;
+          const isValid = await bcrypt.compare(password, user.passwordHash);
+          if (!isValid) return null;
 
-        // Update last login
-        await prisma.user.update({
-          where: { id: user.id },
-          data: { lastLoginAt: new Date() },
-        });
+          // Update last login
+          await prisma.user.update({
+            where: { id: user.id },
+            data: { lastLoginAt: new Date() },
+          });
 
-        const permissions = user.role.permissions.map(
-          (rp) => `${rp.permission.resource}:${rp.permission.action}`
-        );
+          const permissions = user.role.permissions.map(
+            (rp) => `${rp.permission.resource}:${rp.permission.action}`
+          );
 
-        // Check if role is Admin (gets wildcard)
-        const isAdmin = user.role.name === "Admin" || user.role.name === "Developer";
+          // Check if role is Admin (gets wildcard)
+          const isAdmin = user.role.name === "Admin" || user.role.name === "Developer";
 
-        return {
-          id: user.id,
-          email: user.email,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          image: user.image,
-          role: user.role.name,
-          permissions: isAdmin ? ["*"] : permissions,
-        };
+          return {
+            id: user.id,
+            email: user.email,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            image: user.image,
+            role: user.role.name,
+            permissions: isAdmin ? ["*"] : permissions,
+          };
+        } catch (err) {
+          console.error("AUTHORIZE ERROR:", err);
+          throw new Error(
+            `Login failed: ${err instanceof Error ? err.message : String(err)}`
+          );
+        }
       },
     }),
   ],
