@@ -30,7 +30,7 @@ export function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const { user } = usePermissions();
 
-  const displayName = user ? getFullName(user as { firstName: string; lastName: string }) : "User";
+  const displayName = user ? getFullName(user as { firstName?: string; lastName?: string }) : "User";
 
   return (
     <>

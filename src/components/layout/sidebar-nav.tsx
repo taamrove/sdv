@@ -19,6 +19,8 @@ import {
   UserCog,
   Timer,
   Flag,
+  MessageSquarePlus,
+  MessageSquare,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -159,6 +161,11 @@ const navigation: NavGroup[] = [
         icon: ScanLine,
         featureFlag: "scanner",
       },
+      {
+        label: "Feedback",
+        href: "/feedback",
+        icon: MessageSquarePlus,
+      },
     ],
   },
   {
@@ -190,6 +197,13 @@ const navigation: NavGroup[] = [
         href: "/admin/feature-flags",
         icon: Flag,
         permission: "admin:read",
+        developerOnly: true,
+      },
+      {
+        label: "Feedback",
+        href: "/admin/feedback",
+        icon: MessageSquare,
+        permission: "feedback:read",
         developerOnly: true,
       },
     ],

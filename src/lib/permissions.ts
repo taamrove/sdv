@@ -14,6 +14,7 @@ export const RESOURCES = {
   USERS: "users",
   ROLES: "roles",
   REPORTS: "reports",
+  FEEDBACK: "feedback",
 } as const;
 
 export const ACTIONS = {
@@ -104,6 +105,7 @@ export const DEFAULT_ROLES: Record<string, RoleDefinition> = {
       "maintenance:create",
       "maintenance:read",
       "reports:read",
+      "feedback:create",
     ],
   },
   MAINTENANCE: {
@@ -117,6 +119,7 @@ export const DEFAULT_ROLES: Record<string, RoleDefinition> = {
       "maintenance:read",
       "maintenance:update",
       "scan:scan",
+      "feedback:create",
     ],
   },
   VIEWER: {
@@ -136,6 +139,7 @@ export const DEFAULT_ROLES: Record<string, RoleDefinition> = {
       "warehouse:read",
       "maintenance:read",
       "reports:read",
+      "feedback:create",
     ],
   },
 };

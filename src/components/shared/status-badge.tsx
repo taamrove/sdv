@@ -67,6 +67,16 @@ const STATUS_VARIANTS: Record<string, "default" | "secondary" | "destructive" | 
   MEDIUM: "secondary",
   HIGH: "default",
   URGENT: "destructive",
+  // Feedback statuses
+  OPEN: "outline",
+  IN_REVIEW: "secondary",
+  PLANNED: "default",
+  RESOLVED: "default",
+  CLOSED: "secondary",
+  // Feedback categories
+  BUG: "destructive",
+  FEATURE_REQUEST: "default",
+  IMPROVEMENT: "secondary",
 };
 
 interface StatusBadgeProps {

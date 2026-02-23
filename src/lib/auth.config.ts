@@ -34,12 +34,14 @@ export const authConfig: NextAuthConfig = {
     },
     session({ session, token }) {
       if (token) {
-        session.user.id = token.id as string;
-        session.user.firstName = token.firstName as string;
-        session.user.lastName = token.lastName as string;
+        // Use token.id with fallback to token.sub (default next-auth field)
+        session.user.id = (token.id as string) ?? (token.sub as string);
+        // Handle old tokens that may have `name` instead of firstName/lastName
+        session.user.firstName = (token.firstName as string) ?? (token.name as string) ?? "";
+        session.user.lastName = (token.lastName as string) ?? "";
         session.user.image = token.image as string | null;
-        session.user.role = token.role as string;
-        session.user.permissions = token.permissions as string[];
+        session.user.role = (token.role as string) ?? "";
+        session.user.permissions = (token.permissions as string[]) ?? [];
       }
       return session;
     },

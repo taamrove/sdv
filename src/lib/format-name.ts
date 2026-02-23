@@ -2,10 +2,12 @@
  * Constructs a full display name from first and last name.
  */
 export function getFullName(
-  user: { firstName: string; lastName: string } | null | undefined
+  user: { firstName?: string; lastName?: string } | null | undefined
 ): string {
   if (!user) return "User";
-  return `${user.firstName} ${user.lastName}`.trim() || "User";
+  const first = user.firstName ?? "";
+  const last = user.lastName ?? "";
+  return `${first} ${last}`.trim() || "User";
 }
 
 /**

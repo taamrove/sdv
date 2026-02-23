@@ -35,6 +35,7 @@ model User {
   containerPackedBy   ContainerItem[]     @relation("PackedBy")
   containerVerifiedBy ContainerItem[]     @relation("VerifiedBy")
   betaFlags           FeatureFlagUser[]
+  feedbackSubmitted   FeedbackTicket[]
 
   @@map("users")
 }
@@ -668,6 +669,50 @@ enum HistoryAction {
   LOST
   FOUND
   CROSSLOADED
+}
+
+// ============================================================
+// FEEDBACK DOMAIN
+// ============================================================
+
+model FeedbackTicket {
+  id            String           @id @default(uuid())
+  title         String
+  description   String?
+  category      FeedbackCategory
+  status        FeedbackStatus   @default(OPEN)
+  priority      FeedbackPriority @default(MEDIUM)
+  submittedById String
+  resolvedAt    DateTime?
+  devNotes      String?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  submittedBy User @relation(fields: [submittedById], references: [id])
+
+  @@index([status])
+  @@index([submittedById])
+  @@map("feedback_tickets")
+}
+
+enum FeedbackCategory {
+  BUG
+  FEATURE_REQUEST
+  IMPROVEMENT
+}
+
+enum FeedbackStatus {
+  OPEN
+  IN_REVIEW
+  PLANNED
+  RESOLVED
+  CLOSED
+}
+
+enum FeedbackPriority {
+  LOW
+  MEDIUM
+  HIGH
 }
 
 // ============================================================

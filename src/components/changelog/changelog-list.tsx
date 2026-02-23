@@ -106,9 +106,14 @@ export function ChangelogList({ entries, canManage }: ChangelogListProps) {
                             })}
                           </span>
                           {entry.buildId && (
-                            <span className="font-mono text-xs opacity-50">
+                            <a
+                              href={`https://github.com/taamrove/sdv/commit/${entry.buildId}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="font-mono text-xs opacity-50 hover:opacity-100 hover:underline transition-opacity"
+                            >
                               {entry.buildId}
-                            </span>
+                            </a>
                           )}
                         </CardDescription>
                       </div>

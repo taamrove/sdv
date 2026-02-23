@@ -102,6 +102,26 @@ export const CONTAINER_STATUS_LABELS: Record<string, string> = {
   UNPACKED: "Unpacked",
 };
 
+export const FEEDBACK_STATUS_LABELS: Record<string, string> = {
+  OPEN: "Open",
+  IN_REVIEW: "In Review",
+  PLANNED: "Planned",
+  RESOLVED: "Resolved",
+  CLOSED: "Closed",
+};
+
+export const FEEDBACK_CATEGORY_LABELS: Record<string, string> = {
+  BUG: "Bug",
+  FEATURE_REQUEST: "Feature Request",
+  IMPROVEMENT: "Improvement",
+};
+
+export const FEEDBACK_PRIORITY_LABELS: Record<string, string> = {
+  LOW: "Low",
+  MEDIUM: "Medium",
+  HIGH: "High",
+};
+
 export const SIZE_FLEX_DIRECTION_LABELS: Record<string, string> = {
   UP: "Size Up",
   DOWN: "Size Down",
