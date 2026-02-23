@@ -59,7 +59,8 @@ export async function getUsers(
 
     if (params?.search) {
       where.OR = [
-        { name: { contains: params.search, mode: "insensitive" } },
+        { firstName: { contains: params.search, mode: "insensitive" } },
+        { lastName: { contains: params.search, mode: "insensitive" } },
         { email: { contains: params.search, mode: "insensitive" } },
       ];
     }
@@ -76,7 +77,9 @@ export async function getUsers(
         select: {
           id: true,
           email: true,
-          name: true,
+          firstName: true,
+          lastName: true,
+          phone: true,
           active: true,
           lastLoginAt: true,
           createdAt: true,
@@ -85,7 +88,7 @@ export async function getUsers(
             select: { id: true, name: true },
           },
         },
-        orderBy: { name: "asc" },
+        orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
         skip,
         take: limit,
       }),
@@ -124,7 +127,9 @@ export async function getUserById(
       select: {
         id: true,
         email: true,
-        name: true,
+        firstName: true,
+        lastName: true,
+        phone: true,
         active: true,
         lastLoginAt: true,
         createdAt: true,
@@ -184,14 +189,18 @@ export async function createUser(
     const user = await prisma.user.create({
       data: {
         email: parsed.data.email,
-        name: parsed.data.name,
+        firstName: parsed.data.firstName,
+        lastName: parsed.data.lastName,
+        phone: parsed.data.phone || null,
         passwordHash,
         roleId: parsed.data.roleId,
       },
       select: {
         id: true,
         email: true,
-        name: true,
+        firstName: true,
+        lastName: true,
+        phone: true,
         active: true,
         createdAt: true,
         updatedAt: true,
@@ -256,7 +265,9 @@ export async function updateUser(
     const updateData: Record<string, any> = {};
 
     if (parsed.data.email !== undefined) updateData.email = parsed.data.email;
-    if (parsed.data.name !== undefined) updateData.name = parsed.data.name;
+    if (parsed.data.firstName !== undefined) updateData.firstName = parsed.data.firstName;
+    if (parsed.data.lastName !== undefined) updateData.lastName = parsed.data.lastName;
+    if (parsed.data.phone !== undefined) updateData.phone = parsed.data.phone || null;
     if (parsed.data.roleId !== undefined) updateData.roleId = parsed.data.roleId;
     if (parsed.data.active !== undefined) updateData.active = parsed.data.active;
 
@@ -273,7 +284,9 @@ export async function updateUser(
       select: {
         id: true,
         email: true,
-        name: true,
+        firstName: true,
+        lastName: true,
+        phone: true,
         active: true,
         lastLoginAt: true,
         createdAt: true,
@@ -318,7 +331,8 @@ export async function deleteUser(
       select: {
         id: true,
         email: true,
-        name: true,
+        firstName: true,
+        lastName: true,
         active: true,
         updatedAt: true,
         role: {

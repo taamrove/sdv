@@ -28,11 +28,14 @@ import { UserFormDialog } from "@/components/admin/user-form-dialog";
 import { deleteUser, updateUser } from "@/actions/admin";
 import { Plus, Pencil, Trash2, RotateCcw, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { getFullName } from "@/lib/format-name";
 
 interface User {
   id: string;
   email: string;
-  name: string;
+  firstName: string;
+  lastName: string;
+  phone: string | null;
   active: boolean;
   lastLoginAt: string | null;
   createdAt: string;
@@ -105,7 +108,7 @@ export function UserList({ users, roles, pagination }: UserListProps) {
       if ("error" in result) {
         toast.error(result.error);
       } else {
-        toast.success(`User "${deleteTarget.name}" has been deactivated`);
+        toast.success(`User "${getFullName(deleteTarget)}" has been deactivated`);
         router.refresh();
       }
     } catch {
@@ -122,7 +125,7 @@ export function UserList({ users, roles, pagination }: UserListProps) {
       if ("error" in result) {
         toast.error(result.error);
       } else {
-        toast.success(`User "${user.name}" has been reactivated`);
+        toast.success(`User "${getFullName(user)}" has been reactivated`);
         router.refresh();
       }
     } catch {
@@ -182,6 +185,7 @@ export function UserList({ users, roles, pagination }: UserListProps) {
               <TableRow>
                 <TableHead>Name</TableHead>
                 <TableHead>Email</TableHead>
+                <TableHead>Phone</TableHead>
                 <TableHead>Role</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
@@ -190,15 +194,18 @@ export function UserList({ users, roles, pagination }: UserListProps) {
             <TableBody>
               {users.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
                     No users found
                   </TableCell>
                 </TableRow>
               ) : (
                 users.map((user) => (
                   <TableRow key={user.id} className={cn(!user.active && "opacity-50")}>
-                    <TableCell className="font-medium">{user.name}</TableCell>
+                    <TableCell className="font-medium">{getFullName(user)}</TableCell>
                     <TableCell>{user.email}</TableCell>
+                    <TableCell className="text-muted-foreground text-sm">
+                      {user.phone || "—"}
+                    </TableCell>
                     <TableCell>
                       <Badge variant="outline">{user.role.name}</Badge>
                     </TableCell>
@@ -260,7 +267,7 @@ export function UserList({ users, roles, pagination }: UserListProps) {
           if (!open) setDeleteTarget(null);
         }}
         title="Deactivate User"
-        description={`Are you sure you want to deactivate "${deleteTarget?.name}"? They will no longer be able to log in.`}
+        description={`Are you sure you want to deactivate "${deleteTarget ? getFullName(deleteTarget) : ""}"? They will no longer be able to log in.`}
         confirmLabel="Deactivate"
         variant="destructive"
         onConfirm={handleDelete}

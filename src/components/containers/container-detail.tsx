@@ -48,6 +48,7 @@ import {
   CONTAINER_STATUS_LABELS,
 } from "@/lib/constants";
 import { toast } from "sonner";
+import { getFullName } from "@/lib/format-name";
 
 // ---------------------------------------------------------------------------
 // Status transition map (mirrors the server-side map)
@@ -78,7 +79,7 @@ interface ContainerItem {
     category: { code: string; name: string };
     warehouseLocation: { label: string } | null;
   };
-  packedBy: { id: string; name: string } | null;
+  packedBy: { id: string; firstName: string; lastName: string } | null;
 }
 
 interface ContainerData {
@@ -468,7 +469,7 @@ export function ContainerDetail({
                         </TableCell>
                         <TableCell>
                           <span className="text-sm text-muted-foreground">
-                            {ci.packedBy?.name ?? "Unknown"}
+                            {ci.packedBy ? getFullName(ci.packedBy) : "Unknown"}
                           </span>
                         </TableCell>
                         <TableCell>

@@ -89,7 +89,7 @@ export async function getFeatureFlagById(
         betaUsers: {
           include: {
             user: {
-              select: { id: true, name: true, email: true },
+              select: { id: true, firstName: true, lastName: true, email: true },
             },
           },
         },
@@ -335,7 +335,7 @@ export async function removeBetaUser(
 
 export async function searchUsersForBetaFlag(
   search: string
-): Promise<ActionResult<{ id: string; name: string; email: string }[]>> {
+): Promise<ActionResult<{ id: string; firstName: string; lastName: string; email: string }[]>> {
   try {
     await requirePermission("admin:read");
 
@@ -343,17 +343,19 @@ export async function searchUsersForBetaFlag(
       where: {
         active: true,
         OR: [
-          { name: { contains: search, mode: "insensitive" } },
+          { firstName: { contains: search, mode: "insensitive" } },
+          { lastName: { contains: search, mode: "insensitive" } },
           { email: { contains: search, mode: "insensitive" } },
         ],
       },
       select: {
         id: true,
-        name: true,
+        firstName: true,
+        lastName: true,
         email: true,
       },
       take: 20,
-      orderBy: { name: "asc" },
+      orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
     });
 
     return { data: users };

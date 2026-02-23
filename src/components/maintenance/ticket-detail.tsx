@@ -53,6 +53,7 @@ import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
+import { getFullName } from "@/lib/format-name";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -63,14 +64,14 @@ interface Photo {
   url: string;
   caption: string | null;
   createdAt: Date;
-  uploadedBy: { id: string; name: string };
+  uploadedBy: { id: string; firstName: string; lastName: string };
 }
 
 interface Comment {
   id: string;
   content: string;
   createdAt: Date;
-  user: { id: string; name: string };
+  user: { id: string; firstName: string; lastName: string };
 }
 
 interface TicketPiece {
@@ -95,15 +96,16 @@ interface Ticket {
   quarantineType: string;
   createdAt: Date | string;
   piece: TicketPiece;
-  reportedBy: { id: string; name: string };
-  assignedTo: { id: string; name: string } | null;
+  reportedBy: { id: string; firstName: string; lastName: string };
+  assignedTo: { id: string; firstName: string; lastName: string } | null;
   photos: Photo[];
   comments: Comment[];
 }
 
 interface UserOption {
   id: string;
-  name: string;
+  firstName: string;
+  lastName: string;
 }
 
 interface TicketDetailProps {
@@ -446,7 +448,7 @@ export function TicketDetail({ ticket, users }: TicketDetailProps) {
                 <div className="flex items-center gap-2">
                   <User className="h-4 w-4 text-muted-foreground" />
                   <span>
-                    Reported by {ticket.reportedBy.name} on{" "}
+                    Reported by {getFullName(ticket.reportedBy)} on{" "}
                     {formatDate(ticket.createdAt)}
                   </span>
                 </div>
@@ -454,7 +456,7 @@ export function TicketDetail({ ticket, users }: TicketDetailProps) {
                   <User className="h-4 w-4 text-muted-foreground" />
                   <span>
                     Assigned to{" "}
-                    {ticket.assignedTo?.name ?? "Unassigned"}
+                    {ticket.assignedTo ? getFullName(ticket.assignedTo) : "Unassigned"}
                   </span>
                 </div>
                 {ticket.estimatedCompletion && (
@@ -644,7 +646,7 @@ export function TicketDetail({ ticket, users }: TicketDetailProps) {
                     >
                       <div className="flex items-center justify-between mb-1">
                         <span className="text-sm font-medium">
-                          {comment.user.name}
+                          {getFullName(comment.user)}
                         </span>
                         <span className="text-xs text-muted-foreground">
                           {formatRelativeTime(comment.createdAt)}
@@ -748,7 +750,7 @@ export function TicketDetail({ ticket, users }: TicketDetailProps) {
                     <SelectItem value="unassigned">Unassigned</SelectItem>
                     {users.map((user) => (
                       <SelectItem key={user.id} value={user.id}>
-                        {user.name}
+                        {getFullName(user)}
                       </SelectItem>
                     ))}
                   </SelectContent>

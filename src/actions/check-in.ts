@@ -110,8 +110,8 @@ export async function checkInPiece(
           },
           include: {
             piece: { include: { item: true, category: true } },
-            reportedBy: { select: { id: true, name: true } },
-            assignedTo: { select: { id: true, name: true } },
+            reportedBy: { select: { id: true, firstName: true, lastName: true } },
+            assignedTo: { select: { id: true, firstName: true, lastName: true } },
             _count: { select: { photos: true, comments: true } },
           },
         });

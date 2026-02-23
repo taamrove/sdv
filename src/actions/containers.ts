@@ -142,8 +142,8 @@ export async function getContainerById(
                 warehouseLocation: true,
               },
             },
-            packedBy: { select: { id: true, name: true, email: true } },
-            verifiedBy: { select: { id: true, name: true, email: true } },
+            packedBy: { select: { id: true, firstName: true, lastName: true, email: true } },
+            verifiedBy: { select: { id: true, firstName: true, lastName: true, email: true } },
           },
           orderBy: { packedAt: "desc" },
         },
@@ -378,7 +378,7 @@ export async function packItem(
         },
         include: {
           piece: { include: { item: true, category: true } },
-          packedBy: { select: { id: true, name: true } },
+          packedBy: { select: { id: true, firstName: true, lastName: true } },
         },
       });
 

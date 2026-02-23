@@ -32,6 +32,7 @@ import { MapPin, Clock, User, Pencil, X, CalendarDays, FolderOpen, QrCode } from
 import { QRCodeDisplay } from "@/components/shared/qr-code-display";
 import Image from "next/image";
 import Link from "next/link";
+import { getFullName } from "@/lib/format-name";
 
 interface Piece {
   id: string;
@@ -55,7 +56,7 @@ interface HistoryEntry {
   action: string;
   createdAt: Date;
   details: unknown;
-  performedBy: { name: string; email: string } | null;
+  performedBy: { firstName: string; lastName: string; email: string } | null;
 }
 
 interface Location {
@@ -382,7 +383,7 @@ export function PieceDetail({ piece, history, locations, bookings = [] }: PieceD
                       {entry.performedBy && (
                         <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
                           <User className="h-3 w-3" />
-                          {entry.performedBy.name}
+                          {getFullName(entry.performedBy)}
                         </div>
                       )}
                     </div>

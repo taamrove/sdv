@@ -390,7 +390,7 @@ export async function getPieceHistory(
       where: { pieceId },
       include: {
         performedBy: {
-          select: { id: true, name: true, email: true },
+          select: { id: true, firstName: true, lastName: true, email: true },
         },
       },
       orderBy: { createdAt: "desc" },

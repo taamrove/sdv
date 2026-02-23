@@ -23,11 +23,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { createUser, updateUser } from "@/actions/admin";
+import { getFullName } from "@/lib/format-name";
 
 interface User {
   id: string;
   email: string;
-  name: string;
+  firstName: string;
+  lastName: string;
+  phone: string | null;
   active: boolean;
   role: { id: string; name: string };
 }
@@ -56,8 +59,10 @@ export function UserFormDialog({
   const router = useRouter();
   const isEditing = !!user;
 
-  const [name, setName] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [roleId, setRoleId] = useState("");
   const [active, setActive] = useState(true);
@@ -66,14 +71,18 @@ export function UserFormDialog({
   useEffect(() => {
     if (open) {
       if (user) {
-        setName(user.name);
+        setFirstName(user.firstName);
+        setLastName(user.lastName);
         setEmail(user.email);
+        setPhone(user.phone ?? "");
         setPassword("");
         setRoleId(user.role.id);
         setActive(user.active);
       } else {
-        setName("");
+        setFirstName("");
+        setLastName("");
         setEmail("");
+        setPhone("");
         setPassword("");
         setRoleId(roles[0]?.id ?? "");
         setActive(true);
@@ -85,11 +94,15 @@ export function UserFormDialog({
     e.preventDefault();
     setSaving(true);
 
+    const displayName = getFullName({ firstName, lastName });
+
     try {
       if (isEditing) {
         const data: Record<string, unknown> = {
-          name,
+          firstName,
+          lastName,
           email,
+          phone: phone || undefined,
           roleId,
           active,
         };
@@ -101,15 +114,17 @@ export function UserFormDialog({
           toast.error(result.error);
           return;
         }
-        toast.success(`User "${name}" updated successfully`);
+        toast.success(`User "${displayName}" updated successfully`);
       } else {
         if (!password) {
           toast.error("Password is required for new users");
           return;
         }
         const result = await createUser({
-          name,
+          firstName,
+          lastName,
           email,
+          phone: phone || undefined,
           password,
           roleId,
         });
@@ -117,7 +132,7 @@ export function UserFormDialog({
           toast.error(result.error);
           return;
         }
-        toast.success(`User "${name}" created successfully`);
+        toast.success(`User "${displayName}" created successfully`);
       }
 
       onOpenChange(false);
@@ -143,15 +158,27 @@ export function UserFormDialog({
           </DialogHeader>
 
           <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="user-name">Name</Label>
-              <Input
-                id="user-name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Full name"
-                required
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="user-firstName">First Name</Label>
+                <Input
+                  id="user-firstName"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  placeholder="First name"
+                  required
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="user-lastName">Last Name</Label>
+                <Input
+                  id="user-lastName"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  placeholder="Last name"
+                  required
+                />
+              </div>
             </div>
 
             <div className="grid gap-2">
@@ -163,6 +190,17 @@ export function UserFormDialog({
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="user@example.com"
                 required
+              />
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="user-phone">Phone</Label>
+              <Input
+                id="user-phone"
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="+41 79 123 45 67"
               />
             </div>
 

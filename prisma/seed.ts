@@ -91,7 +91,8 @@ async function main() {
     update: {},
     create: {
       email: "admin@sdv.com",
-      name: "Admin",
+      firstName: "Admin",
+      lastName: "User",
       passwordHash,
       roleId: adminRoleId,
     },

@@ -45,6 +45,8 @@ interface NavItem {
   featureFlag?: string;
   /** If true the link renders but is visually disabled (future feature). */
   disabled?: boolean;
+  /** If true only the Developer role can see this item. */
+  developerOnly?: boolean;
 }
 
 interface NavGroup {
@@ -188,6 +190,7 @@ const navigation: NavGroup[] = [
         href: "/admin/feature-flags",
         icon: Flag,
         permission: "admin:read",
+        developerOnly: true,
       },
     ],
   },
@@ -227,7 +230,7 @@ interface SidebarNavProps {
 
 export function SidebarNav({ collapsed = false, onNavigate }: SidebarNavProps) {
   const pathname = usePathname();
-  const { hasPermission } = usePermissions();
+  const { hasPermission, user } = usePermissions();
   const { hasFeatureAccess, getFlagStage } = useFeatureFlags();
 
   function isActive(href: string): boolean {
@@ -240,6 +243,7 @@ export function SidebarNav({ collapsed = false, onNavigate }: SidebarNavProps) {
     return items.filter((item) => {
       if (item.permission && !hasPermission(item.permission)) return false;
       if (item.featureFlag && !hasFeatureAccess(item.featureFlag)) return false;
+      if (item.developerOnly && user?.role !== "Developer") return false;
       return true;
     });
   }

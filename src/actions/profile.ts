@@ -4,9 +4,18 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { z } from "zod";
+import { isValidPhoneNumber } from "libphonenumber-js";
 
 const updateProfileSchema = z.object({
-  name: z.string().min(1, "Name is required"),
+  firstName: z.string().min(1, "First name is required"),
+  lastName: z.string().min(1, "Last name is required"),
+  phone: z
+    .string()
+    .refine((val) => !val || isValidPhoneNumber(val), {
+      message: "Invalid phone number",
+    })
+    .optional()
+    .or(z.literal("")),
   image: z.string().nullable().optional(),
 });
 
@@ -23,8 +32,10 @@ export async function getMyProfile() {
     where: { id: session.user.id },
     select: {
       id: true,
-      name: true,
+      firstName: true,
+      lastName: true,
       email: true,
+      phone: true,
       image: true,
       createdAt: true,
       lastLoginAt: true,
@@ -37,7 +48,9 @@ export async function getMyProfile() {
 }
 
 export async function updateMyProfile(data: {
-  name: string;
+  firstName: string;
+  lastName: string;
+  phone?: string;
   image?: string | null;
 }) {
   const session = await auth();
@@ -51,7 +64,11 @@ export async function updateMyProfile(data: {
   await prisma.user.update({
     where: { id: session.user.id },
     data: {
-      name: parsed.data.name,
+      firstName: parsed.data.firstName,
+      lastName: parsed.data.lastName,
+      ...(parsed.data.phone !== undefined && {
+        phone: parsed.data.phone || null,
+      }),
       ...(parsed.data.image !== undefined && { image: parsed.data.image }),
     },
   });

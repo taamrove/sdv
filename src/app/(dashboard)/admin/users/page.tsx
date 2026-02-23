@@ -59,7 +59,9 @@ export default async function UsersPage({
 interface UserRow {
   id: string;
   email: string;
-  name: string;
+  firstName: string;
+  lastName: string;
+  phone: string | null;
   active: boolean;
   lastLoginAt: string | null;
   createdAt: string;

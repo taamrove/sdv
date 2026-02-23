@@ -28,8 +28,8 @@ export default async function ContainerDetailPage({
                 warehouseLocation: true,
               },
             },
-            packedBy: { select: { id: true, name: true, email: true } },
-            verifiedBy: { select: { id: true, name: true, email: true } },
+            packedBy: { select: { id: true, firstName: true, lastName: true, email: true } },
+            verifiedBy: { select: { id: true, firstName: true, lastName: true, email: true } },
           },
           orderBy: { packedAt: "desc" },
         },
@@ -70,7 +70,7 @@ export default async function ContainerDetailPage({
           : null,
       },
       packedBy: ci.packedBy
-        ? { id: ci.packedBy.id, name: ci.packedBy.name }
+        ? { id: ci.packedBy.id, firstName: ci.packedBy.firstName, lastName: ci.packedBy.lastName }
         : null,
     })),
   };

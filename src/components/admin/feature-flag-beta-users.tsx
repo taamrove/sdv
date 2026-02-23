@@ -31,6 +31,7 @@ import {
   searchUsersForBetaFlag,
 } from "@/actions/feature-flags";
 import { X, ChevronsUpDown, UserPlus } from "lucide-react";
+import { getFullName } from "@/lib/format-name";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -40,7 +41,8 @@ interface BetaUser {
   userId: string;
   user: {
     id: string;
-    name: string;
+    firstName: string;
+    lastName: string;
     email: string;
   };
 }
@@ -54,7 +56,8 @@ interface FeatureFlag {
 
 interface SearchUser {
   id: string;
-  name: string;
+  firstName: string;
+  lastName: string;
   email: string;
 }
 
@@ -233,7 +236,7 @@ export function FeatureFlagBetaUsers({
                         onSelect={() => handleAdd(user.id)}
                       >
                         <div className="flex flex-col">
-                          <span className="font-medium">{user.name}</span>
+                          <span className="font-medium">{getFullName(user)}</span>
                           <span className="text-xs text-muted-foreground">
                             {user.email}
                           </span>
@@ -264,7 +267,7 @@ export function FeatureFlagBetaUsers({
                 >
                   <div className="flex flex-col">
                     <span className="text-sm font-medium">
-                      {bu.user.name}
+                      {getFullName(bu.user)}
                     </span>
                     <span className="text-xs text-muted-foreground">
                       {bu.user.email}

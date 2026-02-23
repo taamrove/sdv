@@ -3,7 +3,6 @@
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import Image from "next/image";
 import {
   Card,
   CardContent,
@@ -22,29 +21,26 @@ import {
   updateMyImage,
   changeMyPassword,
 } from "@/actions/profile";
+import { getFullName, getInitials } from "@/lib/format-name";
 
 interface ProfileData {
   id: string;
-  name: string;
+  firstName: string;
+  lastName: string;
   email: string;
+  phone: string | null;
   image: string | null;
   createdAt: string;
   lastLoginAt: string | null;
   role: { name: string };
 }
 
-function getInitials(name: string): string {
-  const parts = name.split(" ").filter(Boolean);
-  if (parts.length >= 2) {
-    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-  }
-  return name.slice(0, 2).toUpperCase();
-}
-
 export function ProfileForm({ profile }: { profile: ProfileData }) {
   const router = useRouter();
-  const [name, setName] = useState(profile.name);
-  const [savingName, setSavingName] = useState(false);
+  const [firstName, setFirstName] = useState(profile.firstName);
+  const [lastName, setLastName] = useState(profile.lastName);
+  const [phone, setPhone] = useState(profile.phone ?? "");
+  const [savingProfile, setSavingProfile] = useState(false);
   const [imageUrl, setImageUrl] = useState(profile.image);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -53,6 +49,12 @@ export function ProfileForm({ profile }: { profile: ProfileData }) {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [savingPassword, setSavingPassword] = useState(false);
+
+  const displayName = getFullName({ firstName, lastName });
+  const hasProfileChanges =
+    firstName !== profile.firstName ||
+    lastName !== profile.lastName ||
+    phone !== (profile.phone ?? "");
 
   async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -114,11 +116,15 @@ export function ProfileForm({ profile }: { profile: ProfileData }) {
     }
   }
 
-  async function handleUpdateName(e: React.FormEvent) {
+  async function handleUpdateProfile(e: React.FormEvent) {
     e.preventDefault();
-    setSavingName(true);
+    setSavingProfile(true);
     try {
-      const result = await updateMyProfile({ name });
+      const result = await updateMyProfile({
+        firstName,
+        lastName,
+        phone: phone || undefined,
+      });
       if ("error" in result) {
         toast.error(result.error);
       } else {
@@ -128,7 +134,7 @@ export function ProfileForm({ profile }: { profile: ProfileData }) {
     } catch {
       toast.error("Failed to update profile");
     } finally {
-      setSavingName(false);
+      setSavingProfile(false);
     }
   }
 
@@ -174,10 +180,10 @@ export function ProfileForm({ profile }: { profile: ProfileData }) {
             <div className="relative">
               <Avatar className="size-20">
                 {imageUrl && (
-                  <AvatarImage src={imageUrl} alt={name} />
+                  <AvatarImage src={imageUrl} alt={displayName} />
                 )}
                 <AvatarFallback className="text-lg">
-                  {getInitials(name)}
+                  {getInitials({ firstName, lastName })}
                 </AvatarFallback>
               </Avatar>
               {uploading && (
@@ -232,17 +238,39 @@ export function ProfileForm({ profile }: { profile: ProfileData }) {
       <Card>
         <CardHeader>
           <CardTitle>Profile Information</CardTitle>
-          <CardDescription>Update your display name</CardDescription>
+          <CardDescription>Update your name and contact details</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleUpdateName} className="space-y-4">
+          <form onSubmit={handleUpdateProfile} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="profile-firstName">First Name</Label>
+                <Input
+                  id="profile-firstName"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="profile-lastName">Last Name</Label>
+                <Input
+                  id="profile-lastName"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  required
+                />
+              </div>
+            </div>
+
             <div className="grid gap-2">
-              <Label htmlFor="profile-name">Name</Label>
+              <Label htmlFor="profile-phone">Phone</Label>
               <Input
-                id="profile-name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
+                id="profile-phone"
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="+41 79 123 45 67"
               />
             </div>
 
@@ -264,8 +292,8 @@ export function ProfileForm({ profile }: { profile: ProfileData }) {
             </div>
 
             <div className="flex justify-end">
-              <Button type="submit" disabled={savingName || name === profile.name}>
-                {savingName ? "Saving..." : "Save Changes"}
+              <Button type="submit" disabled={savingProfile || !hasProfileChanges}>
+                {savingProfile ? "Saving..." : "Save Changes"}
               </Button>
             </div>
           </form>

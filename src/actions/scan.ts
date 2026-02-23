@@ -54,7 +54,7 @@ export async function lookupPieceByBarcode(
                 project: { select: { id: true, name: true } },
               },
             },
-            packedBy: { select: { id: true, name: true } },
+            packedBy: { select: { id: true, firstName: true, lastName: true } },
           },
         },
         bookingPieces: {
@@ -125,7 +125,7 @@ export async function lookupPieceById(
                 project: { select: { id: true, name: true } },
               },
             },
-            packedBy: { select: { id: true, name: true } },
+            packedBy: { select: { id: true, firstName: true, lastName: true } },
           },
         },
         bookingPieces: {

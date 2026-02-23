@@ -28,22 +28,22 @@ export default async function MaintenanceTicketDetailPage({
             warehouseLocation: { select: { id: true, label: true } },
           },
         },
-        reportedBy: { select: { id: true, name: true } },
-        assignedTo: { select: { id: true, name: true } },
+        reportedBy: { select: { id: true, firstName: true, lastName: true } },
+        assignedTo: { select: { id: true, firstName: true, lastName: true } },
         photos: {
-          include: { uploadedBy: { select: { id: true, name: true } } },
+          include: { uploadedBy: { select: { id: true, firstName: true, lastName: true } } },
           orderBy: { createdAt: "desc" },
         },
         comments: {
-          include: { user: { select: { id: true, name: true } } },
+          include: { user: { select: { id: true, firstName: true, lastName: true } } },
           orderBy: { createdAt: "asc" },
         },
       },
     }),
     prisma.user.findMany({
       where: { active: true },
-      select: { id: true, name: true },
-      orderBy: { name: "asc" },
+      select: { id: true, firstName: true, lastName: true },
+      orderBy: { firstName: "asc" },
     }),
   ]);
 

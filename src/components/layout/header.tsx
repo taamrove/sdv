@@ -24,20 +24,13 @@ import {
 import { MobileSidebarContent } from "@/components/layout/sidebar";
 import { usePermissions } from "@/hooks/use-permissions";
 import { ThemeToggle } from "@/components/shared/theme-toggle";
+import { getFullName, getInitials } from "@/lib/format-name";
 
 export function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const { user } = usePermissions();
 
-  /** Derive initials from the user name for the avatar. */
-  function getInitials(name: string | undefined | null): string {
-    if (!name) return "?";
-    const parts = name.split(" ").filter(Boolean);
-    if (parts.length >= 2) {
-      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-    }
-    return name.slice(0, 2).toUpperCase();
-  }
+  const displayName = user ? getFullName(user as { firstName: string; lastName: string }) : "User";
 
   return (
     <>
@@ -73,14 +66,14 @@ export function Header() {
             >
               <Avatar size="sm">
                 {user?.image && (
-                  <AvatarImage src={user.image} alt={user.name ?? "User"} />
+                  <AvatarImage src={user.image} alt={displayName} />
                 )}
                 <AvatarFallback className="text-xs">
-                  {getInitials(user?.name)}
+                  {getInitials(user as { firstName?: string; lastName?: string } | null)}
                 </AvatarFallback>
               </Avatar>
               <span className="hidden text-sm font-medium sm:inline-block">
-                {user?.name ?? "User"}
+                {displayName}
               </span>
             </Button>
           </DropdownMenuTrigger>
@@ -88,7 +81,7 @@ export function Header() {
             <DropdownMenuLabel className="font-normal">
               <div className="flex flex-col gap-1">
                 <p className="text-sm font-medium leading-none">
-                  {user?.name ?? "User"}
+                  {displayName}
                 </p>
                 <p className="text-xs leading-none text-muted-foreground">
                   {user?.email ?? ""}

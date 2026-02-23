@@ -75,8 +75,8 @@ export async function getTickets(
         where,
         include: {
           piece: { include: { item: true, category: true } },
-          reportedBy: { select: { id: true, name: true } },
-          assignedTo: { select: { id: true, name: true } },
+          reportedBy: { select: { id: true, firstName: true, lastName: true } },
+          assignedTo: { select: { id: true, firstName: true, lastName: true } },
           _count: { select: { photos: true, comments: true } },
         },
         orderBy: { createdAt: "desc" },
@@ -119,14 +119,14 @@ export async function getTicketById(
         piece: {
           include: { item: true, category: true, warehouseLocation: true },
         },
-        reportedBy: { select: { id: true, name: true, email: true } },
-        assignedTo: { select: { id: true, name: true, email: true } },
+        reportedBy: { select: { id: true, firstName: true, lastName: true, email: true } },
+        assignedTo: { select: { id: true, firstName: true, lastName: true, email: true } },
         photos: {
-          include: { uploadedBy: { select: { id: true, name: true } } },
+          include: { uploadedBy: { select: { id: true, firstName: true, lastName: true } } },
           orderBy: { createdAt: "desc" },
         },
         comments: {
-          include: { user: { select: { id: true, name: true } } },
+          include: { user: { select: { id: true, firstName: true, lastName: true } } },
           orderBy: { createdAt: "asc" },
         },
       },
@@ -198,8 +198,8 @@ export async function createTicket(
         },
         include: {
           piece: { include: { item: true, category: true } },
-          reportedBy: { select: { id: true, name: true } },
-          assignedTo: { select: { id: true, name: true } },
+          reportedBy: { select: { id: true, firstName: true, lastName: true } },
+          assignedTo: { select: { id: true, firstName: true, lastName: true } },
           _count: { select: { photos: true, comments: true } },
         },
       });
@@ -278,8 +278,8 @@ export async function updateTicket(
       data: updateData,
       include: {
         piece: { include: { item: true, category: true } },
-        reportedBy: { select: { id: true, name: true } },
-        assignedTo: { select: { id: true, name: true } },
+        reportedBy: { select: { id: true, firstName: true, lastName: true } },
+        assignedTo: { select: { id: true, firstName: true, lastName: true } },
         _count: { select: { photos: true, comments: true } },
       },
     });
@@ -393,7 +393,7 @@ export async function addComment(
         content: parsed.data.content,
       },
       include: {
-        user: { select: { id: true, name: true } },
+        user: { select: { id: true, firstName: true, lastName: true } },
       },
     });
 
@@ -438,7 +438,7 @@ export async function addPhoto(
         uploadedById: user.id,
       },
       include: {
-        uploadedBy: { select: { id: true, name: true } },
+        uploadedBy: { select: { id: true, firstName: true, lastName: true } },
       },
     });
 
@@ -512,8 +512,8 @@ export async function assignTicket(
       data: { assignedToId: userId },
       include: {
         piece: { include: { item: true, category: true } },
-        reportedBy: { select: { id: true, name: true } },
-        assignedTo: { select: { id: true, name: true } },
+        reportedBy: { select: { id: true, firstName: true, lastName: true } },
+        assignedTo: { select: { id: true, firstName: true, lastName: true } },
         _count: { select: { photos: true, comments: true } },
       },
     });
@@ -601,8 +601,8 @@ export async function completeTicket(
         data: ticketUpdateData,
         include: {
           piece: { include: { item: true, category: true } },
-          reportedBy: { select: { id: true, name: true } },
-          assignedTo: { select: { id: true, name: true } },
+          reportedBy: { select: { id: true, firstName: true, lastName: true } },
+          assignedTo: { select: { id: true, firstName: true, lastName: true } },
           _count: { select: { photos: true, comments: true } },
         },
       });
@@ -694,8 +694,8 @@ export async function overrideQuarantine(
         },
         include: {
           piece: { include: { item: true, category: true } },
-          reportedBy: { select: { id: true, name: true } },
-          assignedTo: { select: { id: true, name: true } },
+          reportedBy: { select: { id: true, firstName: true, lastName: true } },
+          assignedTo: { select: { id: true, firstName: true, lastName: true } },
           _count: { select: { photos: true, comments: true } },
         },
       });
@@ -756,8 +756,8 @@ export async function getQuarantinePieces(): Promise<ActionResult<unknown[]>> {
             category: true,
           },
         },
-        reportedBy: { select: { id: true, name: true } },
-        assignedTo: { select: { id: true, name: true } },
+        reportedBy: { select: { id: true, firstName: true, lastName: true } },
+        assignedTo: { select: { id: true, firstName: true, lastName: true } },
       },
       orderBy: { quarantineEndsAt: "asc" },
     });

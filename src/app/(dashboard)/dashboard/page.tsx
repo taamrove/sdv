@@ -63,7 +63,7 @@ export default async function DashboardPage() {
         take: 10,
         include: {
           piece: { select: { humanReadableId: true, id: true } },
-          performedBy: { select: { name: true } },
+          performedBy: { select: { firstName: true, lastName: true } },
         },
       }),
       prisma.project.findMany({
@@ -154,7 +154,7 @@ export default async function DashboardPage() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
         <p className="text-muted-foreground">
-          Welcome back, {session.user.name}
+          Welcome back, {session.user.firstName}
         </p>
       </div>
 
@@ -261,7 +261,7 @@ export default async function DashboardPage() {
                           {new Date(entry.createdAt).toLocaleString()}
                         </span>
                         {entry.performedBy && (
-                          <span>by {entry.performedBy.name}</span>
+                          <span>by {entry.performedBy.firstName} {entry.performedBy.lastName}</span>
                         )}
                       </div>
                     </div>

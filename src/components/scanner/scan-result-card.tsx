@@ -24,6 +24,7 @@ import {
   Wrench,
   Shirt,
 } from "lucide-react";
+import { getFullName } from "@/lib/format-name";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -56,7 +57,7 @@ interface ContainerItem {
     status: string;
     project: { id: string; name: string } | null;
   };
-  packedBy: { id: string; name: string } | null;
+  packedBy: { id: string; firstName: string; lastName: string } | null;
 }
 
 interface BookingPiece {
@@ -222,7 +223,7 @@ export function ScanResultCard({ piece }: ScanResultCardProps) {
                     )}
                   </div>
                   <div className="mt-1 flex items-center gap-4 text-muted-foreground">
-                    {ci.packedBy && <span>by {ci.packedBy.name}</span>}
+                    {ci.packedBy && <span>by {getFullName(ci.packedBy)}</span>}
                     <span>{formatDate(ci.packedAt)}</span>
                   </div>
                 </div>

@@ -32,6 +32,7 @@ import {
   MAINTENANCE_STATUS_LABELS,
   MAINTENANCE_PRIORITY_LABELS,
 } from "@/lib/constants";
+import { getFullName } from "@/lib/format-name";
 
 interface Ticket {
   id: string;
@@ -45,8 +46,8 @@ interface Ticket {
     item: { name: string };
     category: { name: string };
   };
-  reportedBy: { id: string; name: string };
-  assignedTo: { id: string; name: string } | null;
+  reportedBy: { id: string; firstName: string; lastName: string };
+  assignedTo: { id: string; firstName: string; lastName: string } | null;
   _count: { photos: number; comments: number };
 }
 
@@ -216,7 +217,7 @@ export function TicketList({ tickets, pagination }: TicketListProps) {
                     <div className="flex items-center gap-3">
                       <div className="flex items-center gap-1">
                         <User className="h-3 w-3" />
-                        {ticket.assignedTo?.name ?? "Unassigned"}
+                        {ticket.assignedTo ? getFullName(ticket.assignedTo) : "Unassigned"}
                       </div>
                       <span>{formatRelativeTime(ticket.createdAt)}</span>
                     </div>

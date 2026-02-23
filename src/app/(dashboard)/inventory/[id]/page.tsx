@@ -27,7 +27,7 @@ export default async function PieceDetailPage({
 
   const history = await prisma.pieceHistory.findMany({
     where: { pieceId: id },
-    include: { performedBy: { select: { name: true, email: true } } },
+    include: { performedBy: { select: { firstName: true, lastName: true, email: true } } },
     orderBy: { createdAt: "desc" },
     take: 50,
   });
