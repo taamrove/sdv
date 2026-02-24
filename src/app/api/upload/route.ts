@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
+import { put } from "@vercel/blob";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
 import { randomUUID } from "crypto";
 
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 const MAX_SIZE = 5 * 1024 * 1024; // 5MB
+
+/** Use Vercel Blob when the token is available (production), filesystem otherwise (local dev). */
+const useBlob = !!process.env.BLOB_READ_WRITE_TOKEN;
 
 export async function POST(request: NextRequest) {
   try {
@@ -45,20 +49,31 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Sanitize folder name
     const safeFolder = folder.replace(/[^a-zA-Z0-9-_]/g, "");
     const ext = file.name.split(".").pop()?.toLowerCase() ?? "jpg";
     const safeExt = ext.replace(/[^a-zA-Z0-9]/g, "");
     const filename = `${randomUUID()}.${safeExt}`;
-    const uploadDir = path.join(process.cwd(), "public", "uploads", safeFolder);
 
-    await mkdir(uploadDir, { recursive: true });
+    let url: string;
 
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-    await writeFile(path.join(uploadDir, filename), buffer);
+    if (useBlob) {
+      // --- Vercel Blob (production) ---
+      const blob = await put(`${safeFolder}/${filename}`, file, {
+        access: "public",
+        contentType: file.type,
+      });
+      url = blob.url;
+    } else {
+      // --- Local filesystem (development) ---
+      const uploadDir = path.join(process.cwd(), "public", "uploads", safeFolder);
+      await mkdir(uploadDir, { recursive: true });
 
-    const url = `/uploads/${safeFolder}/${filename}`;
+      const bytes = await file.arrayBuffer();
+      const buffer = Buffer.from(bytes);
+      await writeFile(path.join(uploadDir, filename), buffer);
+
+      url = `/uploads/${safeFolder}/${filename}`;
+    }
 
     return NextResponse.json({ url });
   } catch (err) {

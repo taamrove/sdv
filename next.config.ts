@@ -6,6 +6,14 @@ const nextConfig: NextConfig = {
       process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ??
       `dev-${Date.now()}`,
   },
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "*.public.blob.vercel-storage.com",
+      },
+    ],
+  },
 };
 
 export default nextConfig;

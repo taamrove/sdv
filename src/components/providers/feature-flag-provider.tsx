@@ -43,8 +43,12 @@ export function FeatureFlagProvider({ children }: { children: ReactNode }) {
   }, [refresh]);
 
   const hasFeatureAccess = useCallback(
-    (key: string) => flags.some((f) => f.key === key),
-    [flags]
+    (key: string) => {
+      // While loading, assume access (optimistic) so nav items don't flash away
+      if (loading) return true;
+      return flags.some((f) => f.key === key);
+    },
+    [flags, loading]
   );
 
   const getFlagStage = useCallback(
