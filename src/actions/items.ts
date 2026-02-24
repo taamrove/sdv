@@ -1,8 +1,8 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { requirePermission } from "@/lib/rbac";
-import { getNextItemNumber } from "@/lib/human-id";
+import { requirePermission, getCurrentUser } from "@/lib/rbac";
+import { buildHumanReadableId } from "@/lib/human-id";
 import {
   createItemSchema,
   updateItemSchema,
@@ -23,7 +23,10 @@ interface Pagination {
 
 interface ItemListParams {
   categoryId?: string;
+  productId?: string;
+  status?: string;
   search?: string;
+  warehouseLocationId?: string;
   page?: number;
   limit?: number;
 }
@@ -47,21 +50,45 @@ export async function getItems(
     const limit = params?.limit ?? 20;
     const skip = (page - 1) * limit;
 
-    const where: Record<string, unknown> = {};
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const where: Record<string, any> = {};
 
     if (params?.categoryId) {
       where.categoryId = params.categoryId;
     }
 
+    if (params?.productId) {
+      where.productId = params.productId;
+    }
+
+    if (params?.status) {
+      where.status = params.status;
+    }
+
+    if (params?.warehouseLocationId) {
+      where.warehouseLocationId = params.warehouseLocationId;
+    }
+
     if (params?.search) {
-      where.name = { contains: params.search, mode: "insensitive" };
+      where.OR = [
+        { humanReadableId: { contains: params.search, mode: "insensitive" } },
+        {
+          product: {
+            name: { contains: params.search, mode: "insensitive" },
+          },
+        },
+      ];
     }
 
     const [items, total] = await Promise.all([
       prisma.item.findMany({
         where,
-        include: { category: true },
-        orderBy: [{ category: { code: "asc" } }, { number: "asc" }],
+        include: {
+          product: true,
+          category: true,
+          warehouseLocation: true,
+        },
+        orderBy: { createdAt: "desc" },
         skip,
         take: limit,
       }),
@@ -97,7 +124,11 @@ export async function getItemById(
 
     const item = await prisma.item.findUnique({
       where: { id },
-      include: { category: true },
+      include: {
+        product: true,
+        category: true,
+        warehouseLocation: true,
+      },
     });
 
     if (!item) {
@@ -128,22 +159,72 @@ export async function createItem(
       return { error: parsed.error.issues.map((i) => i.message).join(", ") };
     }
 
-    const category = await prisma.category.findUnique({
-      where: { id: parsed.data.categoryId },
+    const product = await prisma.product.findUnique({
+      where: { id: parsed.data.productId },
+      include: { category: true },
     });
 
-    if (!category) {
-      return { error: "Category not found" };
+    if (!product) {
+      return { error: "Product not found" };
     }
 
-    const number = await getNextItemNumber(parsed.data.categoryId);
+    const user = await getCurrentUser();
 
-    const item = await prisma.item.create({
-      data: {
-        ...parsed.data,
-        number,
-      },
-      include: { category: true },
+    const item = await prisma.$transaction(async (tx) => {
+      // Get next sequence within the transaction for safety
+      const lastItem = await tx.item.findFirst({
+        where: { productId: product.id },
+        orderBy: { sequence: "desc" },
+        select: { sequence: true },
+      });
+      const sequence = (lastItem?.sequence ?? 0) + 1;
+
+      const humanReadableId = buildHumanReadableId(
+        product.category.code,
+        product.number,
+        sequence
+      );
+
+      const created = await tx.item.create({
+        data: {
+          categoryId: product.categoryId,
+          productId: product.id,
+          sequence,
+          humanReadableId,
+          sizes: parsed.data.sizes ? (parsed.data.sizes as Record<string, string>) : undefined,
+          color: parsed.data.color,
+          purchaseDate: parsed.data.purchaseDate
+            ? new Date(parsed.data.purchaseDate)
+            : undefined,
+          purchasePrice: parsed.data.purchasePrice,
+          notes: parsed.data.notes,
+          warehouseLocationId: parsed.data.warehouseLocationId ?? undefined,
+          imageUrl: parsed.data.imageUrl ?? undefined,
+          condition: parsed.data.condition ?? undefined,
+          isExternal: parsed.data.isExternal ?? false,
+        },
+        include: {
+          product: true,
+          category: true,
+          warehouseLocation: true,
+        },
+      });
+
+      // Record history
+      await tx.itemHistory.create({
+        data: {
+          itemId: created.id,
+          action: "CREATED",
+          performedById: user?.id ?? null,
+          newState: {
+            status: created.status,
+            condition: created.condition,
+            warehouseLocationId: created.warehouseLocationId,
+          },
+        },
+      });
+
+      return created;
     });
 
     return { data: item };
@@ -176,10 +257,59 @@ export async function updateItem(
       return { error: "Item not found" };
     }
 
-    const item = await prisma.item.update({
-      where: { id },
-      data: parsed.data,
-      include: { category: true },
+    const user = await getCurrentUser();
+
+    // Determine the history action based on what changed
+    let historyAction: string = "UPDATED";
+    if (parsed.data.status && parsed.data.status !== existing.status) {
+      historyAction = "STATUS_CHANGED";
+    } else if (
+      parsed.data.condition &&
+      parsed.data.condition !== existing.condition
+    ) {
+      historyAction = "CONDITION_CHANGED";
+    } else if (
+      parsed.data.warehouseLocationId !== undefined &&
+      parsed.data.warehouseLocationId !== existing.warehouseLocationId
+    ) {
+      historyAction = "LOCATION_CHANGED";
+    }
+
+    const item = await prisma.$transaction(async (tx) => {
+      const { sizes, ...rest } = parsed.data;
+      const updateData = {
+        ...rest,
+        ...(sizes ? { sizes: sizes as Record<string, string> } : {}),
+      };
+      const updated = await tx.item.update({
+        where: { id },
+        data: updateData as Parameters<typeof tx.item.update>[0]["data"],
+        include: {
+          product: true,
+          category: true,
+          warehouseLocation: true,
+        },
+      });
+
+      await tx.itemHistory.create({
+        data: {
+          itemId: id,
+          action: historyAction as never,
+          performedById: user?.id ?? null,
+          previousState: {
+            status: existing.status,
+            condition: existing.condition,
+            warehouseLocationId: existing.warehouseLocationId,
+          },
+          newState: {
+            status: updated.status,
+            condition: updated.condition,
+            warehouseLocationId: updated.warehouseLocationId,
+          },
+        },
+      });
+
+      return updated;
     });
 
     return { data: item };
@@ -192,12 +322,12 @@ export async function updateItem(
 }
 
 // ---------------------------------------------------------------------------
-// deleteItem
+// deleteItem (soft delete -> status = RETIRED)
 // ---------------------------------------------------------------------------
 
 export async function deleteItem(
   id: string
-): Promise<ActionResult<{ success: true }>> {
+): Promise<ActionResult<unknown>> {
   try {
     await requirePermission("items:delete");
 
@@ -206,23 +336,71 @@ export async function deleteItem(
       return { error: "Item not found" };
     }
 
-    const pieceCount = await prisma.piece.count({
-      where: { itemId: id },
+    const user = await getCurrentUser();
+
+    const item = await prisma.$transaction(async (tx) => {
+      const updated = await tx.item.update({
+        where: { id },
+        data: { status: "RETIRED" },
+        include: {
+          product: true,
+          category: true,
+          warehouseLocation: true,
+        },
+      });
+
+      await tx.itemHistory.create({
+        data: {
+          itemId: id,
+          action: "RETIRED",
+          performedById: user?.id ?? null,
+          previousState: { status: existing.status },
+          newState: { status: "RETIRED" },
+        },
+      });
+
+      return updated;
     });
 
-    if (pieceCount > 0) {
-      return {
-        error: `Cannot delete item: ${pieceCount} piece(s) still reference it`,
-      };
-    }
-
-    await prisma.item.delete({ where: { id } });
-
-    return { data: { success: true } };
+    return { data: item };
   } catch (error) {
     if (error instanceof Error && error.message.startsWith("Forbidden")) {
       throw error;
     }
     return { error: error instanceof Error ? error.message : "Failed to delete item" };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// getItemHistory
+// ---------------------------------------------------------------------------
+
+export async function getItemHistory(
+  itemId: string
+): Promise<ActionResult<unknown[]>> {
+  try {
+    await requirePermission("items:read");
+
+    const item = await prisma.item.findUnique({ where: { id: itemId } });
+    if (!item) {
+      return { error: "Item not found" };
+    }
+
+    const history = await prisma.itemHistory.findMany({
+      where: { itemId },
+      include: {
+        performedBy: {
+          select: { id: true, firstName: true, lastName: true, email: true },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    return { data: history };
+  } catch (error) {
+    if (error instanceof Error && error.message.startsWith("Forbidden")) {
+      throw error;
+    }
+    return { error: error instanceof Error ? error.message : "Failed to fetch item history" };
   }
 }

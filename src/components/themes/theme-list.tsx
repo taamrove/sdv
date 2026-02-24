@@ -19,7 +19,7 @@ interface Theme {
   description: string | null;
   imageUrl: string | null;
   active: boolean;
-  _count: { products: number };
+  _count: { kits: number };
 }
 
 interface ThemeListProps {
@@ -77,7 +77,7 @@ export function ThemeList({ themes }: ThemeListProps) {
                 <div className="flex items-center gap-4 text-sm text-muted-foreground">
                   <div className="flex items-center gap-1">
                     <ShoppingBag className="h-3 w-3" />
-                    {theme._count.products} product{theme._count.products !== 1 ? "s" : ""}
+                    {theme._count.kits} kit{theme._count.kits !== 1 ? "s" : ""}
                   </div>
                 </div>
                 {!theme.active && (

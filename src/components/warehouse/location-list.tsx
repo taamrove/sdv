@@ -24,7 +24,7 @@ interface Location {
   bin: string | null;
   label: string;
   description: string | null;
-  _count: { pieces: number };
+  _count: { items: number };
 }
 
 interface LocationListProps {
@@ -96,7 +96,7 @@ export function WarehouseLocationList({ locations }: LocationListProps) {
                     variant="ghost"
                     size="icon"
                     onClick={() => setDeleting(loc)}
-                    disabled={loc._count.pieces > 0}
+                    disabled={loc._count.items > 0}
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
@@ -105,7 +105,7 @@ export function WarehouseLocationList({ locations }: LocationListProps) {
               <CardContent>
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Package className="h-3 w-3" />
-                  {loc._count.pieces} pieces
+                  {loc._count.items} items
                 </div>
                 {loc.description && (
                   <p className="text-sm text-muted-foreground mt-1">

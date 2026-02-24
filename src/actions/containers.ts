@@ -135,9 +135,9 @@ export async function getContainerById(
         project: { select: { id: true, name: true } },
         items: {
           include: {
-            piece: {
+            item: {
               include: {
-                item: true,
+                product: true,
                 category: true,
                 warehouseLocation: true,
               },
@@ -317,7 +317,7 @@ export async function deleteContainer(
 }
 
 // ---------------------------------------------------------------------------
-// packItem — add a piece to a container
+// packItem — add an item to a container
 // ---------------------------------------------------------------------------
 
 export async function packItem(
@@ -342,30 +342,30 @@ export async function packItem(
         throw new Error("Container not found");
       }
 
-      // Verify piece exists
-      const piece = await tx.piece.findUnique({
-        where: { id: parsed.data.pieceId },
-        include: { item: true },
+      // Verify item exists
+      const item = await tx.item.findUnique({
+        where: { id: parsed.data.itemId },
+        include: { product: true },
       });
-      if (!piece) {
-        throw new Error("Piece not found");
+      if (!item) {
+        throw new Error("Item not found");
       }
 
-      // Verify piece is not already in another container
+      // Verify item is not already in another container
       const existingPack = await tx.containerItem.findFirst({
-        where: { pieceId: parsed.data.pieceId },
+        where: { itemId: parsed.data.itemId },
         include: { container: { select: { name: true } } },
       });
       if (existingPack) {
         throw new Error(
-          `Piece is already packed in "${existingPack.container.name}"`
+          `Item is already packed in "${existingPack.container.name}"`
         );
       }
 
-      // Verify piece status allows packing
-      if (!["AVAILABLE", "ASSIGNED"].includes(piece.status)) {
+      // Verify item status allows packing
+      if (!["AVAILABLE", "ASSIGNED"].includes(item.status)) {
         throw new Error(
-          `Cannot pack piece with status "${piece.status}". Piece must be AVAILABLE or ASSIGNED.`
+          `Cannot pack item with status "${item.status}". Item must be AVAILABLE or ASSIGNED.`
         );
       }
 
@@ -373,18 +373,18 @@ export async function packItem(
       const containerItem = await tx.containerItem.create({
         data: {
           containerId: parsed.data.containerId,
-          pieceId: parsed.data.pieceId,
+          itemId: parsed.data.itemId,
           packedById: user?.id ?? null,
         },
         include: {
-          piece: { include: { item: true, category: true } },
+          item: { include: { product: true, category: true } },
           packedBy: { select: { id: true, firstName: true, lastName: true } },
         },
       });
 
-      // Update piece status to PACKED
-      await tx.piece.update({
-        where: { id: parsed.data.pieceId },
+      // Update item status to PACKED
+      await tx.item.update({
+        where: { id: parsed.data.itemId },
         data: { status: "PACKED" },
       });
 
@@ -397,12 +397,12 @@ export async function packItem(
       }
 
       // Record history
-      await tx.pieceHistory.create({
+      await tx.itemHistory.create({
         data: {
-          pieceId: parsed.data.pieceId,
+          itemId: parsed.data.itemId,
           action: "PACKED",
           performedById: user?.id ?? null,
-          previousState: { status: piece.status },
+          previousState: { status: item.status },
           newState: {
             status: "PACKED",
             containerId: parsed.data.containerId,
@@ -421,13 +421,13 @@ export async function packItem(
     }
     return {
       error:
-        error instanceof Error ? error.message : "Failed to pack piece",
+        error instanceof Error ? error.message : "Failed to pack item",
     };
   }
 }
 
 // ---------------------------------------------------------------------------
-// unpackItem — remove a piece from a container
+// unpackItem — remove an item from a container
 // ---------------------------------------------------------------------------
 
 export async function unpackItem(
@@ -443,7 +443,7 @@ export async function unpackItem(
       const containerItem = await tx.containerItem.findUnique({
         where: { id: containerItemId },
         include: {
-          piece: true,
+          item: true,
           container: true,
         },
       });
@@ -456,14 +456,14 @@ export async function unpackItem(
         where: { id: containerItemId },
       });
 
-      // Check if piece has booking assignments -> set ASSIGNED, otherwise AVAILABLE
-      const bookingAssignment = await tx.bookingPiece.findFirst({
-        where: { pieceId: containerItem.pieceId },
+      // Check if item has booking assignments -> set ASSIGNED, otherwise AVAILABLE
+      const bookingAssignment = await tx.bookingItem.findFirst({
+        where: { itemId: containerItem.itemId },
       });
       const newStatus = bookingAssignment ? "ASSIGNED" : "AVAILABLE";
 
-      await tx.piece.update({
-        where: { id: containerItem.pieceId },
+      await tx.item.update({
+        where: { id: containerItem.itemId },
         data: { status: newStatus },
       });
 
@@ -479,9 +479,9 @@ export async function unpackItem(
       }
 
       // Record history
-      await tx.pieceHistory.create({
+      await tx.itemHistory.create({
         data: {
-          pieceId: containerItem.pieceId,
+          itemId: containerItem.itemId,
           action: "UNPACKED",
           performedById: user?.id ?? null,
           previousState: {
@@ -503,7 +503,7 @@ export async function unpackItem(
     }
     return {
       error:
-        error instanceof Error ? error.message : "Failed to unpack piece",
+        error instanceof Error ? error.message : "Failed to unpack item",
     };
   }
 }
@@ -521,22 +521,22 @@ export async function packItemByHumanId(
 
     const normalized = humanReadableId.trim().toUpperCase();
 
-    const piece = await prisma.piece.findUnique({
+    const item = await prisma.item.findUnique({
       where: { humanReadableId: normalized },
     });
 
-    if (!piece) {
-      return { error: `Piece not found: ${normalized}` };
+    if (!item) {
+      return { error: `Item not found: ${normalized}` };
     }
 
-    return packItem({ containerId, pieceId: piece.id });
+    return packItem({ containerId, itemId: item.id });
   } catch (error) {
     if (error instanceof Error && error.message.startsWith("Forbidden")) {
       throw error;
     }
     return {
       error:
-        error instanceof Error ? error.message : "Failed to pack piece",
+        error instanceof Error ? error.message : "Failed to pack item",
     };
   }
 }

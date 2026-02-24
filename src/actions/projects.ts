@@ -102,9 +102,9 @@ export async function getProjectById(
         },
         bookings: {
           include: {
-            product: true,
+            kit: true,
             variant: true,
-            _count: { select: { pieces: true } },
+            _count: { select: { items: true } },
           },
         },
       },
@@ -343,24 +343,24 @@ export async function getProjectConflicts(
       return { error: "Project must have both start and end dates to check conflicts" };
     }
 
-    // Find all pieces assigned to this project via bookings
-    const projectBookingPieces = await prisma.bookingPiece.findMany({
+    // Find all items assigned to this project via bookings
+    const projectBookingItems = await prisma.bookingItem.findMany({
       where: {
         booking: { projectId },
       },
-      select: { pieceId: true },
+      select: { itemId: true },
     });
 
-    const pieceIds = projectBookingPieces.map((bp) => bp.pieceId);
+    const itemIds = projectBookingItems.map((bi) => bi.itemId);
 
-    if (pieceIds.length === 0) {
+    if (itemIds.length === 0) {
       return { data: [] };
     }
 
-    // Find overlapping projects that also use any of these pieces
-    const conflicts = await prisma.bookingPiece.findMany({
+    // Find overlapping projects that also use any of these items
+    const conflicts = await prisma.bookingItem.findMany({
       where: {
-        pieceId: { in: pieceIds },
+        itemId: { in: itemIds },
         booking: {
           projectId: { not: projectId },
           project: {
@@ -373,8 +373,8 @@ export async function getProjectConflicts(
         },
       },
       include: {
-        piece: {
-          include: { item: true },
+        item: {
+          include: { product: true },
         },
         booking: {
           include: {

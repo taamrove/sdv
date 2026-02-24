@@ -22,7 +22,7 @@ interface Category {
   code: string;
   name: string;
   description: string | null;
-  _count: { items: number; pieces: number };
+  _count: { products: number; items: number };
 }
 
 interface CategoryListProps {
@@ -93,7 +93,7 @@ export function CategoryList({ categories }: CategoryListProps) {
                   variant="ghost"
                   size="icon"
                   onClick={() => setDeleting(cat)}
-                  disabled={cat._count.items > 0 || cat._count.pieces > 0}
+                  disabled={cat._count.products > 0 || cat._count.items > 0}
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
@@ -101,8 +101,8 @@ export function CategoryList({ categories }: CategoryListProps) {
             </CardHeader>
             <CardContent>
               <div className="flex gap-4 text-sm text-muted-foreground">
+                <span>{cat._count.products} products</span>
                 <span>{cat._count.items} items</span>
-                <span>{cat._count.pieces} pieces</span>
               </div>
             </CardContent>
           </Card>

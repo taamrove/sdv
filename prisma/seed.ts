@@ -102,10 +102,12 @@ async function main() {
   // 4. Create default feature flags (all existing features at PRODUCTION)
   console.log("Creating feature flags...");
   const defaultFlags = [
-    { key: "pieces", name: "Pieces", description: "Piece inventory management" },
+    { key: "items", name: "Items", description: "Physical item inventory management" },
     { key: "categories", name: "Categories", description: "Category management" },
-    { key: "items", name: "Items", description: "Item/product catalog" },
-    { key: "availability", name: "Availability", description: "Piece availability view" },
+    { key: "products", name: "Products", description: "Product template catalog" },
+    { key: "packs", name: "Packs", description: "Pack grouping management" },
+    { key: "kits", name: "Kits", description: "Kit/outfit management" },
+    { key: "availability", name: "Availability", description: "Item availability view" },
     { key: "projects", name: "Projects", description: "Show/project management" },
     { key: "performers", name: "Performers", description: "Performer management" },
     { key: "themes", name: "Themes", description: "Theme management" },

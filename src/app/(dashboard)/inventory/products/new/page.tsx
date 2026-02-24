@@ -2,9 +2,9 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/shared/page-header";
-import { ItemForm } from "@/components/inventory/product-form";
+import { ProductForm } from "@/components/inventory/product-form";
 
-export default async function NewItemPage() {
+export default async function NewProductPage() {
   const session = await auth();
   if (!session) redirect("/login");
 
@@ -14,8 +14,8 @@ export default async function NewItemPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="New Item" />
-      <ItemForm categories={categories} />
+      <PageHeader title="New Product" />
+      <ProductForm categories={categories} />
     </div>
   );
 }

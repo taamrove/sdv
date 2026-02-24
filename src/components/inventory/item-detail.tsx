@@ -22,10 +22,10 @@ import {
 import { StatusBadge } from "@/components/shared/status-badge";
 import { ImageUpload } from "@/components/shared/image-upload";
 import {
-  PIECE_STATUS_LABELS,
-  PIECE_CONDITION_LABELS,
+  ITEM_STATUS_LABELS,
+  ITEM_CONDITION_LABELS,
 } from "@/lib/constants";
-import { updatePiece } from "@/actions/pieces";
+import { updateItem } from "@/actions/items";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { MapPin, Clock, User, Pencil, X, CalendarDays, FolderOpen, QrCode } from "lucide-react";
@@ -34,7 +34,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { getFullName } from "@/lib/format-name";
 
-interface Piece {
+interface Item {
   id: string;
   humanReadableId: string;
   status: string;
@@ -46,7 +46,7 @@ interface Piece {
   purchasePrice: number | null;
   imageUrl: string | null;
   createdAt: Date;
-  item: { id: string; name: string; number: number };
+  product: { id: string; name: string; number: number };
   category: { id: string; code: string; name: string };
   warehouseLocation: { id: string; label: string } | null;
 }
@@ -65,8 +65,8 @@ interface Location {
 }
 
 interface Booking {
-  bookingPieceId: string;
-  productName: string;
+  bookingItemId: string;
+  kitName: string;
   projectId: string;
   projectName: string;
   projectStatus: string;
@@ -74,33 +74,33 @@ interface Booking {
   endDate: string | null;
 }
 
-interface PieceDetailProps {
-  piece: Piece;
+interface ItemDetailProps {
+  item: Item;
   history: HistoryEntry[];
   locations: Location[];
   bookings?: Booking[];
 }
 
-export function PieceDetail({ piece, history, locations, bookings = [] }: PieceDetailProps) {
+export function ItemDetail({ item, history, locations, bookings = [] }: ItemDetailProps) {
   const router = useRouter();
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
 
   // Status & location fields (always shown in sidebar)
-  const [status, setStatus] = useState(piece.status);
-  const [condition, setCondition] = useState(piece.condition);
+  const [status, setStatus] = useState(item.status);
+  const [condition, setCondition] = useState(item.condition);
   const [locationId, setLocationId] = useState(
-    piece.warehouseLocation?.id ?? "none"
+    item.warehouseLocation?.id ?? "none"
   );
 
   // Editable detail fields
-  const [color, setColor] = useState(piece.color ?? "");
-  const [notes, setNotes] = useState(piece.notes ?? "");
-  const [imageUrl, setImageUrl] = useState(piece.imageUrl);
+  const [color, setColor] = useState(item.color ?? "");
+  const [notes, setNotes] = useState(item.notes ?? "");
+  const [imageUrl, setImageUrl] = useState(item.imageUrl);
 
   const existingSizes =
-    piece.sizes && typeof piece.sizes === "object"
-      ? (piece.sizes as Record<string, string>)
+    item.sizes && typeof item.sizes === "object"
+      ? (item.sizes as Record<string, string>)
       : {};
   const [sizes, setSizes] = useState<Record<string, string>>(existingSizes);
 
@@ -110,9 +110,9 @@ export function PieceDetail({ piece, history, locations, bookings = [] }: PieceD
 
   function cancelEdit() {
     setEditing(false);
-    setColor(piece.color ?? "");
-    setNotes(piece.notes ?? "");
-    setImageUrl(piece.imageUrl);
+    setColor(item.color ?? "");
+    setNotes(item.notes ?? "");
+    setImageUrl(item.imageUrl);
     setSizes(existingSizes);
   }
 
@@ -121,20 +121,20 @@ export function PieceDetail({ piece, history, locations, bookings = [] }: PieceD
     try {
       const data: Record<string, unknown> = {};
 
-      if (status !== piece.status) data.status = status;
-      if (condition !== piece.condition) data.condition = condition;
-      if (locationId !== (piece.warehouseLocation?.id ?? "none")) {
+      if (status !== item.status) data.status = status;
+      if (condition !== item.condition) data.condition = condition;
+      if (locationId !== (item.warehouseLocation?.id ?? "none")) {
         data.warehouseLocationId = locationId === "none" ? null : locationId;
       }
 
       if (editing) {
         const newColor = color.trim() || null;
-        if (newColor !== piece.color) data.color = newColor;
+        if (newColor !== item.color) data.color = newColor;
 
         const newNotes = notes.trim() || null;
-        if (newNotes !== piece.notes) data.notes = newNotes;
+        if (newNotes !== item.notes) data.notes = newNotes;
 
-        if (imageUrl !== piece.imageUrl) data.imageUrl = imageUrl;
+        if (imageUrl !== item.imageUrl) data.imageUrl = imageUrl;
 
         // Check if sizes changed
         const filteredSizes: Record<string, string> = {};
@@ -154,11 +154,11 @@ export function PieceDetail({ piece, history, locations, bookings = [] }: PieceD
         return;
       }
 
-      const result = await updatePiece(piece.id, data);
+      const result = await updateItem(item.id, data);
       if ("error" in result) {
         toast.error(result.error);
       } else {
-        toast.success("Piece updated");
+        toast.success("Item updated");
         setEditing(false);
         router.refresh();
       }
@@ -170,8 +170,8 @@ export function PieceDetail({ piece, history, locations, bookings = [] }: PieceD
   }
 
   const displaySizes =
-    piece.sizes && typeof piece.sizes === "object"
-      ? (piece.sizes as Record<string, string>)
+    item.sizes && typeof item.sizes === "object"
+      ? (item.sizes as Record<string, string>)
       : null;
 
   return (
@@ -181,10 +181,10 @@ export function PieceDetail({ piece, history, locations, bookings = [] }: PieceD
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
-              <span>Piece Details</span>
+              <span>Item Details</span>
               <div className="flex items-center gap-2">
                 <Badge variant="outline" className="font-mono text-base">
-                  {piece.humanReadableId}
+                  {item.humanReadableId}
                 </Badge>
                 {!editing ? (
                   <Button
@@ -214,10 +214,10 @@ export function PieceDetail({ piece, history, locations, bookings = [] }: PieceD
                 />
               </div>
             ) : (
-              piece.imageUrl && (
+              item.imageUrl && (
                 <Image
-                  src={piece.imageUrl}
-                  alt={piece.humanReadableId}
+                  src={item.imageUrl}
+                  alt={item.humanReadableId}
                   width={400}
                   height={300}
                   className="rounded-lg border object-cover"
@@ -225,36 +225,36 @@ export function PieceDetail({ piece, history, locations, bookings = [] }: PieceD
               )
             )}
 
-            {/* Static info (item, category, dates) */}
+            {/* Static info (product, category, dates) */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <p className="text-sm text-muted-foreground">Item</p>
-                <p className="font-medium">{piece.item.name}</p>
+                <p className="text-sm text-muted-foreground">Product</p>
+                <p className="font-medium">{item.product.name}</p>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Category</p>
-                <p className="font-medium">{piece.category.name}</p>
+                <p className="font-medium">{item.category.name}</p>
               </div>
-              {piece.purchaseDate && (
+              {item.purchaseDate && (
                 <div>
                   <p className="text-sm text-muted-foreground">Purchase Date</p>
                   <p className="font-medium">
-                    {new Date(piece.purchaseDate).toLocaleDateString()}
+                    {new Date(item.purchaseDate).toLocaleDateString()}
                   </p>
                 </div>
               )}
-              {piece.purchasePrice != null && (
+              {item.purchasePrice != null && (
                 <div>
                   <p className="text-sm text-muted-foreground">Purchase Price</p>
                   <p className="font-medium">
-                    ${piece.purchasePrice.toFixed(2)}
+                    ${item.purchasePrice.toFixed(2)}
                   </p>
                 </div>
               )}
               <div>
                 <p className="text-sm text-muted-foreground">Created</p>
                 <p className="font-medium">
-                  {new Date(piece.createdAt).toLocaleDateString()}
+                  {new Date(item.createdAt).toLocaleDateString()}
                 </p>
               </div>
             </div>
@@ -271,10 +271,10 @@ export function PieceDetail({ piece, history, locations, bookings = [] }: PieceD
                 />
               </div>
             ) : (
-              piece.color && (
+              item.color && (
                 <div>
                   <p className="text-sm text-muted-foreground">Color</p>
-                  <p className="font-medium">{piece.color}</p>
+                  <p className="font-medium">{item.color}</p>
                 </div>
               )
             )}
@@ -335,10 +335,10 @@ export function PieceDetail({ piece, history, locations, bookings = [] }: PieceD
                 />
               </div>
             ) : (
-              piece.notes && (
+              item.notes && (
                 <div>
                   <p className="text-sm text-muted-foreground">Notes</p>
-                  <p className="text-sm">{piece.notes}</p>
+                  <p className="text-sm">{item.notes}</p>
                 </div>
               )
             )}
@@ -409,7 +409,7 @@ export function PieceDetail({ piece, history, locations, bookings = [] }: PieceD
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {Object.entries(PIECE_STATUS_LABELS).map(([key, label]) => (
+                  {Object.entries(ITEM_STATUS_LABELS).map(([key, label]) => (
                     <SelectItem key={key} value={key}>
                       {label}
                     </SelectItem>
@@ -425,7 +425,7 @@ export function PieceDetail({ piece, history, locations, bookings = [] }: PieceD
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {Object.entries(PIECE_CONDITION_LABELS).map(
+                  {Object.entries(ITEM_CONDITION_LABELS).map(
                     ([key, label]) => (
                       <SelectItem key={key} value={key}>
                         {label}
@@ -476,8 +476,8 @@ export function PieceDetail({ piece, history, locations, bookings = [] }: PieceD
           </CardHeader>
           <CardContent>
             <QRCodeDisplay
-              itemId={piece.id}
-              humanReadableId={piece.humanReadableId}
+              itemId={item.id}
+              humanReadableId={item.humanReadableId}
               size={160}
             />
           </CardContent>
@@ -495,7 +495,7 @@ export function PieceDetail({ piece, history, locations, bookings = [] }: PieceD
             <CardContent className="space-y-3">
               {bookings.map((booking) => (
                 <div
-                  key={booking.bookingPieceId}
+                  key={booking.bookingItemId}
                   className="rounded-md border p-3 space-y-1"
                 >
                   <Link
@@ -507,7 +507,7 @@ export function PieceDetail({ piece, history, locations, bookings = [] }: PieceD
                   <div className="flex items-center gap-2">
                     <StatusBadge status={booking.projectStatus} />
                     <span className="text-xs text-muted-foreground">
-                      {booking.productName}
+                      {booking.kitName}
                     </span>
                   </div>
                   {(booking.startDate || booking.endDate) && (

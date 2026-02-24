@@ -69,13 +69,13 @@ const STATUS_TRANSITIONS: Record<string, string[]> = {
 interface ContainerItem {
   id: string;
   packedAt: string;
-  piece: {
+  item: {
     id: string;
     humanReadableId: string;
     status: string;
     condition: string;
     color: string | null;
-    item: { name: string };
+    product: { name: string };
     category: { code: string; name: string };
     warehouseLocation: { label: string } | null;
   };
@@ -441,8 +441,8 @@ export function ContainerDetail({
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Piece ID</TableHead>
-                      <TableHead>Item</TableHead>
+                      <TableHead>Item ID</TableHead>
+                      <TableHead>Product</TableHead>
                       <TableHead>Category</TableHead>
                       <TableHead>Condition</TableHead>
                       <TableHead>Packed By</TableHead>
@@ -455,17 +455,17 @@ export function ContainerDetail({
                       <TableRow key={ci.id}>
                         <TableCell>
                           <span className="font-mono text-sm font-medium">
-                            {ci.piece.humanReadableId}
+                            {ci.item.humanReadableId}
                           </span>
                         </TableCell>
-                        <TableCell>{ci.piece.item.name}</TableCell>
+                        <TableCell>{ci.item.product.name}</TableCell>
                         <TableCell>
                           <Badge variant="outline" className="text-xs">
-                            {ci.piece.category.code} - {ci.piece.category.name}
+                            {ci.item.category.code} - {ci.item.category.name}
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          <StatusBadge status={ci.piece.condition} />
+                          <StatusBadge status={ci.item.condition} />
                         </TableCell>
                         <TableCell>
                           <span className="text-sm text-muted-foreground">

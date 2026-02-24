@@ -18,12 +18,12 @@ export default async function MaintenanceTicketDetailPage({
     prisma.maintenanceTicket.findUnique({
       where: { id },
       include: {
-        piece: {
+        item: {
           select: {
             id: true,
             humanReadableId: true,
             status: true,
-            item: { select: { id: true, name: true } },
+            product: { select: { id: true, name: true } },
             category: { select: { id: true, name: true } },
             warehouseLocation: { select: { id: true, label: true } },
           },

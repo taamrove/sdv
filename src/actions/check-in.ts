@@ -15,10 +15,10 @@ import {
 type ActionResult<T> = { data: T } | { error: string };
 
 // ---------------------------------------------------------------------------
-// checkInPiece
+// checkInItem
 // ---------------------------------------------------------------------------
 
-export async function checkInPiece(
+export async function checkInItem(
   data: CheckInInput
 ): Promise<ActionResult<unknown>> {
   try {
@@ -29,13 +29,13 @@ export async function checkInPiece(
       return { error: parsed.error.issues.map((i) => i.message).join(", ") };
     }
 
-    const piece = await prisma.piece.findUnique({
-      where: { id: parsed.data.pieceId },
-      include: { item: true, category: true },
+    const item = await prisma.item.findUnique({
+      where: { id: parsed.data.itemId },
+      include: { product: true, category: true },
     });
 
-    if (!piece) {
-      return { error: "Piece not found" };
+    if (!item) {
+      return { error: "Item not found" };
     }
 
     const user = await getCurrentUser();
@@ -43,29 +43,29 @@ export async function checkInPiece(
       return { error: "User not found" };
     }
 
-    const previousStatus = piece.status;
+    const previousStatus = item.status;
 
     // -----------------------------------------------------------------------
     // Action: Check in to inventory
     // -----------------------------------------------------------------------
     if (parsed.data.action === "INVENTORY") {
       const result = await prisma.$transaction(async (tx) => {
-        const updated = await tx.piece.update({
-          where: { id: parsed.data.pieceId },
+        const updated = await tx.item.update({
+          where: { id: parsed.data.itemId },
           data: {
             status: "AVAILABLE",
             warehouseLocationId: parsed.data.warehouseLocationId ?? undefined,
           },
           include: {
-            item: true,
+            product: true,
             category: true,
             warehouseLocation: true,
           },
         });
 
-        await tx.pieceHistory.create({
+        await tx.itemHistory.create({
           data: {
-            pieceId: parsed.data.pieceId,
+            itemId: parsed.data.itemId,
             action: "CHECKED_IN_TO_INVENTORY",
             performedById: user.id,
             previousState: previousStatus as unknown as Prisma.InputJsonValue,
@@ -93,9 +93,9 @@ export async function checkInPiece(
 
       const severity = parsed.data.maintenanceSeverity ?? null;
 
-      // MINOR severity: piece stays available (still usable)
-      // MODERATE or UNUSABLE: piece goes to MAINTENANCE status
-      const newPieceStatus =
+      // MINOR severity: item stays available (still usable)
+      // MODERATE or UNUSABLE: item goes to MAINTENANCE status
+      const newItemStatus =
         severity === "MINOR" ? previousStatus : "MAINTENANCE";
 
       const result = await prisma.$transaction(async (tx) => {
@@ -103,33 +103,33 @@ export async function checkInPiece(
           data: {
             title: parsed.data.maintenanceTitle!,
             description: parsed.data.notes ?? null,
-            pieceId: parsed.data.pieceId,
+            itemId: parsed.data.itemId,
             severity: severity,
             status: "REPORTED",
             reportedById: user.id,
           },
           include: {
-            piece: { include: { item: true, category: true } },
+            item: { include: { product: true, category: true } },
             reportedBy: { select: { id: true, firstName: true, lastName: true } },
             assignedTo: { select: { id: true, firstName: true, lastName: true } },
             _count: { select: { photos: true, comments: true } },
           },
         });
 
-        if (newPieceStatus !== previousStatus) {
-          await tx.piece.update({
-            where: { id: parsed.data.pieceId },
-            data: { status: newPieceStatus },
+        if (newItemStatus !== previousStatus) {
+          await tx.item.update({
+            where: { id: parsed.data.itemId },
+            data: { status: newItemStatus },
           });
         }
 
-        await tx.pieceHistory.create({
+        await tx.itemHistory.create({
           data: {
-            pieceId: parsed.data.pieceId,
+            itemId: parsed.data.itemId,
             action: "SENT_TO_MAINTENANCE",
             performedById: user.id,
             previousState: previousStatus as unknown as Prisma.InputJsonValue,
-            newState: newPieceStatus as unknown as Prisma.InputJsonValue,
+            newState: newItemStatus as unknown as Prisma.InputJsonValue,
             details: {
               ticketId: ticket.id,
               title: parsed.data.maintenanceTitle,
@@ -150,9 +150,6 @@ export async function checkInPiece(
     if (error instanceof Error && error.message.startsWith("Forbidden")) {
       throw error;
     }
-    return { error: error instanceof Error ? error.message : "Failed to check in piece" };
+    return { error: error instanceof Error ? error.message : "Failed to check in item" };
   }
 }
-
-// Keep old function name as alias for backward compatibility during migration
-export const checkInItem = checkInPiece;

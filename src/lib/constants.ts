@@ -9,7 +9,7 @@ export const DEFAULT_CATEGORIES = [
   { code: "P", name: "Props", description: "Stage props and hand-held items" },
 ] as const;
 
-export const PIECE_STATUS_LABELS: Record<string, string> = {
+export const ITEM_STATUS_LABELS: Record<string, string> = {
   AVAILABLE: "Available",
   ASSIGNED: "Assigned",
   PACKED: "Packed",
@@ -19,7 +19,7 @@ export const PIECE_STATUS_LABELS: Record<string, string> = {
   LOST: "Lost",
 };
 
-export const PIECE_CONDITION_LABELS: Record<string, string> = {
+export const ITEM_CONDITION_LABELS: Record<string, string> = {
   NEW: "New",
   EXCELLENT: "Excellent",
   GOOD: "Good",

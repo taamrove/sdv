@@ -21,11 +21,11 @@ export default async function DashboardPage() {
   const session = await auth();
   if (!session) redirect("/login");
 
-  let totalPieces = 0,
-    availablePieces = 0,
-    assignedPieces = 0,
-    maintenancePieces = 0,
-    totalItems = 0,
+  let totalItems = 0,
+    availableItems = 0,
+    assignedItems = 0,
+    maintenanceItems = 0,
+    totalProducts = 0,
     totalLocations = 0,
     activeProjects = 0,
     totalPerformers = 0;
@@ -37,32 +37,32 @@ export default async function DashboardPage() {
   try {
     // Batch all queries into a single transaction to use ONE connection
     const [
-      _totalPieces,
-      _availablePieces,
-      _assignedPieces,
-      _maintenancePieces,
       _totalItems,
+      _availableItems,
+      _assignedItems,
+      _maintenanceItems,
+      _totalProducts,
       _totalLocations,
       _activeProjects,
       _totalPerformers,
       _recentActivity,
       _upcomingProjects,
     ] = await prisma.$transaction([
-      prisma.piece.count(),
-      prisma.piece.count({ where: { status: "AVAILABLE" } }),
-      prisma.piece.count({ where: { status: "ASSIGNED" } }),
-      prisma.piece.count({ where: { status: "MAINTENANCE" } }),
       prisma.item.count(),
+      prisma.item.count({ where: { status: "AVAILABLE" } }),
+      prisma.item.count({ where: { status: "ASSIGNED" } }),
+      prisma.item.count({ where: { status: "MAINTENANCE" } }),
+      prisma.product.count(),
       prisma.warehouseLocation.count(),
       prisma.project.count({
         where: { status: { in: ["CONFIRMED", "PACKING", "IN_TRANSIT", "ACTIVE"] } },
       }),
       prisma.performer.count({ where: { active: true } }),
-      prisma.pieceHistory.findMany({
+      prisma.itemHistory.findMany({
         orderBy: { createdAt: "desc" },
         take: 10,
         include: {
-          piece: { select: { humanReadableId: true, id: true } },
+          item: { select: { humanReadableId: true, id: true } },
           performedBy: { select: { firstName: true, lastName: true } },
         },
       }),
@@ -84,11 +84,11 @@ export default async function DashboardPage() {
       }),
     ]);
 
-    totalPieces = _totalPieces;
-    availablePieces = _availablePieces;
-    assignedPieces = _assignedPieces;
-    maintenancePieces = _maintenancePieces;
     totalItems = _totalItems;
+    availableItems = _availableItems;
+    assignedItems = _assignedItems;
+    maintenanceItems = _maintenanceItems;
+    totalProducts = _totalProducts;
     totalLocations = _totalLocations;
     activeProjects = _activeProjects;
     totalPerformers = _totalPerformers;
@@ -100,26 +100,26 @@ export default async function DashboardPage() {
 
   const stats = [
     {
-      title: "Total Pieces",
-      value: totalPieces,
+      title: "Total Items",
+      value: totalItems,
       icon: Package,
-      description: "All pieces in system",
+      description: "All items in system",
     },
     {
       title: "Available",
-      value: availablePieces,
+      value: availableItems,
       icon: CheckCircle,
       description: "Ready for assignment",
     },
     {
       title: "Assigned",
-      value: assignedPieces,
+      value: assignedItems,
       icon: Shirt,
       description: "Assigned to projects",
     },
     {
       title: "In Maintenance",
-      value: maintenancePieces,
+      value: maintenanceItems,
       icon: Wrench,
       description: "Being repaired",
     },
@@ -136,10 +136,10 @@ export default async function DashboardPage() {
       description: "Active performers",
     },
     {
-      title: "Items",
-      value: totalItems,
+      title: "Products",
+      value: totalProducts,
       icon: ShoppingBag,
-      description: "Unique item types",
+      description: "Unique product types",
     },
     {
       title: "Locations",
@@ -250,10 +250,10 @@ export default async function DashboardPage() {
                       <div className="flex items-center gap-2 flex-wrap">
                         <StatusBadge status={entry.action} />
                         <Link
-                          href={`/inventory/${entry.piece.id}`}
+                          href={`/inventory/${entry.item.id}`}
                           className="font-mono text-xs hover:underline"
                         >
-                          {entry.piece.humanReadableId}
+                          {entry.item.humanReadableId}
                         </Link>
                       </div>
                       <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">

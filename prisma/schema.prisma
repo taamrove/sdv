@@ -6,10 +6,11 @@ datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
+  schemas   = ["auth", "public"]
 }
 
 // ============================================================
-// AUTH DOMAIN
+// AUTH DOMAIN — lives in "auth" schema, survives app DB resets
 // ============================================================
 
 model User {
@@ -31,13 +32,13 @@ model User {
   maintenanceReported MaintenanceTicket[] @relation("ReportedBy")
   maintenanceComments MaintenanceComment[]
   maintenancePhotos   MaintenancePhoto[]
-  pieceHistories      PieceHistory[]
+  itemHistories       ItemHistory[]
   containerPackedBy   ContainerItem[]     @relation("PackedBy")
   containerVerifiedBy ContainerItem[]     @relation("VerifiedBy")
   betaFlags           FeatureFlagUser[]
   feedbackSubmitted   FeedbackTicket[]
 
-  @@map("users")
+  @@schema("auth")
 }
 
 model Role {
@@ -52,7 +53,7 @@ model Role {
   users       User[]
   permissions RolePermission[]
 
-  @@map("roles")
+  @@schema("auth")
 }
 
 model Permission {
@@ -65,7 +66,7 @@ model Permission {
   roles RolePermission[]
 
   @@unique([resource, action])
-  @@map("permissions")
+  @@schema("auth")
 }
 
 model RolePermission {
@@ -76,7 +77,7 @@ model RolePermission {
   permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
 
   @@id([roleId, permissionId])
-  @@map("role_permissions")
+  @@schema("auth")
 }
 
 // ============================================================
@@ -88,6 +89,8 @@ enum FeatureFlagStage {
   ALPHA
   BETA
   PRODUCTION
+
+  @@schema("public")
 }
 
 model FeatureFlag {
@@ -101,7 +104,7 @@ model FeatureFlag {
 
   betaUsers FeatureFlagUser[]
 
-  @@map("feature_flags")
+  @@schema("public")
 }
 
 model FeatureFlagUser {
@@ -112,11 +115,11 @@ model FeatureFlagUser {
   user User        @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@id([flagId, userId])
-  @@map("feature_flag_users")
+  @@schema("public")
 }
 
 // ============================================================
-// INVENTORY DOMAIN
+// PRODUCT DOMAIN
 // ============================================================
 
 model Category {
@@ -127,15 +130,15 @@ model Category {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  products           Product[]
   items              Item[]
-  pieces             Piece[]
   quarantineDefaults CategoryQuarantineDefault[]
 
-  @@map("categories")
+  @@schema("public")
 }
 
-/// Item = a design/type (e.g. "Angel Shoe"). Was called "Product" before restructure.
-model Item {
+/// Product = a design/type (e.g. "Angel Shoe"). The template for physical Items.
+model Product {
   id                    String   @id @default(uuid())
   categoryId            String
   number                Int
@@ -148,50 +151,51 @@ model Item {
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
 
-  category      Category             @relation(fields: [categoryId], references: [id])
-  pieces        Piece[]
-  variantItems  ProductVariantItem[]
+  category           Category           @relation(fields: [categoryId], references: [id])
+  items              Item[]
+  kitVariantProducts KitVariantProduct[]
+  packs              Pack[]
 
   @@unique([categoryId, number])
-  @@map("items")
+  @@schema("public")
 }
 
-/// Piece = an individual physical copy (e.g. "Angel Shoe size 38", barcode S-001-003).
-/// Was called "Item" before restructure.
-model Piece {
-  id                  String         @id @default(uuid())
+/// Item = an individual physical copy (e.g. "Angel Shoe size 38", barcode S-001-003).
+model Item {
+  id                  String        @id @default(uuid())
   categoryId          String
-  itemId              String
+  productId           String
   sequence            Int
-  humanReadableId     String         @unique
-  status              PieceStatus    @default(AVAILABLE)
-  condition           PieceCondition @default(NEW)
+  humanReadableId     String        @unique
+  status              ItemStatus    @default(AVAILABLE)
+  condition           ItemCondition @default(NEW)
   sizes               Json?
   color               String?
   purchaseDate        DateTime?
-  purchasePrice       Decimal?       @db.Decimal(10, 2)
+  purchasePrice       Decimal?      @db.Decimal(10, 2)
   notes               String?
   warehouseLocationId String?
   imageUrl            String?
-  isExternal          Boolean        @default(false)
-  createdAt           DateTime       @default(now())
-  updatedAt           DateTime       @updatedAt
+  isExternal          Boolean       @default(false)
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
 
   category           Category           @relation(fields: [categoryId], references: [id])
-  item               Item               @relation(fields: [itemId], references: [id])
+  product            Product            @relation(fields: [productId], references: [id])
   warehouseLocation  WarehouseLocation? @relation(fields: [warehouseLocationId], references: [id])
-  bookingPieces      BookingPiece[]
+  bookingItems       BookingItem[]
   containerItems     ContainerItem[]
   maintenanceTickets MaintenanceTicket[]
-  history            PieceHistory[]
+  history            ItemHistory[]
+  packItems          PackItem[]
 
-  @@unique([itemId, sequence])
+  @@unique([productId, sequence])
   @@index([status])
   @@index([humanReadableId])
-  @@map("pieces")
+  @@schema("public")
 }
 
-enum PieceStatus {
+enum ItemStatus {
   AVAILABLE
   ASSIGNED
   PACKED
@@ -199,22 +203,26 @@ enum PieceStatus {
   MAINTENANCE
   RETIRED
   LOST
+
+  @@schema("public")
 }
 
-enum PieceCondition {
+enum ItemCondition {
   NEW
   EXCELLENT
   GOOD
   FAIR
   POOR
+
+  @@schema("public")
 }
 
 // ============================================================
-// PRODUCT DOMAIN (kits / compositions)
+// KIT DOMAIN (kits / compositions)
 // ============================================================
 
-/// Product = a kit/set (e.g. "Angel Costume") composed of multiple Items.
-model Product {
+/// Kit = a kit/set (e.g. "Angel Costume") composed of multiple Products.
+model Kit {
   id          String   @id @default(uuid())
   name        String
   description String?
@@ -223,55 +231,88 @@ model Product {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  variants ProductVariant[]
-  themes   ProductTheme[]
+  variants KitVariant[]
+  themes   KitTheme[]
   bookings ProjectBooking[]
 
-  @@map("products")
+  @@schema("public")
 }
 
-/// ProductVariant = a version of a product (e.g. "Angel Costume — Blue").
-model ProductVariant {
+/// KitVariant = a version of a kit (e.g. "Angel Costume — Blue").
+model KitVariant {
   id          String   @id @default(uuid())
-  productId   String
+  kitId       String
   name        String
   description String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  product  Product              @relation(fields: [productId], references: [id], onDelete: Cascade)
-  items    ProductVariantItem[]
+  kit      Kit                @relation(fields: [kitId], references: [id], onDelete: Cascade)
+  products KitVariantProduct[]
   bookings ProjectBooking[]
 
-  @@map("product_variants")
+  @@schema("public")
 }
 
-/// ProductVariantItem = which Items (and how many) compose a variant.
-model ProductVariantItem {
+/// KitVariantProduct = which Products (and how many) compose a variant.
+model KitVariantProduct {
   id        String  @id @default(uuid())
   variantId String
-  itemId    String
+  productId String
   quantity  Int     @default(1)
   required  Boolean @default(true)
   notes     String?
 
-  variant ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
-  item    Item           @relation(fields: [itemId], references: [id])
+  variant KitVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  product Product    @relation(fields: [productId], references: [id])
 
-  @@unique([variantId, itemId])
-  @@map("product_variant_items")
+  @@unique([variantId, productId])
+  @@schema("public")
 }
 
-/// ProductTheme = many-to-many join between Product and Theme.
-model ProductTheme {
-  productId String
-  themeId   String
+/// KitTheme = many-to-many join between Kit and Theme.
+model KitTheme {
+  kitId   String
+  themeId String
 
-  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-  theme   Theme   @relation(fields: [themeId], references: [id], onDelete: Cascade)
+  kit   Kit   @relation(fields: [kitId], references: [id], onDelete: Cascade)
+  theme Theme @relation(fields: [themeId], references: [id], onDelete: Cascade)
 
-  @@id([productId, themeId])
-  @@map("product_themes")
+  @@id([kitId, themeId])
+  @@schema("public")
+}
+
+// ============================================================
+// PACK DOMAIN
+// ============================================================
+
+model Pack {
+  id              String        @id @default(uuid())
+  productId       String
+  humanReadableId String        @unique
+  name            String?
+  status          ItemStatus    @default(AVAILABLE)
+  condition       ItemCondition @default(NEW)
+  notes           String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  product   Product    @relation(fields: [productId], references: [id])
+  packItems PackItem[]
+
+  @@schema("public")
+}
+
+model PackItem {
+  id     String @id @default(uuid())
+  packId String
+  itemId String
+
+  pack Pack @relation(fields: [packId], references: [id], onDelete: Cascade)
+  item Item @relation(fields: [itemId], references: [id])
+
+  @@unique([packId, itemId])
+  @@schema("public")
 }
 
 // ============================================================
@@ -289,9 +330,9 @@ model WarehouseLocation {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  pieces Piece[]
+  items Item[]
 
-  @@map("warehouse_locations")
+  @@schema("public")
 }
 
 // ============================================================
@@ -315,7 +356,7 @@ model Performer {
 
   assignments PerformerAssignment[]
 
-  @@map("performers")
+  @@schema("public")
 }
 
 enum PerformerType {
@@ -325,13 +366,15 @@ enum PerformerType {
   ACROBAT
   ACTOR
   OTHER
+
+  @@schema("public")
 }
 
 // ============================================================
 // THEME DOMAIN
 // ============================================================
 
-/// Theme = a branding tag for Products (many-to-many).
+/// Theme = a branding tag for Kits (many-to-many).
 model Theme {
   id          String   @id @default(uuid())
   name        String   @unique
@@ -341,9 +384,9 @@ model Theme {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  products ProductTheme[]
+  kits KitTheme[]
 
-  @@map("themes")
+  @@schema("public")
 }
 
 // ============================================================
@@ -371,7 +414,7 @@ model Project {
 
   @@index([status])
   @@index([startDate])
-  @@map("projects")
+  @@schema("public")
 }
 
 enum ProjectStatus {
@@ -382,6 +425,8 @@ enum ProjectStatus {
   ACTIVE
   COMPLETED
   CANCELLED
+
+  @@schema("public")
 }
 
 model PerformerAssignment {
@@ -398,11 +443,11 @@ model PerformerAssignment {
   bookingNotes PerformerBookingNote[]
 
   @@unique([performerId, projectId])
-  @@map("performer_assignments")
+  @@schema("public")
 }
 
 // ============================================================
-// BOOKING DOMAIN (replaces Suit system)
+// BOOKING DOMAIN
 // ============================================================
 
 enum BookingStatus {
@@ -411,42 +456,44 @@ enum BookingStatus {
   PARTIALLY_FULFILLED
   FULFILLED
   CANCELLED
+
+  @@schema("public")
 }
 
 /// ProjectBooking = "Book 6 Angel Costumes for Project X".
 model ProjectBooking {
-  id               String        @id @default(uuid())
-  projectId        String
-  productId        String
-  productVariantId String?
-  quantity         Int           @default(1)
-  status           BookingStatus @default(DRAFT)
-  notes            String?
-  createdAt        DateTime      @default(now())
-  updatedAt        DateTime      @updatedAt
+  id            String        @id @default(uuid())
+  projectId     String
+  kitId         String
+  kitVariantId  String?
+  quantity      Int           @default(1)
+  status        BookingStatus @default(DRAFT)
+  notes         String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
 
   project        Project              @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  product        Product              @relation(fields: [productId], references: [id])
-  variant        ProductVariant?      @relation(fields: [productVariantId], references: [id])
-  pieces         BookingPiece[]
+  kit            Kit                  @relation(fields: [kitId], references: [id])
+  variant        KitVariant?          @relation(fields: [kitVariantId], references: [id])
+  items          BookingItem[]
   performerNotes PerformerBookingNote[]
 
-  @@map("project_bookings")
+  @@schema("public")
 }
 
-/// BookingPiece = a concrete Piece assigned to fulfill a booking.
-model BookingPiece {
+/// BookingItem = a concrete Item assigned to fulfill a booking.
+model BookingItem {
   id         String   @id @default(uuid())
   bookingId  String
-  pieceId    String
+  itemId     String
   assignedAt DateTime @default(now())
   notes      String?
 
   booking ProjectBooking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
-  piece   Piece          @relation(fields: [pieceId], references: [id])
+  item    Item           @relation(fields: [itemId], references: [id])
 
-  @@unique([bookingId, pieceId])
-  @@map("booking_pieces")
+  @@unique([bookingId, itemId])
+  @@schema("public")
 }
 
 /// PerformerBookingNote = notes about a performer's specific booking needs.
@@ -461,7 +508,7 @@ model PerformerBookingNote {
   performerAssignment PerformerAssignment @relation(fields: [performerAssignmentId], references: [id], onDelete: Cascade)
   booking             ProjectBooking?     @relation(fields: [bookingId], references: [id])
 
-  @@map("performer_booking_notes")
+  @@schema("public")
 }
 
 // ============================================================
@@ -482,7 +529,7 @@ model Container {
   project Project?       @relation(fields: [projectId], references: [id])
   items   ContainerItem[]
 
-  @@map("containers")
+  @@schema("public")
 }
 
 enum ContainerType {
@@ -493,6 +540,8 @@ enum ContainerType {
   SHOE_BOX
   HAT_BOX
   CUSTOM
+
+  @@schema("public")
 }
 
 enum ContainerStatus {
@@ -503,24 +552,26 @@ enum ContainerStatus {
   AT_VENUE
   RETURNED
   UNPACKED
+
+  @@schema("public")
 }
 
 model ContainerItem {
   id           String    @id @default(uuid())
   containerId  String
-  pieceId      String
+  itemId       String
   packedAt     DateTime  @default(now())
   packedById   String?
   verifiedAt   DateTime?
   verifiedById String?
 
   container  Container @relation(fields: [containerId], references: [id], onDelete: Cascade)
-  piece      Piece     @relation(fields: [pieceId], references: [id])
+  item       Item      @relation(fields: [itemId], references: [id])
   packedBy   User?     @relation("PackedBy", fields: [packedById], references: [id])
   verifiedBy User?     @relation("VerifiedBy", fields: [verifiedById], references: [id])
 
-  @@unique([containerId, pieceId])
-  @@map("container_items")
+  @@unique([containerId, itemId])
+  @@schema("public")
 }
 
 // ============================================================
@@ -529,7 +580,7 @@ model ContainerItem {
 
 model MaintenanceTicket {
   id                  String               @id @default(uuid())
-  pieceId             String
+  itemId              String
   reportedById        String
   assignedToId        String?
   status              MaintenanceStatus    @default(REPORTED)
@@ -544,15 +595,15 @@ model MaintenanceTicket {
   createdAt           DateTime             @default(now())
   updatedAt           DateTime             @updatedAt
 
-  piece      Piece                @relation(fields: [pieceId], references: [id])
+  item       Item                 @relation(fields: [itemId], references: [id])
   reportedBy User                 @relation("ReportedBy", fields: [reportedById], references: [id])
   assignedTo User?                @relation("AssignedTo", fields: [assignedToId], references: [id])
   photos     MaintenancePhoto[]
   comments   MaintenanceComment[]
 
   @@index([status])
-  @@index([pieceId])
-  @@map("maintenance_tickets")
+  @@index([itemId])
+  @@schema("public")
 }
 
 model CategoryQuarantineDefault {
@@ -566,7 +617,7 @@ model CategoryQuarantineDefault {
   category Category @relation(fields: [categoryId], references: [id])
 
   @@unique([categoryId, severity])
-  @@map("category_quarantine_defaults")
+  @@schema("public")
 }
 
 enum MaintenanceStatus {
@@ -576,6 +627,8 @@ enum MaintenanceStatus {
   AWAITING_PARTS
   COMPLETED
   CANCELLED
+
+  @@schema("public")
 }
 
 enum MaintenancePriority {
@@ -583,18 +636,24 @@ enum MaintenancePriority {
   MEDIUM
   HIGH
   URGENT
+
+  @@schema("public")
 }
 
 enum MaintenanceSeverity {
   MINOR
   MODERATE
   UNUSABLE
+
+  @@schema("public")
 }
 
 enum QuarantineType {
   NONE
   AUTO
   MANUAL
+
+  @@schema("public")
 }
 
 model MaintenancePhoto {
@@ -608,7 +667,7 @@ model MaintenancePhoto {
   ticket     MaintenanceTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
   uploadedBy User              @relation(fields: [uploadedById], references: [id])
 
-  @@map("maintenance_photos")
+  @@schema("public")
 }
 
 model MaintenanceComment {
@@ -622,16 +681,16 @@ model MaintenanceComment {
   ticket MaintenanceTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
   user   User              @relation(fields: [userId], references: [id])
 
-  @@map("maintenance_comments")
+  @@schema("public")
 }
 
 // ============================================================
 // AUDIT / HISTORY DOMAIN
 // ============================================================
 
-model PieceHistory {
+model ItemHistory {
   id            String        @id @default(uuid())
-  pieceId       String
+  itemId        String
   action        HistoryAction
   performedById String?
   details       Json?
@@ -639,12 +698,12 @@ model PieceHistory {
   newState      Json?
   createdAt     DateTime      @default(now())
 
-  piece       Piece @relation(fields: [pieceId], references: [id])
+  item        Item  @relation(fields: [itemId], references: [id])
   performedBy User? @relation(fields: [performedById], references: [id])
 
-  @@index([pieceId, createdAt])
+  @@index([itemId, createdAt])
   @@index([action])
-  @@map("piece_history")
+  @@schema("public")
 }
 
 enum HistoryAction {
@@ -669,6 +728,8 @@ enum HistoryAction {
   LOST
   FOUND
   CROSSLOADED
+
+  @@schema("public")
 }
 
 // ============================================================
@@ -692,13 +753,15 @@ model FeedbackTicket {
 
   @@index([status])
   @@index([submittedById])
-  @@map("feedback_tickets")
+  @@schema("public")
 }
 
 enum FeedbackCategory {
   BUG
   FEATURE_REQUEST
   IMPROVEMENT
+
+  @@schema("public")
 }
 
 enum FeedbackStatus {
@@ -707,12 +770,16 @@ enum FeedbackStatus {
   PLANNED
   RESOLVED
   CLOSED
+
+  @@schema("public")
 }
 
 enum FeedbackPriority {
   LOW
   MEDIUM
   HIGH
+
+  @@schema("public")
 }
 
 // ============================================================
@@ -728,5 +795,5 @@ model ChangelogEntry {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@map("changelog_entries")
+  @@schema("public")
 }

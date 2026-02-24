@@ -2,9 +2,9 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { redirect, notFound } from "next/navigation";
 import { PageHeader } from "@/components/shared/page-header";
-import { ItemForm } from "@/components/inventory/product-form";
+import { ProductForm } from "@/components/inventory/product-form";
 
-export default async function EditItemPage({
+export default async function EditProductPage({
   params,
 }: {
   params: Promise<{ id: string }>;
@@ -14,8 +14,8 @@ export default async function EditItemPage({
 
   const { id } = await params;
 
-  const [item, categories] = await Promise.all([
-    prisma.item.findUnique({
+  const [product, categories] = await Promise.all([
+    prisma.product.findUnique({
       where: { id },
       select: {
         id: true,
@@ -30,12 +30,12 @@ export default async function EditItemPage({
     prisma.category.findMany({ orderBy: { code: "asc" } }),
   ]);
 
-  if (!item) notFound();
+  if (!product) notFound();
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Edit Item" description={item.name} />
-      <ItemForm categories={categories} item={item} />
+      <PageHeader title="Edit Product" description={product.name} />
+      <ProductForm categories={categories} product={product} />
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 
 const STATUS_VARIANTS: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
-  // Piece statuses
+  // Item statuses (physical copies)
   AVAILABLE: "default",
   ASSIGNED: "secondary",
   PACKED: "secondary",
@@ -47,7 +47,7 @@ const STATUS_VARIANTS: Record<string, "default" | "secondary" | "destructive" | 
   DRAFT: "outline",
   PARTIALLY_FULFILLED: "secondary",
   FULFILLED: "default",
-  // Container statuses (some overlap with project/piece)
+  // Container statuses (some overlap with project/item)
   EMPTY: "outline",
   AT_VENUE: "default",
   RETURNED: "secondary",

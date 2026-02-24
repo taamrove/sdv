@@ -40,10 +40,10 @@ interface Ticket {
   status: string;
   priority: string;
   createdAt: Date;
-  piece: {
+  item: {
     id: string;
     humanReadableId: string;
-    item: { name: string };
+    product: { name: string };
     category: { name: string };
   };
   reportedBy: { id: string; firstName: string; lastName: string };
@@ -201,13 +201,13 @@ export function TicketList({ tickets, pagination }: TicketListProps) {
                     </div>
                     <div className="flex items-center gap-2 text-muted-foreground">
                       <span className="font-mono text-xs">
-                        {ticket.piece.humanReadableId}
+                        {ticket.item.humanReadableId}
                       </span>
-                      <span>{ticket.piece.item.name}</span>
+                      <span>{ticket.item.product.name}</span>
                     </div>
                     <div>
                       <Badge variant="outline" className="text-xs">
-                        {ticket.piece.category.name}
+                        {ticket.item.category.name}
                       </Badge>
                     </div>
                   </div>

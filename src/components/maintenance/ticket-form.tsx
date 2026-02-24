@@ -28,18 +28,18 @@ import { ImageUpload } from "@/components/shared/image-upload";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 
-interface PieceOption {
+interface ItemOption {
   id: string;
   humanReadableId: string;
-  item: { name: string };
+  product: { name: string };
   category: { name: string };
 }
 
 interface TicketFormProps {
-  pieces: PieceOption[];
+  items: ItemOption[];
 }
 
-export function TicketForm({ pieces }: TicketFormProps) {
+export function TicketForm({ items }: TicketFormProps) {
   const router = useRouter();
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [itemFilter, setItemFilter] = useState("");
@@ -49,20 +49,20 @@ export function TicketForm({ pieces }: TicketFormProps) {
     defaultValues: {
       title: "",
       description: "",
-      pieceId: "",
+      itemId: "",
       priority: "MEDIUM",
     },
   });
 
-  const filteredPieces = itemFilter
-    ? pieces.filter(
+  const filteredItems = itemFilter
+    ? items.filter(
         (p) =>
           p.humanReadableId
             .toLowerCase()
             .includes(itemFilter.toLowerCase()) ||
-          p.item.name.toLowerCase().includes(itemFilter.toLowerCase())
+          p.product.name.toLowerCase().includes(itemFilter.toLowerCase())
       )
-    : pieces;
+    : items;
 
   async function onSubmit(data: CreateTicketInput) {
     try {
@@ -99,32 +99,32 @@ export function TicketForm({ pieces }: TicketFormProps) {
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           {/* Item Selector */}
           <div className="space-y-2">
-            <Label htmlFor="pieceId">Piece *</Label>
+            <Label htmlFor="itemId">Item *</Label>
             <div className="space-y-2">
               <Input
-                placeholder="Filter pieces..."
+                placeholder="Filter items..."
                 value={itemFilter}
                 onChange={(e) => setItemFilter(e.target.value)}
               />
               <Select
-                value={form.watch("pieceId") || ""}
-                onValueChange={(val) => form.setValue("pieceId", val)}
+                value={form.watch("itemId") || ""}
+                onValueChange={(val) => form.setValue("itemId", val)}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select a piece" />
+                  <SelectValue placeholder="Select an item" />
                 </SelectTrigger>
                 <SelectContent>
-                  {filteredPieces.map((p) => (
+                  {filteredItems.map((p) => (
                     <SelectItem key={p.id} value={p.id}>
-                      {p.humanReadableId} - {p.item.name}
+                      {p.humanReadableId} - {p.product.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
-            {form.formState.errors.pieceId && (
+            {form.formState.errors.itemId && (
               <p className="text-sm text-destructive">
-                {form.formState.errors.pieceId.message}
+                {form.formState.errors.itemId.message}
               </p>
             )}
           </div>

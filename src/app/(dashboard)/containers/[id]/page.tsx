@@ -21,9 +21,9 @@ export default async function ContainerDetailPage({
         project: { select: { id: true, name: true } },
         items: {
           include: {
-            piece: {
+            item: {
               include: {
-                item: true,
+                product: true,
                 category: true,
                 warehouseLocation: true,
               },
@@ -57,16 +57,16 @@ export default async function ContainerDetailPage({
     items: container.items.map((ci) => ({
       id: ci.id,
       packedAt: ci.packedAt.toISOString(),
-      piece: {
-        id: ci.piece.id,
-        humanReadableId: ci.piece.humanReadableId,
-        status: ci.piece.status as string,
-        condition: ci.piece.condition as string,
-        color: ci.piece.color,
-        item: { name: ci.piece.item.name },
-        category: { code: ci.piece.category.code, name: ci.piece.category.name },
-        warehouseLocation: ci.piece.warehouseLocation
-          ? { label: ci.piece.warehouseLocation.label }
+      item: {
+        id: ci.item.id,
+        humanReadableId: ci.item.humanReadableId,
+        status: ci.item.status as string,
+        condition: ci.item.condition as string,
+        color: ci.item.color,
+        product: { name: ci.item.product.name },
+        category: { code: ci.item.category.code, name: ci.item.category.name },
+        warehouseLocation: ci.item.warehouseLocation
+          ? { label: ci.item.warehouseLocation.label }
           : null,
       },
       packedBy: ci.packedBy

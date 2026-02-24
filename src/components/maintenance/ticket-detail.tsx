@@ -74,11 +74,11 @@ interface Comment {
   user: { id: string; firstName: string; lastName: string };
 }
 
-interface TicketPiece {
+interface TicketItem {
   id: string;
   humanReadableId: string;
   status: string;
-  item: { id: string; name: string };
+  product: { id: string; name: string };
   category: { id: string; name: string };
   warehouseLocation: { id: string; label: string } | null;
 }
@@ -95,7 +95,7 @@ interface Ticket {
   quarantineEndsAt: Date | string | null;
   quarantineType: string;
   createdAt: Date | string;
-  piece: TicketPiece;
+  item: TicketItem;
   reportedBy: { id: string; firstName: string; lastName: string };
   assignedTo: { id: string; firstName: string; lastName: string } | null;
   photos: Photo[];
@@ -435,13 +435,13 @@ export function TicketDetail({ ticket, users }: TicketDetailProps) {
                 <div className="flex items-center gap-2">
                   <Wrench className="h-4 w-4 text-muted-foreground" />
                   <Link
-                    href={`/inventory/${ticket.piece.id}`}
+                    href={`/inventory/${ticket.item.id}`}
                     className="text-primary hover:underline flex items-center gap-1"
                   >
                     <span className="font-mono">
-                      {ticket.piece.humanReadableId}
+                      {ticket.item.humanReadableId}
                     </span>
-                    <span>{ticket.piece.item.name}</span>
+                    <span>{ticket.item.product.name}</span>
                     <ExternalLink className="h-3 w-3" />
                   </Link>
                 </div>
@@ -779,44 +779,44 @@ export function TicketDetail({ ticket, users }: TicketDetailProps) {
             </CardContent>
           </Card>
 
-          {/* Piece Info */}
+          {/* Item Info */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Piece Info</CardTitle>
+              <CardTitle className="text-base">Item Info</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
               <Link
-                href={`/inventory/${ticket.piece.id}`}
+                href={`/inventory/${ticket.item.id}`}
                 className="text-primary hover:underline flex items-center gap-1"
               >
-                View Piece
+                View Item
                 <ExternalLink className="h-3 w-3" />
               </Link>
               <div>
                 <span className="text-muted-foreground">ID: </span>
                 <span className="font-mono">
-                  {ticket.piece.humanReadableId}
+                  {ticket.item.humanReadableId}
                 </span>
               </div>
               <div>
-                <span className="text-muted-foreground">Item: </span>
-                <span>{ticket.piece.item.name}</span>
+                <span className="text-muted-foreground">Product: </span>
+                <span>{ticket.item.product.name}</span>
               </div>
               <div>
                 <span className="text-muted-foreground">Category: </span>
                 <Badge variant="outline" className="text-xs">
-                  {ticket.piece.category.name}
+                  {ticket.item.category.name}
                 </Badge>
               </div>
-              {ticket.piece.warehouseLocation && (
+              {ticket.item.warehouseLocation && (
                 <div>
                   <span className="text-muted-foreground">Location: </span>
-                  <span>{ticket.piece.warehouseLocation.label}</span>
+                  <span>{ticket.item.warehouseLocation.label}</span>
                 </div>
               )}
               <div>
                 <span className="text-muted-foreground">Status: </span>
-                <StatusBadge status={ticket.piece.status} />
+                <StatusBadge status={ticket.item.status} />
               </div>
             </CardContent>
           </Card>

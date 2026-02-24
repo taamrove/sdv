@@ -11,7 +11,7 @@ export default async function ScanPage() {
     <div className="space-y-6">
       <PageHeader
         title="Scanner"
-        description="Scan piece barcodes for quick actions"
+        description="Scan item barcodes for quick actions"
       />
       <ScannerView />
     </div>

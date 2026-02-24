@@ -16,10 +16,10 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-  createItemSchema,
-  type CreateItemInput,
-} from "@/lib/validators/item";
-import { createItem, updateItem } from "@/actions/items";
+  createProductSchema,
+  type CreateProductInput,
+} from "@/lib/validators/product";
+import { createProduct, updateProduct } from "@/actions/products";
 import { ImageUpload } from "@/components/shared/image-upload";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
@@ -30,9 +30,9 @@ interface Category {
   name: string;
 }
 
-interface ItemFormProps {
+interface ProductFormProps {
   categories: Category[];
-  item?: {
+  product?: {
     id: string;
     name: string;
     description: string | null;
@@ -43,26 +43,26 @@ interface ItemFormProps {
   };
 }
 
-export function ItemForm({ categories, item }: ItemFormProps) {
+export function ProductForm({ categories, product }: ProductFormProps) {
   const router = useRouter();
-  const isEditing = !!item;
+  const isEditing = !!product;
 
-  const form = useForm<CreateItemInput>({
-    resolver: zodResolver(createItemSchema),
+  const form = useForm<CreateProductInput>({
+    resolver: zodResolver(createProductSchema),
     defaultValues: {
-      categoryId: item?.categoryId ?? "",
-      name: item?.name ?? "",
-      description: item?.description ?? "",
-      imageUrl: item?.imageUrl ?? undefined,
-      size: item?.size ?? undefined,
-      allowsSizeFlexibility: item?.allowsSizeFlexibility ?? true,
+      categoryId: product?.categoryId ?? "",
+      name: product?.name ?? "",
+      description: product?.description ?? "",
+      imageUrl: product?.imageUrl ?? undefined,
+      size: product?.size ?? undefined,
+      allowsSizeFlexibility: product?.allowsSizeFlexibility ?? true,
     },
   });
 
-  async function onSubmit(data: CreateItemInput) {
+  async function onSubmit(data: CreateProductInput) {
     try {
       if (isEditing) {
-        const result = await updateItem(item.id, {
+        const result = await updateProduct(product.id, {
           name: data.name,
           description: data.description,
           imageUrl: data.imageUrl,
@@ -73,14 +73,14 @@ export function ItemForm({ categories, item }: ItemFormProps) {
           toast.error(result.error);
           return;
         }
-        toast.success("Item updated");
+        toast.success("Product updated");
       } else {
-        const result = await createItem(data);
+        const result = await createProduct(data);
         if ("error" in result) {
           toast.error(result.error);
           return;
         }
-        toast.success("Item created");
+        toast.success("Product created");
       }
       router.push("/inventory/products");
       router.refresh();
@@ -92,7 +92,7 @@ export function ItemForm({ categories, item }: ItemFormProps) {
   return (
     <Card className="max-w-2xl">
       <CardHeader>
-        <CardTitle>{isEditing ? "Edit Item" : "Create Item"}</CardTitle>
+        <CardTitle>{isEditing ? "Edit Product" : "Create Product"}</CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -123,7 +123,7 @@ export function ItemForm({ categories, item }: ItemFormProps) {
           )}
 
           <div className="space-y-2">
-            <Label htmlFor="name">Item Name</Label>
+            <Label htmlFor="name">Product Name</Label>
             <Input
               id="name"
               placeholder="e.g., Red Carnival Dress"
@@ -169,11 +169,11 @@ export function ItemForm({ categories, item }: ItemFormProps) {
           </div>
 
           <div className="space-y-2">
-            <Label>Item Image</Label>
+            <Label>Product Image</Label>
             <ImageUpload
               value={form.watch("imageUrl")}
               onChange={(url) => form.setValue("imageUrl", url ?? undefined)}
-              folder="items"
+              folder="products"
             />
           </div>
 

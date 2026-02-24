@@ -11,7 +11,7 @@ export default async function WarehousePage() {
   const locations = await prisma.warehouseLocation.findMany({
     orderBy: { label: "asc" },
     include: {
-      _count: { select: { pieces: true } },
+      _count: { select: { items: true } },
     },
   });
 

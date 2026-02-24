@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/select";
 import { Eye, Package } from "lucide-react";
 import { AvailabilityDetail } from "./availability-detail";
-import type { ItemAvailability } from "@/actions/availability";
+import type { ProductAvailability } from "@/actions/availability";
 
 interface Category {
   id: string;
@@ -28,7 +28,7 @@ interface Category {
 }
 
 interface AvailabilityDashboardProps {
-  groups: ItemAvailability[];
+  groups: ProductAvailability[];
   categories: Category[];
 }
 
@@ -39,8 +39,8 @@ export function AvailabilityDashboard({
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
-  const [drillDownItemId, setDrillDownItemId] = useState<string | null>(null);
-  const [drillDownItemName, setDrillDownItemName] = useState<string>("");
+  const [drillDownProductId, setDrillDownProductId] = useState<string | null>(null);
+  const [drillDownProductName, setDrillDownProductName] = useState<string>("");
 
   function handleCategoryFilter(value: string) {
     startTransition(() => {
@@ -54,21 +54,21 @@ export function AvailabilityDashboard({
     });
   }
 
-  function handleDrillDown(itemId: string, itemName: string) {
-    setDrillDownItemId(itemId);
-    setDrillDownItemName(itemName);
+  function handleDrillDown(productId: string, productName: string) {
+    setDrillDownProductId(productId);
+    setDrillDownProductName(productName);
   }
 
   function handleBack() {
-    setDrillDownItemId(null);
-    setDrillDownItemName("");
+    setDrillDownProductId(null);
+    setDrillDownProductName("");
   }
 
-  if (drillDownItemId) {
+  if (drillDownProductId) {
     return (
       <AvailabilityDetail
-        itemId={drillDownItemId}
-        itemName={drillDownItemName}
+        productId={drillDownProductId}
+        productName={drillDownProductName}
         onBack={handleBack}
       />
     );
@@ -105,20 +105,20 @@ export function AvailabilityDashboard({
       {groups.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-lg border border-dashed p-12 text-center">
           <Package className="h-12 w-12 text-muted-foreground mb-4" />
-          <h3 className="text-lg font-medium">No items found</h3>
+          <h3 className="text-lg font-medium">No products found</h3>
           <p className="text-sm text-muted-foreground mt-1">
-            There are no pieces in the inventory matching the selected filters.
+            There are no items in the inventory matching the selected filters.
           </p>
         </div>
       ) : (
         /* Card Grid */
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {groups.map((group) => (
-            <Card key={group.itemId}>
+            <Card key={group.productId}>
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-base">
-                    {group.itemName}
+                    {group.productName}
                   </CardTitle>
                   <Badge variant="outline">
                     {group.categoryCode} - {group.categoryName}
@@ -133,7 +133,7 @@ export function AvailabilityDashboard({
                       Available
                     </span>
                     <span className="text-2xl font-bold text-green-600">
-                      {group.availablePieces}
+                      {group.availableItems}
                     </span>
                   </div>
 
@@ -144,7 +144,7 @@ export function AvailabilityDashboard({
                         Assigned
                       </span>
                       <span className="font-medium text-yellow-700 dark:text-yellow-400">
-                        {group.assignedPieces}
+                        {group.assignedItems}
                       </span>
                     </div>
                     <div className="flex items-center justify-between rounded-md bg-red-50 px-2 py-1 dark:bg-red-950/30">
@@ -152,22 +152,22 @@ export function AvailabilityDashboard({
                         Maintenance
                       </span>
                       <span className="font-medium text-red-700 dark:text-red-400">
-                        {group.maintenancePieces}
+                        {group.maintenanceItems}
                       </span>
                     </div>
                   </div>
 
-                  {group.externalPieces > 0 && (
+                  {group.externalItems > 0 && (
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-muted-foreground">External</span>
-                      <Badge variant="secondary">{group.externalPieces}</Badge>
+                      <Badge variant="secondary">{group.externalItems}</Badge>
                     </div>
                   )}
 
                   <div className="flex items-center justify-between border-t pt-2">
                     <span className="text-sm font-medium">Total</span>
                     <span className="text-sm font-bold">
-                      {group.totalPieces}
+                      {group.totalItems}
                     </span>
                   </div>
 
@@ -176,11 +176,11 @@ export function AvailabilityDashboard({
                     size="sm"
                     className="w-full"
                     onClick={() =>
-                      handleDrillDown(group.itemId, group.itemName)
+                      handleDrillDown(group.productId, group.productName)
                     }
                   >
                     <Eye className="mr-2 h-4 w-4" />
-                    View pieces
+                    View items
                   </Button>
                 </div>
               </CardContent>

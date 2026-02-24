@@ -14,40 +14,40 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import {
-  getAvailabilityByPiece,
-  type PieceAvailability,
+  getItemAvailabilityByProduct,
+  type ItemAvailability,
 } from "@/actions/availability";
 import { StatusBadge } from "@/components/shared/status-badge";
-import { PIECE_STATUS_LABELS, PIECE_CONDITION_LABELS } from "@/lib/constants";
+import { ITEM_STATUS_LABELS, ITEM_CONDITION_LABELS } from "@/lib/constants";
 import { toast } from "sonner";
 
 interface AvailabilityDetailProps {
-  itemId: string;
-  itemName: string;
+  productId: string;
+  productName: string;
   onBack: () => void;
 }
 
 export function AvailabilityDetail({
-  itemId,
-  itemName,
+  productId,
+  productName,
   onBack,
 }: AvailabilityDetailProps) {
-  const [pieces, setPieces] = useState<PieceAvailability[]>([]);
+  const [items, setItems] = useState<ItemAvailability[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function load() {
       setLoading(true);
-      const result = await getAvailabilityByPiece(itemId);
+      const result = await getItemAvailabilityByProduct(productId);
       if ("error" in result) {
         toast.error(result.error);
       } else {
-        setPieces(result.data);
+        setItems(result.data);
       }
       setLoading(false);
     }
     load();
-  }, [itemId]);
+  }, [productId]);
 
   return (
     <div className="space-y-4">
@@ -58,48 +58,48 @@ export function AvailabilityDetail({
 
       <Card>
         <CardHeader>
-          <CardTitle>{itemName} -- Pieces</CardTitle>
+          <CardTitle>{productName} -- Items</CardTitle>
         </CardHeader>
         <CardContent>
           {loading ? (
             <div className="flex items-center justify-center py-12">
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
             </div>
-          ) : pieces.length === 0 ? (
+          ) : items.length === 0 ? (
             <p className="text-sm text-muted-foreground py-8 text-center">
-              No pieces found for this item.
+              No items found for this product.
             </p>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Piece ID</TableHead>
+                  <TableHead>Item ID</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Condition</TableHead>
                   <TableHead>Color</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {pieces.map((piece) => (
-                  <TableRow key={piece.pieceId}>
+                {items.map((item) => (
+                  <TableRow key={item.itemId}>
                     <TableCell className="font-mono font-medium">
-                      {piece.humanReadableId}
+                      {item.humanReadableId}
                     </TableCell>
                     <TableCell>
                       <StatusBadge
-                        status={piece.status}
-                        label={PIECE_STATUS_LABELS[piece.status]}
+                        status={item.status}
+                        label={ITEM_STATUS_LABELS[item.status]}
                       />
                     </TableCell>
                     <TableCell>
                       <StatusBadge
-                        status={piece.condition}
-                        label={PIECE_CONDITION_LABELS[piece.condition]}
+                        status={item.condition}
+                        label={ITEM_CONDITION_LABELS[item.condition]}
                       />
                     </TableCell>
                     <TableCell>
-                      {piece.color ? (
-                        <Badge variant="secondary">{piece.color}</Badge>
+                      {item.color ? (
+                        <Badge variant="secondary">{item.color}</Badge>
                       ) : (
                         <span className="text-muted-foreground text-sm">
                           --

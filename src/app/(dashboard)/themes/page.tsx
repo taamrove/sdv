@@ -11,7 +11,7 @@ export default async function ThemesPage() {
   const themes = await prisma.theme.findMany({
     orderBy: { name: "asc" },
     include: {
-      _count: { select: { products: true } },
+      _count: { select: { kits: true } },
     },
   });
 
@@ -19,7 +19,7 @@ export default async function ThemesPage() {
     <div className="space-y-6">
       <PageHeader
         title="Themes"
-        description="Manage costume themes and linked products"
+        description="Manage costume themes and linked kits"
       />
       <ThemeList themes={themes} />
     </div>

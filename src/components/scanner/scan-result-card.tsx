@@ -11,8 +11,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { StatusBadge } from "@/components/shared/status-badge";
 import {
-  PIECE_STATUS_LABELS,
-  PIECE_CONDITION_LABELS,
+  ITEM_STATUS_LABELS,
+  ITEM_CONDITION_LABELS,
 } from "@/lib/constants";
 import {
   Package,
@@ -30,7 +30,7 @@ import { getFullName } from "@/lib/format-name";
 // Types
 // ---------------------------------------------------------------------------
 
-interface Item {
+interface Product {
   id: string;
   name: string;
   number: number;
@@ -60,11 +60,11 @@ interface ContainerItem {
   packedBy: { id: string; firstName: string; lastName: string } | null;
 }
 
-interface BookingPiece {
+interface BookingItem {
   id: string;
   booking: {
     id: string;
-    product: { name: string };
+    kit: { name: string };
     project: { id: string; name: string; status: string };
   };
 }
@@ -77,7 +77,7 @@ interface MaintenanceTicket {
   severity: string | null;
 }
 
-export interface ScannedPiece {
+export interface ScannedItem {
   id: string;
   humanReadableId: string;
   status: string;
@@ -85,11 +85,11 @@ export interface ScannedPiece {
   color: string | null;
   notes: string | null;
   isExternal: boolean;
-  item: Item;
+  product: Product;
   category: Category;
   warehouseLocation: WarehouseLocation | null;
   containerItems: ContainerItem[];
-  bookingPieces: BookingPiece[];
+  bookingItems: BookingItem[];
   maintenanceTickets: MaintenanceTicket[];
 }
 
@@ -98,7 +98,7 @@ export interface ScannedPiece {
 // ---------------------------------------------------------------------------
 
 interface ScanResultCardProps {
-  piece: ScannedPiece;
+  item: ScannedItem;
 }
 
 function formatDate(dateString: string): string {
@@ -112,20 +112,20 @@ function formatDate(dateString: string): string {
   });
 }
 
-export function ScanResultCard({ piece }: ScanResultCardProps) {
+export function ScanResultCard({ item }: ScanResultCardProps) {
   return (
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
             <CardTitle className="font-mono text-lg font-bold">
-              {piece.humanReadableId}
+              {item.humanReadableId}
             </CardTitle>
             <CardDescription className="text-base">
-              {piece.item.name}
+              {item.product.name}
             </CardDescription>
           </div>
-          {piece.isExternal && (
+          {item.isExternal && (
             <Badge variant="outline" className="gap-1">
               <ExternalLink className="size-3" />
               External
@@ -135,13 +135,13 @@ export function ScanResultCard({ piece }: ScanResultCardProps) {
       </CardHeader>
 
       <CardContent className="space-y-6">
-        {/* Piece details grid */}
+        {/* Item details grid */}
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div className="flex items-center gap-2">
             <Tag className="size-4 text-muted-foreground" />
             <div>
               <p className="text-muted-foreground">Category</p>
-              <p className="font-medium">{piece.category.name}</p>
+              <p className="font-medium">{item.category.name}</p>
             </div>
           </div>
 
@@ -149,8 +149,8 @@ export function ScanResultCard({ piece }: ScanResultCardProps) {
             <div>
               <p className="text-muted-foreground">Status</p>
               <StatusBadge
-                status={piece.status}
-                label={PIECE_STATUS_LABELS[piece.status] ?? piece.status}
+                status={item.status}
+                label={ITEM_STATUS_LABELS[item.status] ?? item.status}
               />
             </div>
           </div>
@@ -159,52 +159,52 @@ export function ScanResultCard({ piece }: ScanResultCardProps) {
             <div>
               <p className="text-muted-foreground">Condition</p>
               <StatusBadge
-                status={piece.condition}
-                label={PIECE_CONDITION_LABELS[piece.condition] ?? piece.condition}
+                status={item.condition}
+                label={ITEM_CONDITION_LABELS[item.condition] ?? item.condition}
               />
             </div>
           </div>
 
-          {piece.color && (
+          {item.color && (
             <div className="flex items-center gap-2">
               <Palette className="size-4 text-muted-foreground" />
               <div>
                 <p className="text-muted-foreground">Color</p>
-                <p className="font-medium">{piece.color}</p>
+                <p className="font-medium">{item.color}</p>
               </div>
             </div>
           )}
 
-          {piece.item.size && (
+          {item.product.size && (
             <div className="flex items-center gap-2">
               <Ruler className="size-4 text-muted-foreground" />
               <div>
                 <p className="text-muted-foreground">Size</p>
-                <p className="font-medium">{piece.item.size}</p>
+                <p className="font-medium">{item.product.size}</p>
               </div>
             </div>
           )}
 
-          {piece.warehouseLocation && (
+          {item.warehouseLocation && (
             <div className="flex items-center gap-2">
               <MapPin className="size-4 text-muted-foreground" />
               <div>
                 <p className="text-muted-foreground">Location</p>
-                <p className="font-medium">{piece.warehouseLocation.label}</p>
+                <p className="font-medium">{item.warehouseLocation.label}</p>
               </div>
             </div>
           )}
         </div>
 
         {/* Packed in section */}
-        {piece.containerItems.length > 0 && (
+        {item.containerItems.length > 0 && (
           <div className="space-y-2">
             <h4 className="flex items-center gap-2 text-sm font-semibold">
               <Package className="size-4" />
               Packed in
             </h4>
             <div className="space-y-2">
-              {piece.containerItems.map((ci) => (
+              {item.containerItems.map((ci) => (
                 <div
                   key={ci.id}
                   className="rounded-md border bg-muted/50 p-3 text-sm"
@@ -233,27 +233,27 @@ export function ScanResultCard({ piece }: ScanResultCardProps) {
         )}
 
         {/* Assigned to bookings section */}
-        {piece.bookingPieces.length > 0 && (
+        {item.bookingItems.length > 0 && (
           <div className="space-y-2">
             <h4 className="flex items-center gap-2 text-sm font-semibold">
               <Shirt className="size-4" />
               Assigned to
             </h4>
             <div className="space-y-2">
-              {piece.bookingPieces.map((bp) => (
+              {item.bookingItems.map((bi) => (
                 <div
-                  key={bp.id}
+                  key={bi.id}
                   className="rounded-md border bg-muted/50 p-3 text-sm"
                 >
                   <div className="flex items-center justify-between">
                     <span className="font-medium">
-                      {bp.booking.product.name}
+                      {bi.booking.kit.name}
                     </span>
                     <Link
-                      href={`/projects/${bp.booking.project.id}`}
+                      href={`/projects/${bi.booking.project.id}`}
                       className="text-primary hover:underline"
                     >
-                      {bp.booking.project.name}
+                      {bi.booking.project.name}
                     </Link>
                   </div>
                 </div>
@@ -263,14 +263,14 @@ export function ScanResultCard({ piece }: ScanResultCardProps) {
         )}
 
         {/* Maintenance tickets section */}
-        {piece.maintenanceTickets.length > 0 && (
+        {item.maintenanceTickets.length > 0 && (
           <div className="space-y-2">
             <h4 className="flex items-center gap-2 text-sm font-semibold">
               <Wrench className="size-4" />
               Maintenance
             </h4>
             <div className="space-y-2">
-              {piece.maintenanceTickets.map((ticket) => (
+              {item.maintenanceTickets.map((ticket) => (
                 <Link
                   key={ticket.id}
                   href={`/maintenance/${ticket.id}`}
@@ -290,10 +290,10 @@ export function ScanResultCard({ piece }: ScanResultCardProps) {
         )}
 
         {/* Notes */}
-        {piece.notes && (
+        {item.notes && (
           <div className="text-sm">
             <p className="font-semibold">Notes</p>
-            <p className="text-muted-foreground">{piece.notes}</p>
+            <p className="text-muted-foreground">{item.notes}</p>
           </div>
         )}
       </CardContent>

@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { MAINTENANCE_SEVERITY_LABELS } from "@/lib/constants";
-import { checkInPiece } from "@/actions/check-in";
+import { checkInItem } from "@/actions/check-in";
 import { Package, Wrench } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
@@ -32,10 +32,10 @@ import { useRouter } from "next/navigation";
 // ---------------------------------------------------------------------------
 
 interface CheckInDialogProps {
-  piece: {
+  item: {
     id: string;
     humanReadableId: string;
-    itemName: string;
+    productName: string;
   };
   locations: {
     id: string;
@@ -50,7 +50,7 @@ interface CheckInDialogProps {
 // ---------------------------------------------------------------------------
 
 export function CheckInDialog({
-  piece,
+  item,
   locations,
   open,
   onOpenChange,
@@ -78,8 +78,8 @@ export function CheckInDialog({
 
     setSubmitting(true);
     try {
-      const result = await checkInPiece({
-        pieceId: piece.id,
+      const result = await checkInItem({
+        itemId: item.id,
         action,
         warehouseLocationId: warehouseLocationId || null,
         maintenanceTitle: maintenanceTitle || undefined,
@@ -94,8 +94,8 @@ export function CheckInDialog({
       } else {
         toast.success(
           action === "INVENTORY"
-            ? "Piece checked in to inventory"
-            : "Piece sent to maintenance"
+            ? "Item checked in to inventory"
+            : "Item sent to maintenance"
         );
         resetForm();
         onOpenChange(false);
@@ -119,11 +119,11 @@ export function CheckInDialog({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Check In Piece</DialogTitle>
+          <DialogTitle>Check In Item</DialogTitle>
           <DialogDescription>
-            <span className="font-mono">{piece.humanReadableId}</span>
+            <span className="font-mono">{item.humanReadableId}</span>
             {" - "}
-            {piece.itemName}
+            {item.productName}
           </DialogDescription>
         </DialogHeader>
 

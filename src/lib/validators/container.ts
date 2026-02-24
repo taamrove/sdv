@@ -63,7 +63,7 @@ export type UpdateContainerInput = z.infer<typeof updateContainerSchema>;
 
 export const packItemSchema = z.object({
   containerId: z.string().uuid("Invalid container"),
-  pieceId: z.string().uuid("Invalid piece"),
+  itemId: z.string().uuid("Invalid item"),
 });
 
 export type PackItemInput = z.infer<typeof packItemSchema>;

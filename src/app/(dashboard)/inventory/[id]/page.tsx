@@ -2,9 +2,9 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { redirect, notFound } from "next/navigation";
 import { PageHeader } from "@/components/shared/page-header";
-import { PieceDetail } from "@/components/inventory/item-detail";
+import { ItemDetail } from "@/components/inventory/item-detail";
 
-export default async function PieceDetailPage({
+export default async function ItemDetailPage({
   params,
 }: {
   params: Promise<{ id: string }>;
@@ -14,19 +14,19 @@ export default async function PieceDetailPage({
 
   const { id } = await params;
 
-  const piece = await prisma.piece.findUnique({
+  const item = await prisma.item.findUnique({
     where: { id },
     include: {
-      item: true,
+      product: true,
       category: true,
       warehouseLocation: true,
     },
   });
 
-  if (!piece) notFound();
+  if (!item) notFound();
 
-  const history = await prisma.pieceHistory.findMany({
-    where: { pieceId: id },
+  const history = await prisma.itemHistory.findMany({
+    where: { itemId: id },
     include: { performedBy: { select: { firstName: true, lastName: true, email: true } } },
     orderBy: { createdAt: "desc" },
     take: 50,
@@ -36,10 +36,10 @@ export default async function PieceDetailPage({
     orderBy: { label: "asc" },
   });
 
-  // Fetch active project bookings for this piece
-  const bookingPieces = await prisma.bookingPiece.findMany({
+  // Fetch active project bookings for this item
+  const bookingItems = await prisma.bookingItem.findMany({
     where: {
-      pieceId: id,
+      itemId: id,
       booking: {
         project: {
           status: { notIn: ["COMPLETED", "CANCELLED"] },
@@ -49,7 +49,7 @@ export default async function PieceDetailPage({
     include: {
       booking: {
         include: {
-          product: { select: { name: true } },
+          kit: { select: { name: true } },
           project: {
             select: {
               id: true,
@@ -65,30 +65,30 @@ export default async function PieceDetailPage({
     orderBy: { booking: { project: { startDate: "asc" } } },
   });
 
-  const serializedBookings = bookingPieces.map((bp) => ({
-    bookingPieceId: bp.id,
-    productName: bp.booking.product.name,
-    projectId: bp.booking.project.id,
-    projectName: bp.booking.project.name,
-    projectStatus: bp.booking.project.status,
-    startDate: bp.booking.project.startDate?.toISOString() ?? null,
-    endDate: bp.booking.project.endDate?.toISOString() ?? null,
+  const serializedBookings = bookingItems.map((bi) => ({
+    bookingItemId: bi.id,
+    kitName: bi.booking.kit.name,
+    projectId: bi.booking.project.id,
+    projectName: bi.booking.project.name,
+    projectStatus: bi.booking.project.status,
+    startDate: bi.booking.project.startDate?.toISOString() ?? null,
+    endDate: bi.booking.project.endDate?.toISOString() ?? null,
   }));
 
   // Serialize Decimal to number for client component
-  const serializedPiece = {
-    ...piece,
-    purchasePrice: piece.purchasePrice ? Number(piece.purchasePrice) : null,
+  const serializedItem = {
+    ...item,
+    purchasePrice: item.purchasePrice ? Number(item.purchasePrice) : null,
   };
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title={piece.humanReadableId}
-        description={`${piece.item.name} — ${piece.category.name}`}
+        title={item.humanReadableId}
+        description={`${item.product.name} — ${item.category.name}`}
       />
-      <PieceDetail
-        piece={serializedPiece}
+      <ItemDetail
+        item={serializedItem}
         history={history}
         locations={locations}
         bookings={serializedBookings}

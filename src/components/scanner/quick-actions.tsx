@@ -20,10 +20,10 @@ import { StatusBadge } from "@/components/shared/status-badge";
 import { packItemByHumanId, unpackItem } from "@/actions/containers";
 import {
   CONTAINER_TYPE_LABELS,
-  PIECE_STATUS_LABELS,
+  ITEM_STATUS_LABELS,
 } from "@/lib/constants";
 import { toast } from "sonner";
-import type { ScannedPiece } from "@/components/scanner/scan-result-card";
+import type { ScannedItem } from "@/components/scanner/scan-result-card";
 import {
   PackageOpen,
   Package,
@@ -46,7 +46,7 @@ export interface PackableContainer {
 }
 
 interface QuickActionsProps {
-  piece: ScannedPiece;
+  item: ScannedItem;
   containers: PackableContainer[];
   onActionComplete: () => void;
 }
@@ -56,7 +56,7 @@ interface QuickActionsProps {
 // ---------------------------------------------------------------------------
 
 export function QuickActions({
-  piece,
+  item,
   containers,
   onActionComplete,
 }: QuickActionsProps) {
@@ -74,7 +74,7 @@ export function QuickActions({
     try {
       const result = await packItemByHumanId(
         selectedContainerId,
-        piece.humanReadableId
+        item.humanReadableId
       );
 
       if ("error" in result) {
@@ -83,12 +83,12 @@ export function QuickActions({
       }
 
       toast.success(
-        `Packed ${piece.humanReadableId} into container`
+        `Packed ${item.humanReadableId} into container`
       );
       setSelectedContainerId("");
       onActionComplete();
     } catch {
-      toast.error("Failed to pack piece");
+      toast.error("Failed to pack item");
     } finally {
       setIsPacking(false);
     }
@@ -105,11 +105,11 @@ export function QuickActions({
       }
 
       toast.success(
-        `Unpacked ${piece.humanReadableId}`
+        `Unpacked ${item.humanReadableId}`
       );
       onActionComplete();
     } catch {
-      toast.error("Failed to unpack piece");
+      toast.error("Failed to unpack item");
     } finally {
       setIsUnpacking(false);
     }
@@ -118,7 +118,7 @@ export function QuickActions({
   // -------------------------------------------------------------------------
   // AVAILABLE or ASSIGNED: Show pack action
   // -------------------------------------------------------------------------
-  if (piece.status === "AVAILABLE" || piece.status === "ASSIGNED") {
+  if (item.status === "AVAILABLE" || item.status === "ASSIGNED") {
     return (
       <Card>
         <CardHeader>
@@ -155,7 +155,7 @@ export function QuickActions({
                           </span>
                         )}
                         <span className="text-muted-foreground">
-                          ({container.itemCount} pieces)
+                          ({container.itemCount} items)
                         </span>
                       </span>
                     </SelectItem>
@@ -184,8 +184,8 @@ export function QuickActions({
   // -------------------------------------------------------------------------
   // PACKED: Show unpack action
   // -------------------------------------------------------------------------
-  if (piece.status === "PACKED") {
-    const activeContainerItem = piece.containerItems[0];
+  if (item.status === "PACKED") {
+    const activeContainerItem = item.containerItems[0];
 
     if (!activeContainerItem) {
       return (
@@ -198,7 +198,7 @@ export function QuickActions({
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground">
-              Piece is marked as packed but no container assignment found.
+              Item is marked as packed but no container assignment found.
             </p>
           </CardContent>
         </Card>
@@ -254,8 +254,8 @@ export function QuickActions({
   // -------------------------------------------------------------------------
   // MAINTENANCE: Show info with link
   // -------------------------------------------------------------------------
-  if (piece.status === "MAINTENANCE") {
-    const ticket = piece.maintenanceTickets[0];
+  if (item.status === "MAINTENANCE") {
+    const ticket = item.maintenanceTickets[0];
 
     return (
       <Card>
@@ -284,7 +284,7 @@ export function QuickActions({
             </div>
           ) : (
             <p className="text-sm text-muted-foreground">
-              Piece is in maintenance but no active ticket was found.
+              Item is in maintenance but no active ticket was found.
             </p>
           )}
         </CardContent>
@@ -295,7 +295,7 @@ export function QuickActions({
   // -------------------------------------------------------------------------
   // IN_USE: Read-only info
   // -------------------------------------------------------------------------
-  if (piece.status === "IN_USE") {
+  if (item.status === "IN_USE") {
     return (
       <Card>
         <CardHeader>
@@ -306,12 +306,12 @@ export function QuickActions({
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground">
-            This piece is currently in use and cannot be modified.
+            This item is currently in use and cannot be modified.
           </p>
           <div className="mt-2">
             <StatusBadge
-              status={piece.status}
-              label={PIECE_STATUS_LABELS[piece.status] ?? piece.status}
+              status={item.status}
+              label={ITEM_STATUS_LABELS[item.status] ?? item.status}
             />
           </div>
         </CardContent>
@@ -322,18 +322,18 @@ export function QuickActions({
   // -------------------------------------------------------------------------
   // RETIRED: Warning
   // -------------------------------------------------------------------------
-  if (piece.status === "RETIRED") {
+  if (item.status === "RETIRED") {
     return (
       <Card className="border-yellow-500/50">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base text-yellow-600 dark:text-yellow-400">
             <AlertTriangle className="size-4" />
-            Piece Retired
+            Item Retired
           </CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground">
-            This piece has been retired and is no longer in active inventory.
+            This item has been retired and is no longer in active inventory.
           </p>
         </CardContent>
       </Card>
@@ -343,18 +343,18 @@ export function QuickActions({
   // -------------------------------------------------------------------------
   // LOST: Warning
   // -------------------------------------------------------------------------
-  if (piece.status === "LOST") {
+  if (item.status === "LOST") {
     return (
       <Card className="border-destructive/50">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base text-destructive">
             <AlertTriangle className="size-4" />
-            Piece Marked as Lost
+            Item Marked as Lost
           </CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground">
-            This piece is marked as lost. If found, update its status in inventory
+            This item is marked as lost. If found, update its status in inventory
             management.
           </p>
         </CardContent>
@@ -374,8 +374,8 @@ export function QuickActions({
         <p className="text-sm text-muted-foreground">
           No actions available for status:{" "}
           <StatusBadge
-            status={piece.status}
-            label={PIECE_STATUS_LABELS[piece.status] ?? piece.status}
+            status={item.status}
+            label={ITEM_STATUS_LABELS[item.status] ?? item.status}
           />
         </p>
       </CardContent>

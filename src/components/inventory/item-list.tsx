@@ -19,18 +19,18 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import {
-  PIECE_STATUS_LABELS,
-  PIECE_CONDITION_LABELS,
+  ITEM_STATUS_LABELS,
+  ITEM_CONDITION_LABELS,
 } from "@/lib/constants";
 
-interface Piece {
+interface Item {
   id: string;
   humanReadableId: string;
   status: string;
   condition: string;
   color: string | null;
   isExternal: boolean;
-  item: { id: string; name: string; number: number };
+  product: { id: string; name: string; number: number };
   category: { id: string; code: string; name: string };
   warehouseLocation: { id: string; label: string } | null;
 }
@@ -48,7 +48,7 @@ interface PaginationData {
   totalPages: number;
 }
 
-const columns: ColumnDef<Piece>[] = [
+const columns: ColumnDef<Item>[] = [
   {
     accessorKey: "humanReadableId",
     header: "ID",
@@ -66,11 +66,11 @@ const columns: ColumnDef<Piece>[] = [
     ),
   },
   {
-    accessorKey: "item.name",
-    header: "Item",
+    accessorKey: "product.name",
+    header: "Product",
     cell: ({ row }) => (
       <div>
-        <div className="font-medium">{row.original.item.name}</div>
+        <div className="font-medium">{row.original.product.name}</div>
         <div className="text-xs text-muted-foreground">
           {row.original.category.name}
         </div>
@@ -83,7 +83,7 @@ const columns: ColumnDef<Piece>[] = [
     cell: ({ row }) => (
       <StatusBadge
         status={row.original.status}
-        label={PIECE_STATUS_LABELS[row.original.status]}
+        label={ITEM_STATUS_LABELS[row.original.status]}
       />
     ),
   },
@@ -93,7 +93,7 @@ const columns: ColumnDef<Piece>[] = [
     cell: ({ row }) => (
       <StatusBadge
         status={row.original.condition}
-        label={PIECE_CONDITION_LABELS[row.original.condition]}
+        label={ITEM_CONDITION_LABELS[row.original.condition]}
       />
     ),
   },
@@ -122,13 +122,13 @@ const columns: ColumnDef<Piece>[] = [
   },
 ];
 
-interface PieceListProps {
-  pieces: Piece[];
+interface ItemListProps {
+  items: Item[];
   categories: Category[];
   pagination: PaginationData;
 }
 
-export function PieceList({ pieces, categories, pagination }: PieceListProps) {
+export function ItemList({ items, categories, pagination }: ItemListProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [search, setSearch] = useState(searchParams.get("search") ?? "");
@@ -184,7 +184,7 @@ export function PieceList({ pieces, categories, pagination }: PieceListProps) {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All statuses</SelectItem>
-            {Object.entries(PIECE_STATUS_LABELS).map(([key, label]) => (
+            {Object.entries(ITEM_STATUS_LABELS).map(([key, label]) => (
               <SelectItem key={key} value={key}>
                 {label}
               </SelectItem>
@@ -192,7 +192,7 @@ export function PieceList({ pieces, categories, pagination }: PieceListProps) {
           </SelectContent>
         </Select>
       </div>
-      <DataTable columns={columns} data={pieces} />
+      <DataTable columns={columns} data={items} />
       <Pagination {...pagination} />
     </div>
   );

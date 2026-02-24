@@ -26,12 +26,12 @@ export default async function ProjectDetailPage({
         },
         bookings: {
           include: {
-            product: true,
-            pieces: {
+            kit: true,
+            items: {
               include: {
-                piece: {
+                item: {
                   include: {
-                    item: true,
+                    product: true,
                     category: true,
                   },
                 },
@@ -56,13 +56,13 @@ export default async function ProjectDetailPage({
 
   if (!project) notFound();
 
-  // Find pieces with potential conflicts (assigned to overlapping projects)
-  const pieceIds = project.bookings.flatMap((b) =>
-    b.pieces.map((bp) => bp.piece.id)
+  // Find items with potential conflicts (assigned to overlapping projects)
+  const itemIds = project.bookings.flatMap((b) =>
+    b.items.map((bi) => bi.item.id)
   );
 
-  let conflictPieceIds: string[] = [];
-  if (pieceIds.length > 0 && project.startDate && project.endDate) {
+  let conflictItemIds: string[] = [];
+  if (itemIds.length > 0 && project.startDate && project.endDate) {
     const overlappingProjects = await prisma.project.findMany({
       where: {
         id: { not: project.id },
@@ -73,17 +73,17 @@ export default async function ProjectDetailPage({
       select: {
         bookings: {
           select: {
-            pieces: {
-              where: { pieceId: { in: pieceIds } },
-              select: { pieceId: true },
+            items: {
+              where: { itemId: { in: itemIds } },
+              select: { itemId: true },
             },
           },
         },
       },
     });
 
-    conflictPieceIds = overlappingProjects.flatMap((p) =>
-      p.bookings.flatMap((b) => b.pieces.map((bp) => bp.pieceId))
+    conflictItemIds = overlappingProjects.flatMap((p) =>
+      p.bookings.flatMap((b) => b.items.map((bi) => bi.itemId))
     );
   }
 
@@ -94,7 +94,7 @@ export default async function ProjectDetailPage({
         project={project}
         themes={themes}
         allPerformers={allPerformers}
-        conflictPieceIds={conflictPieceIds}
+        conflictItemIds={conflictItemIds}
       />
     </div>
   );

@@ -63,7 +63,7 @@ export async function getTickets(
       where.OR = [
         { title: { contains: params.search, mode: "insensitive" } },
         {
-          piece: {
+          item: {
             humanReadableId: { contains: params.search, mode: "insensitive" },
           },
         },
@@ -74,7 +74,7 @@ export async function getTickets(
       prisma.maintenanceTicket.findMany({
         where,
         include: {
-          piece: { include: { item: true, category: true } },
+          item: { include: { product: true, category: true } },
           reportedBy: { select: { id: true, firstName: true, lastName: true } },
           assignedTo: { select: { id: true, firstName: true, lastName: true } },
           _count: { select: { photos: true, comments: true } },
@@ -116,8 +116,8 @@ export async function getTicketById(
     const ticket = await prisma.maintenanceTicket.findUnique({
       where: { id },
       include: {
-        piece: {
-          include: { item: true, category: true, warehouseLocation: true },
+        item: {
+          include: { product: true, category: true, warehouseLocation: true },
         },
         reportedBy: { select: { id: true, firstName: true, lastName: true, email: true } },
         assignedTo: { select: { id: true, firstName: true, lastName: true, email: true } },
@@ -160,17 +160,17 @@ export async function createTicket(
       return { error: parsed.error.issues.map((i) => i.message).join(", ") };
     }
 
-    const piece = await prisma.piece.findUnique({
-      where: { id: parsed.data.pieceId },
+    const item = await prisma.item.findUnique({
+      where: { id: parsed.data.itemId },
     });
 
-    if (!piece) {
-      return { error: "Piece not found" };
+    if (!item) {
+      return { error: "Item not found" };
     }
 
-    if (["MAINTENANCE", "RETIRED", "LOST"].includes(piece.status)) {
+    if (["MAINTENANCE", "RETIRED", "LOST"].includes(item.status)) {
       return {
-        error: `Piece is currently ${piece.status} and cannot be sent to maintenance`,
+        error: `Item is currently ${item.status} and cannot be sent to maintenance`,
       };
     }
 
@@ -179,11 +179,11 @@ export async function createTicket(
       return { error: "User not found" };
     }
 
-    const previousState = piece.status;
+    const previousState = item.status;
 
-    // If severity is MINOR, piece stays in its current status (still usable)
+    // If severity is MINOR, item stays in its current status (still usable)
     const severity = parsed.data.severity ?? null;
-    const newPieceStatus =
+    const newItemStatus =
       severity === "MINOR" ? previousState : "MAINTENANCE";
 
     const ticket = await prisma.$transaction(async (tx) => {
@@ -191,33 +191,33 @@ export async function createTicket(
         data: {
           title: parsed.data.title,
           description: parsed.data.description,
-          pieceId: parsed.data.pieceId,
+          itemId: parsed.data.itemId,
           priority: parsed.data.priority,
           severity: severity,
           reportedById: user.id,
         },
         include: {
-          piece: { include: { item: true, category: true } },
+          item: { include: { product: true, category: true } },
           reportedBy: { select: { id: true, firstName: true, lastName: true } },
           assignedTo: { select: { id: true, firstName: true, lastName: true } },
           _count: { select: { photos: true, comments: true } },
         },
       });
 
-      if (newPieceStatus !== previousState) {
-        await tx.piece.update({
-          where: { id: parsed.data.pieceId },
+      if (newItemStatus !== previousState) {
+        await tx.item.update({
+          where: { id: parsed.data.itemId },
           data: { status: "MAINTENANCE" },
         });
       }
 
-      await tx.pieceHistory.create({
+      await tx.itemHistory.create({
         data: {
-          pieceId: parsed.data.pieceId,
+          itemId: parsed.data.itemId,
           action: "MAINTENANCE_STARTED",
           performedById: user.id,
           previousState: previousState as unknown as Prisma.InputJsonValue,
-          newState: newPieceStatus as unknown as Prisma.InputJsonValue,
+          newState: newItemStatus as unknown as Prisma.InputJsonValue,
           details: {
             ticketId: created.id,
             title: parsed.data.title,
@@ -277,7 +277,7 @@ export async function updateTicket(
       where: { id },
       data: updateData,
       include: {
-        piece: { include: { item: true, category: true } },
+        item: { include: { product: true, category: true } },
         reportedBy: { select: { id: true, firstName: true, lastName: true } },
         assignedTo: { select: { id: true, firstName: true, lastName: true } },
         _count: { select: { photos: true, comments: true } },
@@ -305,7 +305,7 @@ export async function deleteTicket(
 
     const existing = await prisma.maintenanceTicket.findUnique({
       where: { id },
-      include: { piece: true },
+      include: { item: true },
     });
 
     if (!existing) {
@@ -327,15 +327,15 @@ export async function deleteTicket(
         data: { status: "CANCELLED" },
       });
 
-      if (existing.piece.status === "MAINTENANCE") {
-        await tx.piece.update({
-          where: { id: existing.pieceId },
+      if (existing.item.status === "MAINTENANCE") {
+        await tx.item.update({
+          where: { id: existing.itemId },
           data: { status: "AVAILABLE" },
         });
 
-        await tx.pieceHistory.create({
+        await tx.itemHistory.create({
           data: {
-            pieceId: existing.pieceId,
+            itemId: existing.itemId,
             action: "MAINTENANCE_COMPLETED",
             performedById: user.id,
             previousState: "MAINTENANCE" as unknown as Prisma.InputJsonValue,
@@ -511,7 +511,7 @@ export async function assignTicket(
       where: { id: ticketId },
       data: { assignedToId: userId },
       include: {
-        piece: { include: { item: true, category: true } },
+        item: { include: { product: true, category: true } },
         reportedBy: { select: { id: true, firstName: true, lastName: true } },
         assignedTo: { select: { id: true, firstName: true, lastName: true } },
         _count: { select: { photos: true, comments: true } },
@@ -539,7 +539,7 @@ export async function completeTicket(
 
     const ticket = await prisma.maintenanceTicket.findUnique({
       where: { id: ticketId },
-      include: { piece: true },
+      include: { item: true },
     });
 
     if (!ticket) {
@@ -559,17 +559,17 @@ export async function completeTicket(
       return { error: "User not found" };
     }
 
-    // Look up quarantine default for this piece's category + ticket severity
+    // Look up quarantine default for this item's category + ticket severity
     let quarantineDefault = null;
     if (
       ticket.severity &&
       ticket.severity !== "MINOR" &&
-      ticket.piece.categoryId
+      ticket.item.categoryId
     ) {
       quarantineDefault = await prisma.categoryQuarantineDefault.findUnique({
         where: {
           categoryId_severity: {
-            categoryId: ticket.piece.categoryId,
+            categoryId: ticket.item.categoryId,
             severity: ticket.severity,
           },
         },
@@ -600,7 +600,7 @@ export async function completeTicket(
         where: { id: ticketId },
         data: ticketUpdateData,
         include: {
-          piece: { include: { item: true, category: true } },
+          item: { include: { product: true, category: true } },
           reportedBy: { select: { id: true, firstName: true, lastName: true } },
           assignedTo: { select: { id: true, firstName: true, lastName: true } },
           _count: { select: { photos: true, comments: true } },
@@ -608,10 +608,10 @@ export async function completeTicket(
       });
 
       if (shouldQuarantine) {
-        // Keep piece in MAINTENANCE status during quarantine
-        await tx.pieceHistory.create({
+        // Keep item in MAINTENANCE status during quarantine
+        await tx.itemHistory.create({
           data: {
-            pieceId: ticket.pieceId,
+            itemId: ticket.itemId,
             action: "QUARANTINE_STARTED",
             performedById: user.id,
             previousState: "MAINTENANCE" as unknown as Prisma.InputJsonValue,
@@ -625,15 +625,15 @@ export async function completeTicket(
           },
         });
       } else {
-        // No quarantine: set piece to AVAILABLE immediately
-        await tx.piece.update({
-          where: { id: ticket.pieceId },
+        // No quarantine: set item to AVAILABLE immediately
+        await tx.item.update({
+          where: { id: ticket.itemId },
           data: { status: "AVAILABLE" },
         });
 
-        await tx.pieceHistory.create({
+        await tx.itemHistory.create({
           data: {
-            pieceId: ticket.pieceId,
+            itemId: ticket.itemId,
             action: "MAINTENANCE_COMPLETED",
             performedById: user.id,
             previousState: "MAINTENANCE" as unknown as Prisma.InputJsonValue,
@@ -669,7 +669,7 @@ export async function overrideQuarantine(
 
     const ticket = await prisma.maintenanceTicket.findUnique({
       where: { id: ticketId },
-      include: { piece: true },
+      include: { item: true },
     });
 
     if (!ticket) {
@@ -693,21 +693,21 @@ export async function overrideQuarantine(
           quarantineType: "MANUAL",
         },
         include: {
-          piece: { include: { item: true, category: true } },
+          item: { include: { product: true, category: true } },
           reportedBy: { select: { id: true, firstName: true, lastName: true } },
           assignedTo: { select: { id: true, firstName: true, lastName: true } },
           _count: { select: { photos: true, comments: true } },
         },
       });
 
-      await tx.piece.update({
-        where: { id: ticket.pieceId },
+      await tx.item.update({
+        where: { id: ticket.itemId },
         data: { status: "AVAILABLE" },
       });
 
-      await tx.pieceHistory.create({
+      await tx.itemHistory.create({
         data: {
-          pieceId: ticket.pieceId,
+          itemId: ticket.itemId,
           action: "QUARANTINE_ENDED",
           performedById: user.id,
           previousState: "MAINTENANCE" as unknown as Prisma.InputJsonValue,
@@ -735,10 +735,10 @@ export async function overrideQuarantine(
 }
 
 // ---------------------------------------------------------------------------
-// getQuarantinePieces
+// getQuarantineItems
 // ---------------------------------------------------------------------------
 
-export async function getQuarantinePieces(): Promise<ActionResult<unknown[]>> {
+export async function getQuarantineItems(): Promise<ActionResult<unknown[]>> {
   try {
     await requirePermission("maintenance:read");
 
@@ -750,9 +750,9 @@ export async function getQuarantinePieces(): Promise<ActionResult<unknown[]>> {
         quarantineEndsAt: { gt: now },
       },
       include: {
-        piece: {
+        item: {
           include: {
-            item: true,
+            product: true,
             category: true,
           },
         },
@@ -768,10 +768,7 @@ export async function getQuarantinePieces(): Promise<ActionResult<unknown[]>> {
       throw error;
     }
     return {
-      error: error instanceof Error ? error.message : "Failed to fetch quarantine pieces",
+      error: error instanceof Error ? error.message : "Failed to fetch quarantine items",
     };
   }
 }
-
-// Keep old function name as alias for backward compatibility during migration
-export const getQuarantineItems = getQuarantinePieces;

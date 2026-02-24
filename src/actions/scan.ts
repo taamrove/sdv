@@ -17,18 +17,18 @@ type ActionResult<T> = { data: T } | { error: string };
 // Serialize Prisma Decimal fields to plain numbers for client components
 // ---------------------------------------------------------------------------
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function serializePiece(piece: any) {
+function serializeItem(item: any) {
   return {
-    ...piece,
-    purchasePrice: piece.purchasePrice ? Number(piece.purchasePrice) : null,
+    ...item,
+    purchasePrice: item.purchasePrice ? Number(item.purchasePrice) : null,
   };
 }
 
 // ---------------------------------------------------------------------------
-// lookupPieceByBarcode
+// lookupItemByBarcode
 // ---------------------------------------------------------------------------
 
-export async function lookupPieceByBarcode(
+export async function lookupItemByBarcode(
   data: ScanLookupInput
 ): Promise<ActionResult<unknown>> {
   try {
@@ -41,10 +41,10 @@ export async function lookupPieceByBarcode(
 
     const normalized = parsed.data.humanReadableId.trim().toUpperCase();
 
-    const piece = await prisma.piece.findUnique({
+    const item = await prisma.item.findUnique({
       where: { humanReadableId: normalized },
       include: {
-        item: { select: { id: true, name: true, number: true, size: true } },
+        product: { select: { id: true, name: true, number: true, size: true } },
         category: { select: { id: true, code: true, name: true } },
         warehouseLocation: { select: { id: true, label: true } },
         containerItems: {
@@ -57,11 +57,11 @@ export async function lookupPieceByBarcode(
             packedBy: { select: { id: true, firstName: true, lastName: true } },
           },
         },
-        bookingPieces: {
+        bookingItems: {
           include: {
             booking: {
               include: {
-                product: { select: { name: true } },
+                kit: { select: { name: true } },
                 project: { select: { id: true, name: true, status: true } },
               },
             },
@@ -84,11 +84,11 @@ export async function lookupPieceByBarcode(
       },
     });
 
-    if (!piece) {
-      return { error: `Piece not found: ${normalized}` };
+    if (!item) {
+      return { error: `Item not found: ${normalized}` };
     }
 
-    return { data: serializePiece(piece) };
+    return { data: serializeItem(item) };
   } catch (error) {
     if (error instanceof Error && error.message.startsWith("Forbidden")) {
       throw error;
@@ -97,25 +97,25 @@ export async function lookupPieceByBarcode(
       error:
         error instanceof Error
           ? error.message
-          : "Failed to look up piece",
+          : "Failed to look up item",
     };
   }
 }
 
 // ---------------------------------------------------------------------------
-// lookupPieceById — look up a piece by its UUID (used by QR code scanner)
+// lookupItemById — look up an item by its UUID (used by QR code scanner)
 // ---------------------------------------------------------------------------
 
-export async function lookupPieceById(
+export async function lookupItemById(
   id: string
 ): Promise<ActionResult<unknown>> {
   try {
     await requirePermission("scan:scan");
 
-    const piece = await prisma.piece.findUnique({
+    const item = await prisma.item.findUnique({
       where: { id },
       include: {
-        item: { select: { id: true, name: true, number: true, size: true } },
+        product: { select: { id: true, name: true, number: true, size: true } },
         category: { select: { id: true, code: true, name: true } },
         warehouseLocation: { select: { id: true, label: true } },
         containerItems: {
@@ -128,11 +128,11 @@ export async function lookupPieceById(
             packedBy: { select: { id: true, firstName: true, lastName: true } },
           },
         },
-        bookingPieces: {
+        bookingItems: {
           include: {
             booking: {
               include: {
-                product: { select: { name: true } },
+                kit: { select: { name: true } },
                 project: { select: { id: true, name: true, status: true } },
               },
             },
@@ -155,11 +155,11 @@ export async function lookupPieceById(
       },
     });
 
-    if (!piece) {
-      return { error: "Piece not found" };
+    if (!item) {
+      return { error: "Item not found" };
     }
 
-    return { data: serializePiece(piece) };
+    return { data: serializeItem(item) };
   } catch (error) {
     if (error instanceof Error && error.message.startsWith("Forbidden")) {
       throw error;
@@ -168,13 +168,13 @@ export async function lookupPieceById(
       error:
         error instanceof Error
           ? error.message
-          : "Failed to look up piece",
+          : "Failed to look up item",
     };
   }
 }
 
 // ---------------------------------------------------------------------------
-// getContainersForPacking — containers that can accept pieces
+// getContainersForPacking — containers that can accept items
 // ---------------------------------------------------------------------------
 
 export async function getContainersForPacking(): Promise<
@@ -220,7 +220,3 @@ export async function getContainersForPacking(): Promise<
     };
   }
 }
-
-// Keep old function names as aliases for backward compatibility during migration
-export const lookupItemByBarcode = lookupPieceByBarcode;
-export const lookupItemById = lookupPieceById;

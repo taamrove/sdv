@@ -18,14 +18,14 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 
-interface Item {
+interface Product {
   id: string;
   name: string;
   number: number;
   description: string | null;
   active: boolean;
   category: { id: string; code: string; name: string };
-  _count: { pieces: number };
+  _count: { items: number };
 }
 
 interface Category {
@@ -41,13 +41,13 @@ interface PaginationData {
   totalPages: number;
 }
 
-interface ItemListProps {
-  items: Item[];
+interface ProductListProps {
+  products: Product[];
   categories: Category[];
   pagination: PaginationData;
 }
 
-const columns: ColumnDef<Item>[] = [
+const columns: ColumnDef<Product>[] = [
   {
     accessorKey: "number",
     header: "ID",
@@ -79,12 +79,12 @@ const columns: ColumnDef<Item>[] = [
     ),
   },
   {
-    accessorKey: "_count.pieces",
-    header: "Pieces",
+    accessorKey: "_count.items",
+    header: "Items",
     cell: ({ row }) => (
       <div className="flex items-center gap-1">
         <Package className="h-3 w-3" />
-        {row.original._count.pieces}
+        {row.original._count.items}
       </div>
     ),
   },
@@ -100,11 +100,11 @@ const columns: ColumnDef<Item>[] = [
   },
 ];
 
-export function ItemList({
-  items,
+export function ProductList({
+  products,
   categories,
   pagination,
-}: ItemListProps) {
+}: ProductListProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [search, setSearch] = useState(searchParams.get("search") ?? "");
@@ -123,7 +123,7 @@ export function ItemList({
     <div className="space-y-4">
       <div className="flex gap-4">
         <Input
-          placeholder="Search items..."
+          placeholder="Search products..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           onKeyDown={(e) => {
@@ -150,7 +150,7 @@ export function ItemList({
           </SelectContent>
         </Select>
       </div>
-      <DataTable columns={columns} data={items} />
+      <DataTable columns={columns} data={products} />
       <Pagination {...pagination} />
     </div>
   );

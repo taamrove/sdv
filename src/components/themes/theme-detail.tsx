@@ -13,9 +13,9 @@ import { Pencil, ShoppingBag } from "lucide-react";
 import { ThemeFormDialog } from "./theme-form-dialog";
 import Image from "next/image";
 
-interface ProductTheme {
-  productId: string;
-  product: {
+interface KitTheme {
+  kitId: string;
+  kit: {
     id: string;
     name: string;
     description: string | null;
@@ -29,7 +29,7 @@ interface Theme {
   description: string | null;
   imageUrl: string | null;
   active: boolean;
-  products: ProductTheme[];
+  kits: KitTheme[];
 }
 
 interface ThemeDetailProps {
@@ -78,33 +78,33 @@ export function ThemeDetail({ theme }: ThemeDetailProps) {
         </CardContent>
       </Card>
 
-      {/* Products linked to this theme */}
+      {/* Kits linked to this theme */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Products</h2>
+          <h2 className="text-lg font-semibold">Kits</h2>
         </div>
 
-        {theme.products.length === 0 ? (
+        {theme.kits.length === 0 ? (
           <div className="flex flex-col items-center justify-center rounded-lg border border-dashed p-12 text-center">
             <ShoppingBag className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-medium">No products linked yet</h3>
+            <h3 className="text-lg font-medium">No kits linked yet</h3>
             <p className="text-sm text-muted-foreground mt-1">
-              Link products (kits/sets) to this theme from the Products page.
+              Link kits (outfits/sets) to this theme from the Kits page.
             </p>
           </div>
         ) : (
           <div className="space-y-2">
-            {theme.products.map((pt) => (
-              <Card key={pt.productId}>
+            {theme.kits.map((kt) => (
+              <Card key={kt.kitId}>
                 <CardContent className="flex items-center justify-between py-4">
                   <div className="flex items-center gap-3">
-                    <span className="font-medium">{pt.product.name}</span>
-                    {pt.product.description && (
+                    <span className="font-medium">{kt.kit.name}</span>
+                    {kt.kit.description && (
                       <span className="text-sm text-muted-foreground truncate max-w-[300px]">
-                        {pt.product.description}
+                        {kt.kit.description}
                       </span>
                     )}
-                    {!pt.product.active && (
+                    {!kt.kit.active && (
                       <Badge variant="secondary" className="text-xs">
                         Inactive
                       </Badge>

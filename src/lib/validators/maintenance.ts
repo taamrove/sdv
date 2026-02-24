@@ -3,7 +3,7 @@ import { z } from "zod";
 export const createTicketSchema = z.object({
   title: z.string().min(1, "Title is required").max(200),
   description: z.string().max(2000).optional(),
-  pieceId: z.string().uuid("Invalid piece"),
+  itemId: z.string().uuid("Invalid item"),
   priority: z.enum(["LOW", "MEDIUM", "HIGH", "URGENT"]).optional(),
   severity: z.enum(["MINOR", "MODERATE", "UNUSABLE"]).optional(),
 });

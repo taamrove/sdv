@@ -61,7 +61,7 @@ export async function getWarehouseLocations(
       prisma.warehouseLocation.findMany({
         where,
         include: {
-          _count: { select: { pieces: true } },
+          _count: { select: { items: true } },
         },
         orderBy: { label: "asc" },
         skip,
@@ -102,7 +102,7 @@ export async function getWarehouseLocationById(
     const location = await prisma.warehouseLocation.findUnique({
       where: { id },
       include: {
-        _count: { select: { pieces: true } },
+        _count: { select: { items: true } },
       },
     });
 
@@ -152,7 +152,7 @@ export async function createWarehouseLocation(
         label,
       },
       include: {
-        _count: { select: { pieces: true } },
+        _count: { select: { items: true } },
       },
     });
 
@@ -221,7 +221,7 @@ export async function updateWarehouseLocation(
         label: newLabel,
       },
       include: {
-        _count: { select: { pieces: true } },
+        _count: { select: { items: true } },
       },
     });
 
@@ -248,16 +248,16 @@ export async function deleteWarehouseLocation(
 
     const existing = await prisma.warehouseLocation.findUnique({
       where: { id },
-      include: { _count: { select: { pieces: true } } },
+      include: { _count: { select: { items: true } } },
     });
 
     if (!existing) {
       return { error: "Warehouse location not found" };
     }
 
-    if (existing._count.pieces > 0) {
+    if (existing._count.items > 0) {
       return {
-        error: `Cannot delete location: ${existing._count.pieces} piece(s) are stored here`,
+        error: `Cannot delete location: ${existing._count.items} item(s) are stored here`,
       };
     }
 

@@ -38,13 +38,13 @@ import {
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 
-interface BookingPiece {
+interface BookingItem {
   id: string;
-  piece: {
+  item: {
     id: string;
     humanReadableId: string;
     status: string;
-    item: { id: string; name: string };
+    product: { id: string; name: string };
     category: { id: string; code: string; name: string };
   };
 }
@@ -54,8 +54,8 @@ interface Booking {
   status: string;
   notes: string | null;
   quantity: number;
-  product: { id: string; name: string };
-  pieces: BookingPiece[];
+  kit: { id: string; name: string };
+  items: BookingItem[];
 }
 
 interface Assignment {
@@ -99,7 +99,7 @@ interface ProjectDetailProps {
   project: Project;
   themes: Theme[];
   allPerformers: PerformerOption[];
-  conflictPieceIds: string[];
+  conflictItemIds: string[];
 }
 
 function statusVariant(status: string): "default" | "secondary" | "outline" | "destructive" {
@@ -130,7 +130,7 @@ export function ProjectDetail({
   project,
   themes,
   allPerformers,
-  conflictPieceIds,
+  conflictItemIds,
 }: ProjectDetailProps) {
   const router = useRouter();
   const [editing, setEditing] = useState(false);
@@ -140,13 +140,13 @@ export function ProjectDetail({
 
   const assignedPerformerIds = project.assignments.map((a) => a.performer.id);
 
-  // Gather all pieces across bookings for the inventory tab
-  const allPieces = project.bookings.flatMap((booking) =>
-    booking.pieces.map((bp) => ({
-      ...bp,
-      productName: booking.product.name,
+  // Gather all items across bookings for the inventory tab
+  const allItems = project.bookings.flatMap((booking) =>
+    booking.items.map((bi) => ({
+      ...bi,
+      kitName: booking.kit.name,
       bookingId: booking.id,
-      hasConflict: conflictPieceIds.includes(bp.piece.id),
+      hasConflict: conflictItemIds.includes(bi.item.id),
     }))
   );
 
@@ -192,8 +192,8 @@ export function ProjectDetail({
             Bookings ({project.bookings.length})
           </TabsTrigger>
           <TabsTrigger value="inventory">
-            Inventory ({allPieces.length})
-            {conflictPieceIds.length > 0 && (
+            Inventory ({allItems.length})
+            {conflictItemIds.length > 0 && (
               <AlertTriangle className="ml-1 h-3 w-3 text-destructive" />
             )}
           </TabsTrigger>
@@ -267,7 +267,7 @@ export function ProjectDetail({
                   </div>
                   <div className="flex items-center gap-1 text-sm text-muted-foreground">
                     <Package className="h-4 w-4" />
-                    {allPieces.length} piece{allPieces.length !== 1 ? "s" : ""}
+                    {allItems.length} item{allItems.length !== 1 ? "s" : ""}
                   </div>
                 </div>
               </div>
@@ -339,7 +339,7 @@ export function ProjectDetail({
                 <ShoppingBag className="h-12 w-12 text-muted-foreground mb-4" />
                 <h3 className="text-lg font-medium">No bookings yet</h3>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Bookings are created to reserve products for this project.
+                  Bookings are created to reserve kits for this project.
                 </p>
               </div>
             ) : (
@@ -349,7 +349,7 @@ export function ProjectDetail({
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <CardTitle className="text-base">
-                          {booking.product.name}
+                          {booking.kit.name}
                         </CardTitle>
                         <Badge variant="outline">
                           {BOOKING_STATUS_LABELS[booking.status] ?? booking.status}
@@ -361,25 +361,25 @@ export function ProjectDetail({
                     </div>
                   </CardHeader>
                   <CardContent>
-                    {booking.pieces.length === 0 ? (
+                    {booking.items.length === 0 ? (
                       <p className="text-sm text-muted-foreground italic">
-                        No pieces assigned yet.
+                        No items assigned yet.
                       </p>
                     ) : (
                       <div className="space-y-1">
-                        {booking.pieces.map((bp) => (
+                        {booking.items.map((bi) => (
                           <div
-                            key={bp.id}
+                            key={bi.id}
                             className="flex items-center gap-2 text-sm rounded-md border px-3 py-2"
                           >
                             <span className="font-mono">
-                              {bp.piece.humanReadableId}
+                              {bi.item.humanReadableId}
                             </span>
-                            <span>{bp.piece.item.name}</span>
+                            <span>{bi.item.product.name}</span>
                             <Badge variant="outline" className="text-xs">
-                              {bp.piece.category.name}
+                              {bi.item.category.name}
                             </Badge>
-                            {conflictPieceIds.includes(bp.piece.id) && (
+                            {conflictItemIds.includes(bi.item.id) && (
                               <Badge variant="destructive" className="text-xs">
                                 <AlertTriangle className="mr-1 h-3 w-3" />
                                 Conflict
@@ -404,7 +404,7 @@ export function ProjectDetail({
         {/* Inventory Tab */}
         <TabsContent value="inventory">
           <div className="space-y-4">
-            {conflictPieceIds.length > 0 && (
+            {conflictItemIds.length > 0 && (
               <Card className="border-destructive">
                 <CardContent className="flex items-center gap-3 py-4">
                   <AlertTriangle className="h-5 w-5 text-destructive" />
@@ -413,7 +413,7 @@ export function ProjectDetail({
                       Scheduling Conflicts Detected
                     </p>
                     <p className="text-sm text-muted-foreground">
-                      {conflictPieceIds.length} piece{conflictPieceIds.length !== 1 ? "s are" : " is"}{" "}
+                      {conflictItemIds.length} item{conflictItemIds.length !== 1 ? "s are" : " is"}{" "}
                       assigned to other projects with overlapping dates.
                     </p>
                   </div>
@@ -421,38 +421,38 @@ export function ProjectDetail({
               </Card>
             )}
 
-            {allPieces.length === 0 ? (
+            {allItems.length === 0 ? (
               <div className="flex flex-col items-center justify-center rounded-lg border border-dashed p-12 text-center">
                 <Package className="h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-medium">No inventory pieces</h3>
+                <h3 className="text-lg font-medium">No inventory items</h3>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Pieces are assigned through bookings.
+                  Items are assigned through bookings.
                 </p>
               </div>
             ) : (
               <div className="space-y-2">
-                {allPieces.map((bp) => (
+                {allItems.map((bi) => (
                   <div
-                    key={bp.id}
+                    key={bi.id}
                     className={`flex items-center justify-between rounded-md border px-3 py-2 ${
-                      bp.hasConflict ? "border-destructive bg-destructive/5" : ""
+                      bi.hasConflict ? "border-destructive bg-destructive/5" : ""
                     }`}
                   >
                     <div className="flex items-center gap-2 text-sm">
-                      <span className="font-mono">{bp.piece.humanReadableId}</span>
-                      <span className="font-medium">{bp.piece.item.name}</span>
+                      <span className="font-mono">{bi.item.humanReadableId}</span>
+                      <span className="font-medium">{bi.item.product.name}</span>
                       <Badge variant="outline" className="text-xs">
-                        {bp.piece.category.name}
+                        {bi.item.category.name}
                       </Badge>
                       <span className="text-muted-foreground">
-                        in {bp.productName}
+                        in {bi.kitName}
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Badge variant="outline" className="text-xs">
-                        {bp.piece.status}
+                        {bi.item.status}
                       </Badge>
-                      {bp.hasConflict && (
+                      {bi.hasConflict && (
                         <Badge variant="destructive" className="text-xs">
                           <AlertTriangle className="mr-1 h-3 w-3" />
                           Conflict

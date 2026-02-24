@@ -3,7 +3,7 @@ import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/shared/page-header";
 import { AvailabilityDashboard } from "@/components/inventory/availability-dashboard";
-import { getAvailabilityByItem } from "@/actions/availability";
+import { getAvailabilityByProduct } from "@/actions/availability";
 
 interface SearchParams {
   categoryId?: string;
@@ -20,7 +20,7 @@ export default async function AvailabilityPage({
   const params = await searchParams;
 
   const [availabilityResult, categories] = await Promise.all([
-    getAvailabilityByItem(
+    getAvailabilityByProduct(
       params.categoryId ? { categoryId: params.categoryId } : undefined
     ),
     prisma.category.findMany({ orderBy: { code: "asc" } }),
@@ -32,7 +32,7 @@ export default async function AvailabilityPage({
     <div className="space-y-6">
       <PageHeader
         title="Availability"
-        description="Overview of piece availability by item type"
+        description="Overview of item availability by product type"
       />
       <AvailabilityDashboard groups={groups} categories={categories} />
     </div>

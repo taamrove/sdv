@@ -38,7 +38,7 @@ export default async function MaintenancePage({
     where.OR = [
       { title: { contains: search, mode: "insensitive" } },
       {
-        piece: {
+        item: {
           humanReadableId: { contains: search, mode: "insensitive" },
         },
       },
@@ -51,11 +51,11 @@ export default async function MaintenancePage({
     prisma.maintenanceTicket.findMany({
       where,
       include: {
-        piece: {
+        item: {
           select: {
             id: true,
             humanReadableId: true,
-            item: { select: { name: true } },
+            product: { select: { name: true } },
             category: { select: { name: true } },
           },
         },
@@ -74,7 +74,7 @@ export default async function MaintenancePage({
     <div className="space-y-6">
       <PageHeader
         title="Maintenance"
-        description="Track and manage piece repairs"
+        description="Track and manage item repairs"
         action={
           <Link href="/maintenance/new">
             <Button>

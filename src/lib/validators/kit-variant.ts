@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const createVariantSchema = z.object({
-  productId: z.string().uuid("Invalid product"),
+  kitId: z.string().uuid("Invalid kit"),
   name: z.string().min(1, "Name is required").max(200),
   description: z.string().max(500).optional(),
 });
@@ -15,12 +15,12 @@ export const updateVariantSchema = z.object({
 
 export type UpdateVariantInput = z.infer<typeof updateVariantSchema>;
 
-export const addVariantItemSchema = z.object({
+export const addVariantProductSchema = z.object({
   variantId: z.string().uuid(),
-  itemId: z.string().uuid("Invalid item"),
+  productId: z.string().uuid("Invalid product"),
   quantity: z.number().int().min(1).default(1),
   required: z.boolean().default(true),
   notes: z.string().optional(),
 });
 
-export type AddVariantItemInput = z.infer<typeof addVariantItemSchema>;
+export type AddVariantProductInput = z.infer<typeof addVariantProductSchema>;

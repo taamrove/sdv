@@ -9,21 +9,21 @@ import { requirePermission } from "@/lib/rbac";
 
 type ActionResult<T> = { data: T } | { error: string };
 
-export interface ItemAvailability {
-  itemId: string;
-  itemName: string;
+export interface ProductAvailability {
+  productId: string;
+  productName: string;
   categoryName: string;
   categoryCode: string;
   size: string | null;
-  totalPieces: number;
-  availablePieces: number;
-  assignedPieces: number;
-  maintenancePieces: number;
-  externalPieces: number;
+  totalItems: number;
+  availableItems: number;
+  assignedItems: number;
+  maintenanceItems: number;
+  externalItems: number;
 }
 
-export interface PieceAvailability {
-  pieceId: string;
+export interface ItemAvailability {
+  itemId: string;
   humanReadableId: string;
   status: string;
   condition: string;
@@ -35,66 +35,66 @@ interface AvailabilityByCategoryParams {
 }
 
 // ---------------------------------------------------------------------------
-// getAvailabilityByItem — aggregate piece counts per Item (design/type)
+// getAvailabilityByProduct — aggregate item counts per Product (design/type)
 // ---------------------------------------------------------------------------
 
-export async function getAvailabilityByItem(
+export async function getAvailabilityByProduct(
   params?: AvailabilityByCategoryParams
-): Promise<ActionResult<ItemAvailability[]>> {
+): Promise<ActionResult<ProductAvailability[]>> {
   try {
-    await requirePermission("pieces:read");
+    await requirePermission("items:read");
 
     // Build a WHERE clause for the category filter
     const categoryFilter = params?.categoryId
-      ? `AND p."categoryId" = '${params.categoryId}'`
+      ? `AND i."categoryId" = '${params.categoryId}'`
       : "";
 
     const rows = await prisma.$queryRawUnsafe<
       {
-        itemId: string;
-        itemName: string;
+        productId: string;
+        productName: string;
         categoryName: string | null;
         categoryCode: string | null;
         size: string | null;
-        totalPieces: bigint;
-        availablePieces: bigint;
-        assignedPieces: bigint;
-        maintenancePieces: bigint;
-        externalPieces: bigint;
+        totalItems: bigint;
+        availableItems: bigint;
+        assignedItems: bigint;
+        maintenanceItems: bigint;
+        externalItems: bigint;
       }[]
     >(
       `
       SELECT
-        i."id"           AS "itemId",
-        i."name"         AS "itemName",
+        p."id"           AS "productId",
+        p."name"         AS "productName",
         c."name"         AS "categoryName",
         c."code"         AS "categoryCode",
-        i."size"         AS "size",
-        COUNT(p."id")    AS "totalPieces",
-        COUNT(p."id") FILTER (WHERE p."status" = 'AVAILABLE')   AS "availablePieces",
-        COUNT(p."id") FILTER (WHERE p."status" = 'ASSIGNED')    AS "assignedPieces",
-        COUNT(p."id") FILTER (WHERE p."status" = 'MAINTENANCE') AS "maintenancePieces",
-        COUNT(p."id") FILTER (WHERE p."isExternal" = true)       AS "externalPieces"
-      FROM pieces p
-      JOIN items i ON i."id" = p."itemId"
-      JOIN categories c ON c."id" = p."categoryId"
+        p."size"         AS "size",
+        COUNT(i."id")    AS "totalItems",
+        COUNT(i."id") FILTER (WHERE i."status" = 'AVAILABLE')   AS "availableItems",
+        COUNT(i."id") FILTER (WHERE i."status" = 'ASSIGNED')    AS "assignedItems",
+        COUNT(i."id") FILTER (WHERE i."status" = 'MAINTENANCE') AS "maintenanceItems",
+        COUNT(i."id") FILTER (WHERE i."isExternal" = true)       AS "externalItems"
+      FROM items i
+      JOIN products p ON p."id" = i."productId"
+      JOIN categories c ON c."id" = i."categoryId"
       WHERE 1=1 ${categoryFilter}
-      GROUP BY i."id", i."name", c."name", c."code", i."size"
-      ORDER BY c."code" ASC, i."name" ASC
+      GROUP BY p."id", p."name", c."name", c."code", p."size"
+      ORDER BY c."code" ASC, p."name" ASC
       `
     );
 
-    const result: ItemAvailability[] = rows.map((row) => ({
-      itemId: row.itemId,
-      itemName: row.itemName,
+    const result: ProductAvailability[] = rows.map((row) => ({
+      productId: row.productId,
+      productName: row.productName,
       categoryName: row.categoryName ?? "",
       categoryCode: row.categoryCode ?? "",
       size: row.size,
-      totalPieces: Number(row.totalPieces),
-      availablePieces: Number(row.availablePieces),
-      assignedPieces: Number(row.assignedPieces),
-      maintenancePieces: Number(row.maintenancePieces),
-      externalPieces: Number(row.externalPieces),
+      totalItems: Number(row.totalItems),
+      availableItems: Number(row.availableItems),
+      assignedItems: Number(row.assignedItems),
+      maintenanceItems: Number(row.maintenanceItems),
+      externalItems: Number(row.externalItems),
     }));
 
     return { data: result };
@@ -112,17 +112,17 @@ export async function getAvailabilityByItem(
 }
 
 // ---------------------------------------------------------------------------
-// getAvailabilityByPiece — list pieces for a given Item
+// getItemAvailabilityByProduct — list items for a given Product
 // ---------------------------------------------------------------------------
 
-export async function getAvailabilityByPiece(
-  itemId: string
-): Promise<ActionResult<PieceAvailability[]>> {
+export async function getItemAvailabilityByProduct(
+  productId: string
+): Promise<ActionResult<ItemAvailability[]>> {
   try {
-    await requirePermission("pieces:read");
+    await requirePermission("items:read");
 
-    const pieces = await prisma.piece.findMany({
-      where: { itemId },
+    const items = await prisma.item.findMany({
+      where: { productId },
       select: {
         id: true,
         humanReadableId: true,
@@ -133,12 +133,12 @@ export async function getAvailabilityByPiece(
       orderBy: { sequence: "asc" },
     });
 
-    const result: PieceAvailability[] = pieces.map((p) => ({
-      pieceId: p.id,
-      humanReadableId: p.humanReadableId,
-      status: p.status,
-      condition: p.condition,
-      color: p.color,
+    const result: ItemAvailability[] = items.map((i) => ({
+      itemId: i.id,
+      humanReadableId: i.humanReadableId,
+      status: i.status,
+      condition: i.condition,
+      color: i.color,
     }));
 
     return { data: result };
@@ -150,11 +150,7 @@ export async function getAvailabilityByPiece(
       error:
         error instanceof Error
           ? error.message
-          : "Failed to fetch piece availability",
+          : "Failed to fetch item availability",
     };
   }
 }
-
-// Keep old function names as aliases for backward compatibility during migration
-export const getAvailabilityByGroup = getAvailabilityByItem;
-export const getAvailabilityByProduct = getAvailabilityByPiece;

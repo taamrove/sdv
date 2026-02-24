@@ -35,19 +35,19 @@ export async function createBooking(
       return { error: "Project not found" };
     }
 
-    const product = await prisma.product.findUnique({
-      where: { id: parsed.data.productId },
+    const kit = await prisma.kit.findUnique({
+      where: { id: parsed.data.kitId },
     });
-    if (!product) {
-      return { error: "Product not found" };
+    if (!kit) {
+      return { error: "Kit not found" };
     }
 
-    if (parsed.data.productVariantId) {
-      const variant = await prisma.productVariant.findUnique({
-        where: { id: parsed.data.productVariantId },
+    if (parsed.data.kitVariantId) {
+      const variant = await prisma.kitVariant.findUnique({
+        where: { id: parsed.data.kitVariantId },
       });
-      if (!variant || variant.productId !== parsed.data.productId) {
-        return { error: "Variant not found or does not belong to this product" };
+      if (!variant || variant.kitId !== parsed.data.kitId) {
+        return { error: "Variant not found or does not belong to this kit" };
       }
     }
 
@@ -55,9 +55,9 @@ export async function createBooking(
       data: parsed.data,
       include: {
         project: true,
-        product: true,
+        kit: true,
         variant: true,
-        _count: { select: { pieces: true } },
+        _count: { select: { items: true } },
       },
     });
 
@@ -91,12 +91,12 @@ export async function updateBooking(
       return { error: "Booking not found" };
     }
 
-    if (parsed.data.productVariantId) {
-      const variant = await prisma.productVariant.findUnique({
-        where: { id: parsed.data.productVariantId },
+    if (parsed.data.kitVariantId) {
+      const variant = await prisma.kitVariant.findUnique({
+        where: { id: parsed.data.kitVariantId },
       });
-      if (!variant || variant.productId !== existing.productId) {
-        return { error: "Variant not found or does not belong to this product" };
+      if (!variant || variant.kitId !== existing.kitId) {
+        return { error: "Variant not found or does not belong to this kit" };
       }
     }
 
@@ -105,9 +105,9 @@ export async function updateBooking(
       data: parsed.data,
       include: {
         project: true,
-        product: true,
+        kit: true,
         variant: true,
-        _count: { select: { pieces: true } },
+        _count: { select: { items: true } },
       },
     });
 
@@ -132,15 +132,15 @@ export async function deleteBooking(
 
     const existing = await prisma.projectBooking.findUnique({
       where: { id },
-      include: { _count: { select: { pieces: true } } },
+      include: { _count: { select: { items: true } } },
     });
     if (!existing) {
       return { error: "Booking not found" };
     }
 
-    if (existing._count.pieces > 0) {
+    if (existing._count.items > 0) {
       return {
-        error: `Cannot delete booking: ${existing._count.pieces} piece(s) are still assigned. Remove them first.`,
+        error: `Cannot delete booking: ${existing._count.items} item(s) are still assigned. Remove them first.`,
       };
     }
 
@@ -156,12 +156,12 @@ export async function deleteBooking(
 }
 
 // ---------------------------------------------------------------------------
-// assignPieceToBooking — with double-booking prevention using project dates
+// assignItemToBooking — with double-booking prevention using project dates
 // ---------------------------------------------------------------------------
 
-export async function assignPieceToBooking(
+export async function assignItemToBooking(
   bookingId: string,
-  pieceId: string
+  itemId: string
 ): Promise<ActionResult<unknown>> {
   try {
     await requirePermission("bookings:assign");
@@ -188,8 +188,8 @@ export async function assignPieceToBooking(
       if (!booking) throw new Error("Booking not found");
       if (!booking.project) throw new Error("Booking is not linked to a project");
 
-      const piece = await tx.piece.findUnique({
-        where: { id: pieceId },
+      const item = await tx.item.findUnique({
+        where: { id: itemId },
         select: {
           id: true,
           humanReadableId: true,
@@ -197,36 +197,36 @@ export async function assignPieceToBooking(
         },
       });
 
-      if (!piece) throw new Error("Piece not found");
+      if (!item) throw new Error("Item not found");
 
-      // Check if piece is in a state that prevents assignment
-      if (piece.status === "RETIRED" || piece.status === "LOST") {
+      // Check if item is in a state that prevents assignment
+      if (item.status === "RETIRED" || item.status === "LOST") {
         throw new Error(
-          `Piece ${piece.humanReadableId} is ${piece.status.toLowerCase()} and cannot be assigned`
+          `Item ${item.humanReadableId} is ${item.status.toLowerCase()} and cannot be assigned`
         );
       }
 
-      if (piece.status === "MAINTENANCE") {
+      if (item.status === "MAINTENANCE") {
         throw new Error(
-          `Piece ${piece.humanReadableId} is in maintenance and cannot be assigned`
+          `Item ${item.humanReadableId} is in maintenance and cannot be assigned`
         );
       }
 
       // Check already in this booking
-      const existing = await tx.bookingPiece.findFirst({
-        where: { bookingId, pieceId },
+      const existing = await tx.bookingItem.findFirst({
+        where: { bookingId, itemId },
       });
       if (existing) {
         throw new Error(
-          `Piece ${piece.humanReadableId} is already assigned to this booking`
+          `Item ${item.humanReadableId} is already assigned to this booking`
         );
       }
 
       // Check for double-booking across overlapping projects
       if (booking.project.startDate && booking.project.endDate) {
-        const overlapping = await tx.bookingPiece.findFirst({
+        const overlapping = await tx.bookingItem.findFirst({
           where: {
-            pieceId,
+            itemId,
             booking: {
               projectId: { not: booking.project.id },
               project: {
@@ -247,29 +247,29 @@ export async function assignPieceToBooking(
 
         if (overlapping) {
           throw new Error(
-            `Piece ${piece.humanReadableId} is already assigned to "${overlapping.booking.project.name}" which overlaps with this project's dates`
+            `Item ${item.humanReadableId} is already assigned to "${overlapping.booking.project.name}" which overlaps with this project's dates`
           );
         }
       }
 
-      // Create the booking piece assignment
-      const bookingPiece = await tx.bookingPiece.create({
-        data: { bookingId, pieceId },
+      // Create the booking item assignment
+      const bookingItem = await tx.bookingItem.create({
+        data: { bookingId, itemId },
         include: {
-          piece: { include: { item: true, category: true } },
+          item: { include: { product: true, category: true } },
         },
       });
 
-      // Update piece status to ASSIGNED
-      await tx.piece.update({
-        where: { id: pieceId },
+      // Update item status to ASSIGNED
+      await tx.item.update({
+        where: { id: itemId },
         data: { status: "ASSIGNED" },
       });
 
       // Log history
-      await tx.pieceHistory.create({
+      await tx.itemHistory.create({
         data: {
-          pieceId,
+          itemId,
           action: "ASSIGNED_TO_BOOKING",
           performedById: userId ?? undefined,
           details: {
@@ -278,11 +278,11 @@ export async function assignPieceToBooking(
             projectName: booking.project.name,
           } as unknown as Prisma.InputJsonValue,
           newState: "ASSIGNED",
-          previousState: piece.status,
+          previousState: item.status,
         },
       });
 
-      return bookingPiece;
+      return bookingItem;
     });
 
     return { data: result };
@@ -294,17 +294,17 @@ export async function assignPieceToBooking(
       error:
         error instanceof Error
           ? error.message
-          : "Failed to assign piece to booking",
+          : "Failed to assign item to booking",
     };
   }
 }
 
 // ---------------------------------------------------------------------------
-// removePieceFromBooking
+// removeItemFromBooking
 // ---------------------------------------------------------------------------
 
-export async function removePieceFromBooking(
-  bookingPieceId: string
+export async function removeItemFromBooking(
+  bookingItemId: string
 ): Promise<ActionResult<{ success: true }>> {
   try {
     await requirePermission("bookings:update");
@@ -313,10 +313,10 @@ export async function removePieceFromBooking(
     const userId = session?.user?.id;
 
     await prisma.$transaction(async (tx) => {
-      const bookingPiece = await tx.bookingPiece.findUnique({
-        where: { id: bookingPieceId },
+      const bookingItem = await tx.bookingItem.findUnique({
+        where: { id: bookingItemId },
         include: {
-          piece: { select: { id: true, status: true, humanReadableId: true } },
+          item: { select: { id: true, status: true, humanReadableId: true } },
           booking: {
             include: {
               project: { select: { id: true, name: true } },
@@ -325,36 +325,36 @@ export async function removePieceFromBooking(
         },
       });
 
-      if (!bookingPiece) throw new Error("Booking piece not found");
+      if (!bookingItem) throw new Error("Booking item not found");
 
-      await tx.bookingPiece.delete({ where: { id: bookingPieceId } });
+      await tx.bookingItem.delete({ where: { id: bookingItemId } });
 
-      // Check if piece is in any other bookings
-      const otherAssignments = await tx.bookingPiece.count({
-        where: { pieceId: bookingPiece.pieceId },
+      // Check if item is in any other bookings
+      const otherAssignments = await tx.bookingItem.count({
+        where: { itemId: bookingItem.itemId },
       });
 
       // If no other assignments, set back to AVAILABLE
       if (otherAssignments === 0) {
-        await tx.piece.update({
-          where: { id: bookingPiece.pieceId },
+        await tx.item.update({
+          where: { id: bookingItem.itemId },
           data: { status: "AVAILABLE" },
         });
       }
 
       // Log history
-      await tx.pieceHistory.create({
+      await tx.itemHistory.create({
         data: {
-          pieceId: bookingPiece.pieceId,
+          itemId: bookingItem.itemId,
           action: "REMOVED_FROM_BOOKING",
           performedById: userId ?? undefined,
           details: {
-            bookingId: bookingPiece.bookingId,
-            projectId: bookingPiece.booking.project.id,
-            projectName: bookingPiece.booking.project.name,
+            bookingId: bookingItem.bookingId,
+            projectId: bookingItem.booking.project.id,
+            projectName: bookingItem.booking.project.name,
           } as unknown as Prisma.InputJsonValue,
-          previousState: bookingPiece.piece.status,
-          newState: otherAssignments === 0 ? "AVAILABLE" : bookingPiece.piece.status,
+          previousState: bookingItem.item.status,
+          newState: otherAssignments === 0 ? "AVAILABLE" : bookingItem.item.status,
         },
       });
     });
@@ -368,17 +368,17 @@ export async function removePieceFromBooking(
       error:
         error instanceof Error
           ? error.message
-          : "Failed to remove piece from booking",
+          : "Failed to remove item from booking",
     };
   }
 }
 
 // ---------------------------------------------------------------------------
-// checkPieceAvailability
+// checkItemAvailability
 // ---------------------------------------------------------------------------
 
-export async function checkPieceAvailability(
-  pieceIds: string[],
+export async function checkItemAvailability(
+  itemIds: string[],
   startDate: Date,
   endDate: Date,
   excludeProjectId?: string
@@ -386,7 +386,7 @@ export async function checkPieceAvailability(
   ActionResult<{
     available: string[];
     conflicting: {
-      pieceId: string;
+      itemId: string;
       humanReadableId: string;
       projectName: string;
       projectId: string;
@@ -396,16 +396,16 @@ export async function checkPieceAvailability(
   }>
 > {
   try {
-    await requirePermission("pieces:read");
+    await requirePermission("items:read");
 
-    if (pieceIds.length === 0) {
+    if (itemIds.length === 0) {
       return { data: { available: [], conflicting: [] } };
     }
 
-    // Find pieces already assigned to bookings in overlapping projects
-    const conflicts = await prisma.bookingPiece.findMany({
+    // Find items already assigned to bookings in overlapping projects
+    const conflicts = await prisma.bookingItem.findMany({
       where: {
-        pieceId: { in: pieceIds },
+        itemId: { in: itemIds },
         booking: {
           project: {
             ...(excludeProjectId ? { id: { not: excludeProjectId } } : {}),
@@ -416,7 +416,7 @@ export async function checkPieceAvailability(
         },
       },
       include: {
-        piece: { select: { humanReadableId: true } },
+        item: { select: { humanReadableId: true } },
         booking: {
           include: {
             project: {
@@ -432,12 +432,12 @@ export async function checkPieceAvailability(
       },
     });
 
-    const conflictingPieceIds = new Set(conflicts.map((c) => c.pieceId));
-    const available = pieceIds.filter((id) => !conflictingPieceIds.has(id));
+    const conflictingItemIds = new Set(conflicts.map((c) => c.itemId));
+    const available = itemIds.filter((id) => !conflictingItemIds.has(id));
 
     const conflicting = conflicts.map((c) => ({
-      pieceId: c.pieceId,
-      humanReadableId: c.piece.humanReadableId,
+      itemId: c.itemId,
+      humanReadableId: c.item.humanReadableId,
       projectName: c.booking.project.name,
       projectId: c.booking.project.id,
       projectStart: c.booking.project.startDate!,
@@ -453,7 +453,7 @@ export async function checkPieceAvailability(
       error:
         error instanceof Error
           ? error.message
-          : "Failed to check piece availability",
+          : "Failed to check item availability",
     };
   }
 }
@@ -478,19 +478,19 @@ export async function getBookingsForProject(
     const bookings = await prisma.projectBooking.findMany({
       where: { projectId },
       include: {
-        product: true,
+        kit: true,
         variant: true,
-        pieces: {
+        items: {
           include: {
-            piece: {
+            item: {
               include: {
-                item: true,
+                product: true,
                 category: true,
               },
             },
           },
         },
-        _count: { select: { pieces: true } },
+        _count: { select: { items: true } },
       },
       orderBy: { createdAt: "desc" },
     });
@@ -510,17 +510,17 @@ export async function getBookingsForProject(
 }
 
 // ---------------------------------------------------------------------------
-// getPieceBookings — Get all active bookings for a piece
+// getItemBookings — Get all active bookings for an item
 // ---------------------------------------------------------------------------
 
-export async function getPieceBookings(
-  pieceId: string
+export async function getItemBookings(
+  itemId: string
 ): Promise<
   ActionResult<
     {
-      bookingPieceId: string;
+      bookingItemId: string;
       bookingId: string;
-      productName: string;
+      kitName: string;
       projectId: string;
       projectName: string;
       projectStatus: string;
@@ -530,11 +530,11 @@ export async function getPieceBookings(
   >
 > {
   try {
-    await requirePermission("pieces:read");
+    await requirePermission("items:read");
 
-    const bookings = await prisma.bookingPiece.findMany({
+    const bookings = await prisma.bookingItem.findMany({
       where: {
-        pieceId,
+        itemId,
         booking: {
           project: {
             status: { notIn: ["COMPLETED", "CANCELLED"] },
@@ -544,7 +544,7 @@ export async function getPieceBookings(
       include: {
         booking: {
           include: {
-            product: { select: { name: true } },
+            kit: { select: { name: true } },
             project: {
               select: {
                 id: true,
@@ -564,9 +564,9 @@ export async function getPieceBookings(
 
     return {
       data: bookings.map((b) => ({
-        bookingPieceId: b.id,
+        bookingItemId: b.id,
         bookingId: b.bookingId,
-        productName: b.booking.product.name,
+        kitName: b.booking.kit.name,
         projectId: b.booking.project.id,
         projectName: b.booking.project.name,
         projectStatus: b.booking.project.status,
@@ -582,17 +582,17 @@ export async function getPieceBookings(
       error:
         error instanceof Error
           ? error.message
-          : "Failed to get piece bookings",
+          : "Failed to get item bookings",
     };
   }
 }
 
 // ---------------------------------------------------------------------------
-// crossloadPiece — Move a piece from one project booking to another
+// crossloadItem — Move an item from one project booking to another
 // ---------------------------------------------------------------------------
 
-export async function crossloadPiece(
-  bookingPieceId: string,
+export async function crossloadItem(
+  bookingItemId: string,
   targetBookingId: string
 ): Promise<ActionResult<unknown>> {
   try {
@@ -602,11 +602,11 @@ export async function crossloadPiece(
     const userId = session?.user?.id;
 
     const result = await prisma.$transaction(async (tx) => {
-      // Get source booking piece
-      const sourceBookingPiece = await tx.bookingPiece.findUnique({
-        where: { id: bookingPieceId },
+      // Get source booking item
+      const sourceBookingItem = await tx.bookingItem.findUnique({
+        where: { id: bookingItemId },
         include: {
-          piece: {
+          item: {
             select: { id: true, humanReadableId: true, status: true },
           },
           booking: {
@@ -617,7 +617,7 @@ export async function crossloadPiece(
         },
       });
 
-      if (!sourceBookingPiece) throw new Error("Source booking piece not found");
+      if (!sourceBookingItem) throw new Error("Source booking item not found");
 
       // Get target booking
       const targetBooking = await tx.projectBooking.findUnique({
@@ -635,55 +635,55 @@ export async function crossloadPiece(
       });
 
       if (!targetBooking) throw new Error("Target booking not found");
-      if (targetBooking.projectId === sourceBookingPiece.booking.projectId) {
+      if (targetBooking.projectId === sourceBookingItem.booking.projectId) {
         throw new Error("Cannot crossload to the same project");
       }
 
-      // Check if piece is already in the target booking
-      const alreadyInTarget = await tx.bookingPiece.findFirst({
+      // Check if item is already in the target booking
+      const alreadyInTarget = await tx.bookingItem.findFirst({
         where: {
           bookingId: targetBookingId,
-          pieceId: sourceBookingPiece.pieceId,
+          itemId: sourceBookingItem.itemId,
         },
       });
       if (alreadyInTarget) {
-        throw new Error("Piece is already assigned to the target booking");
+        throw new Error("Item is already assigned to the target booking");
       }
 
       // Remove from source
-      await tx.bookingPiece.delete({ where: { id: bookingPieceId } });
+      await tx.bookingItem.delete({ where: { id: bookingItemId } });
 
       // Add to target
-      const newBookingPiece = await tx.bookingPiece.create({
+      const newBookingItem = await tx.bookingItem.create({
         data: {
           bookingId: targetBookingId,
-          pieceId: sourceBookingPiece.pieceId,
+          itemId: sourceBookingItem.itemId,
         },
         include: {
-          piece: { include: { item: true, category: true } },
+          item: { include: { product: true, category: true } },
         },
       });
 
       // Log crossload history
-      await tx.pieceHistory.create({
+      await tx.itemHistory.create({
         data: {
-          pieceId: sourceBookingPiece.pieceId,
+          itemId: sourceBookingItem.itemId,
           action: "CROSSLOADED",
           performedById: userId ?? undefined,
           details: {
-            fromProjectId: sourceBookingPiece.booking.project.id,
-            fromProjectName: sourceBookingPiece.booking.project.name,
-            fromBookingId: sourceBookingPiece.bookingId,
+            fromProjectId: sourceBookingItem.booking.project.id,
+            fromProjectName: sourceBookingItem.booking.project.name,
+            fromBookingId: sourceBookingItem.bookingId,
             toProjectId: targetBooking.project.id,
             toProjectName: targetBooking.project.name,
             toBookingId: targetBookingId,
           } as unknown as Prisma.InputJsonValue,
-          previousState: sourceBookingPiece.piece.status,
+          previousState: sourceBookingItem.item.status,
           newState: "ASSIGNED",
         },
       });
 
-      return newBookingPiece;
+      return newBookingItem;
     });
 
     return { data: result };
@@ -695,7 +695,7 @@ export async function crossloadPiece(
       error:
         error instanceof Error
           ? error.message
-          : "Failed to crossload piece",
+          : "Failed to crossload item",
     };
   }
 }

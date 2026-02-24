@@ -21,11 +21,11 @@ type ActionResult<T> = { data: T } | { error: string };
 
 export async function getThemes(): Promise<ActionResult<unknown[]>> {
   try {
-    await requirePermission("products:read");
+    await requirePermission("kits:read");
 
     const themes = await prisma.theme.findMany({
       include: {
-        _count: { select: { products: true } },
+        _count: { select: { kits: true } },
       },
       orderBy: { name: "asc" },
     });
@@ -47,14 +47,14 @@ export async function getThemeById(
   id: string
 ): Promise<ActionResult<unknown>> {
   try {
-    await requirePermission("products:read");
+    await requirePermission("kits:read");
 
     const theme = await prisma.theme.findUnique({
       where: { id },
       include: {
-        products: {
+        kits: {
           include: {
-            product: true,
+            kit: true,
           },
         },
       },
@@ -81,7 +81,7 @@ export async function createTheme(
   data: CreateThemeInput
 ): Promise<ActionResult<unknown>> {
   try {
-    await requirePermission("products:create");
+    await requirePermission("kits:create");
 
     const parsed = createThemeSchema.safeParse(data);
     if (!parsed.success) {
@@ -110,7 +110,7 @@ export async function updateTheme(
   data: UpdateThemeInput
 ): Promise<ActionResult<unknown>> {
   try {
-    await requirePermission("products:update");
+    await requirePermission("kits:update");
 
     const parsed = updateThemeSchema.safeParse(data);
     if (!parsed.success) {
@@ -144,21 +144,21 @@ export async function deleteTheme(
   id: string
 ): Promise<ActionResult<{ success: true }>> {
   try {
-    await requirePermission("products:delete");
+    await requirePermission("kits:delete");
 
     const existing = await prisma.theme.findUnique({ where: { id } });
     if (!existing) {
       return { error: "Theme not found" };
     }
 
-    // Check for products linked to this theme
-    const productCount = await prisma.productTheme.count({
+    // Check for kits linked to this theme
+    const kitCount = await prisma.kitTheme.count({
       where: { themeId: id },
     });
 
-    if (productCount > 0) {
+    if (kitCount > 0) {
       return {
-        error: `Cannot delete theme: ${productCount} product(s) still reference it`,
+        error: `Cannot delete theme: ${kitCount} kit(s) still reference it`,
       };
     }
 
@@ -174,37 +174,37 @@ export async function deleteTheme(
 }
 
 // ---------------------------------------------------------------------------
-// getThemeProducts — list products linked to a theme
+// getThemeKits — list kits linked to a theme
 // ---------------------------------------------------------------------------
 
-export async function getThemeProducts(
+export async function getThemeKits(
   themeId: string
 ): Promise<ActionResult<unknown[]>> {
   try {
-    await requirePermission("products:read");
+    await requirePermission("kits:read");
 
     const theme = await prisma.theme.findUnique({ where: { id: themeId } });
     if (!theme) {
       return { error: "Theme not found" };
     }
 
-    const productThemes = await prisma.productTheme.findMany({
+    const kitThemes = await prisma.kitTheme.findMany({
       where: { themeId },
       include: {
-        product: {
+        kit: {
           include: {
             _count: { select: { variants: true, bookings: true } },
           },
         },
       },
-      orderBy: { product: { name: "asc" } },
+      orderBy: { kit: { name: "asc" } },
     });
 
-    return { data: productThemes.map((pt) => pt.product) };
+    return { data: kitThemes.map((kt) => kt.kit) };
   } catch (error) {
     if (error instanceof Error && error.message.startsWith("Forbidden")) {
       throw error;
     }
-    return { error: error instanceof Error ? error.message : "Failed to fetch theme products" };
+    return { error: error instanceof Error ? error.message : "Failed to fetch theme kits" };
   }
 }

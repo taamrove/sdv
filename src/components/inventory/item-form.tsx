@@ -21,16 +21,16 @@ import {
 } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import {
-  createPieceSchema,
-  type CreatePieceInput,
-} from "@/lib/validators/piece";
-import { createPiece } from "@/actions/pieces";
+  createItemSchema,
+  type CreateItemInput,
+} from "@/lib/validators/item";
+import { createItem } from "@/actions/items";
 import { ImageUpload } from "@/components/shared/image-upload";
-import { PIECE_CONDITION_LABELS } from "@/lib/constants";
+import { ITEM_CONDITION_LABELS } from "@/lib/constants";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 
-interface Item {
+interface Product {
   id: string;
   name: string;
   number: number;
@@ -42,18 +42,18 @@ interface Location {
   label: string;
 }
 
-interface PieceFormProps {
-  items: Item[];
+interface ItemFormProps {
+  products: Product[];
   locations: Location[];
 }
 
-export function PieceForm({ items, locations }: PieceFormProps) {
+export function ItemForm({ products, locations }: ItemFormProps) {
   const router = useRouter();
 
-  const form = useForm<CreatePieceInput>({
-    resolver: zodResolver(createPieceSchema),
+  const form = useForm<CreateItemInput>({
+    resolver: zodResolver(createItemSchema),
     defaultValues: {
-      itemId: "",
+      productId: "",
       color: "",
       notes: "",
       condition: "NEW",
@@ -61,17 +61,17 @@ export function PieceForm({ items, locations }: PieceFormProps) {
     },
   });
 
-  const selectedItemId = form.watch("itemId");
-  const selectedItem = items.find((p) => p.id === selectedItemId);
+  const selectedProductId = form.watch("productId");
+  const selectedProduct = products.find((p) => p.id === selectedProductId);
 
-  async function onSubmit(data: CreatePieceInput) {
+  async function onSubmit(data: CreateItemInput) {
     try {
-      const result = await createPiece(data);
+      const result = await createItem(data);
       if ("error" in result) {
         toast.error(result.error);
         return;
       }
-      toast.success("Piece created");
+      toast.success("Item created");
       router.push("/inventory");
       router.refresh();
     } catch {
@@ -83,35 +83,35 @@ export function PieceForm({ items, locations }: PieceFormProps) {
     <div className="max-w-2xl space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Create Piece</CardTitle>
+          <CardTitle>Create Item</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="itemId">Item *</Label>
+              <Label htmlFor="productId">Product *</Label>
               <Select
-                value={form.watch("itemId")}
-                onValueChange={(val) => form.setValue("itemId", val)}
+                value={form.watch("productId")}
+                onValueChange={(val) => form.setValue("productId", val)}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select an item" />
+                  <SelectValue placeholder="Select a product" />
                 </SelectTrigger>
                 <SelectContent>
-                  {items.map((p) => (
+                  {products.map((p) => (
                     <SelectItem key={p.id} value={p.id}>
                       {p.category.code}-{String(p.number).padStart(3, "0")} — {p.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-              {form.formState.errors.itemId && (
+              {form.formState.errors.productId && (
                 <p className="text-sm text-destructive">
-                  {form.formState.errors.itemId.message}
+                  {form.formState.errors.productId.message}
                 </p>
               )}
-              {selectedItem && (
+              {selectedProduct && (
                 <p className="text-sm text-muted-foreground">
-                  Category: {selectedItem.category.name}
+                  Category: {selectedProduct.category.name}
                 </p>
               )}
             </div>
@@ -124,7 +124,7 @@ export function PieceForm({ items, locations }: PieceFormProps) {
                   onValueChange={(val) =>
                     form.setValue(
                       "condition",
-                      val as CreatePieceInput["condition"]
+                      val as CreateItemInput["condition"]
                     )
                   }
                 >
@@ -132,7 +132,7 @@ export function PieceForm({ items, locations }: PieceFormProps) {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {Object.entries(PIECE_CONDITION_LABELS).map(
+                    {Object.entries(ITEM_CONDITION_LABELS).map(
                       ([key, label]) => (
                         <SelectItem key={key} value={key}>
                           {label}
@@ -326,7 +326,7 @@ export function PieceForm({ items, locations }: PieceFormProps) {
             </div>
 
             <div className="space-y-2">
-              <Label>Piece Image</Label>
+              <Label>Item Image</Label>
               <ImageUpload
                 value={form.watch("imageUrl")}
                 onChange={(url) => form.setValue("imageUrl", url ?? undefined)}
@@ -352,7 +352,7 @@ export function PieceForm({ items, locations }: PieceFormProps) {
                 Cancel
               </Button>
               <Button type="submit" disabled={form.formState.isSubmitting}>
-                {form.formState.isSubmitting ? "Creating..." : "Create Piece"}
+                {form.formState.isSubmitting ? "Creating..." : "Create Item"}
               </Button>
             </div>
           </form>

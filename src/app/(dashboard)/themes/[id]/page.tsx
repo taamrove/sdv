@@ -17,9 +17,9 @@ export default async function ThemeDetailPage({
   const theme = await prisma.theme.findUnique({
     where: { id },
     include: {
-      products: {
+      kits: {
         include: {
-          product: {
+          kit: {
             include: { variants: true },
           },
         },

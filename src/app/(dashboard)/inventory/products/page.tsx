@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/shared/page-header";
-import { ItemList } from "@/components/inventory/product-list";
+import { ProductList } from "@/components/inventory/product-list";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
@@ -13,7 +13,7 @@ interface SearchParams {
   categoryId?: string;
 }
 
-export default async function ItemsPage({
+export default async function ProductsPage({
   searchParams,
 }: {
   searchParams: Promise<SearchParams>;
@@ -34,37 +34,37 @@ export default async function ItemsPage({
     where.categoryId = params.categoryId;
   }
 
-  const [items, total, categories] = await Promise.all([
-    prisma.item.findMany({
+  const [products, total, categories] = await Promise.all([
+    prisma.product.findMany({
       where,
       include: {
         category: true,
-        _count: { select: { pieces: true } },
+        _count: { select: { items: true } },
       },
       orderBy: [{ category: { code: "asc" } }, { number: "asc" }],
       skip,
       take: limit,
     }),
-    prisma.item.count({ where }),
+    prisma.product.count({ where }),
     prisma.category.findMany({ orderBy: { code: "asc" } }),
   ]);
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Items"
-        description="Item types within each category"
+        title="Products"
+        description="Product types within each category"
         action={
           <Link href="/inventory/products/new">
             <Button>
               <Plus className="mr-2 h-4 w-4" />
-              New Item
+              New Product
             </Button>
           </Link>
         }
       />
-      <ItemList
-        items={items}
+      <ProductList
+        products={products}
         categories={categories}
         pagination={{ page, limit, total, totalPages: Math.ceil(total / limit) }}
       />

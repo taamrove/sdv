@@ -27,10 +27,10 @@ interface QuarantineTicket {
   severity: string | null;
   quarantineEndsAt: string;
   quarantineType: string;
-  piece: {
+  item: {
     id: string;
     humanReadableId: string;
-    item: { name: string };
+    product: { name: string };
     category: { name: string };
   };
 }
@@ -101,8 +101,8 @@ export function QuarantineList({ tickets }: QuarantineListProps) {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Piece ID</TableHead>
-            <TableHead>Item</TableHead>
+            <TableHead>Item ID</TableHead>
+            <TableHead>Product</TableHead>
             <TableHead>Category</TableHead>
             <TableHead>Severity</TableHead>
             <TableHead>Quarantine Until</TableHead>
@@ -114,10 +114,10 @@ export function QuarantineList({ tickets }: QuarantineListProps) {
           {tickets.map((ticket) => (
             <TableRow key={ticket.id}>
               <TableCell className="font-mono">
-                {ticket.piece.humanReadableId}
+                {ticket.item.humanReadableId}
               </TableCell>
-              <TableCell>{ticket.piece.item.name}</TableCell>
-              <TableCell>{ticket.piece.category.name}</TableCell>
+              <TableCell>{ticket.item.product.name}</TableCell>
+              <TableCell>{ticket.item.category.name}</TableCell>
               <TableCell>
                 {ticket.severity ? (
                   <StatusBadge

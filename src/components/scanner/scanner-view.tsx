@@ -14,13 +14,13 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { ScanResultCard } from "@/components/scanner/scan-result-card";
-import type { ScannedPiece } from "@/components/scanner/scan-result-card";
+import type { ScannedItem } from "@/components/scanner/scan-result-card";
 import { QuickActions } from "@/components/scanner/quick-actions";
 import type { PackableContainer } from "@/components/scanner/quick-actions";
 import { CameraScanner } from "@/components/scanner/camera-scanner";
 import type { CameraScannerHandle } from "@/components/scanner/camera-scanner";
-import { lookupPieceByBarcode, lookupPieceById, getContainersForPacking } from "@/actions/scan";
-import { PIECE_STATUS_LABELS } from "@/lib/constants";
+import { lookupItemByBarcode, lookupItemById, getContainersForPacking } from "@/actions/scan";
+import { ITEM_STATUS_LABELS } from "@/lib/constants";
 import { toast } from "sonner";
 import { ScanLine, Loader2, Clock, Trash2, Camera } from "lucide-react";
 
@@ -30,7 +30,7 @@ import { ScanLine, Loader2, Clock, Trash2, Camera } from "lucide-react";
 
 interface ScanHistoryEntry {
   humanReadableId: string;
-  itemName: string;
+  productName: string;
   status: string;
   scannedAt: string;
 }
@@ -67,7 +67,7 @@ function formatRelativeTime(isoString: string): string {
 export function ScannerView() {
   const [barcode, setBarcode] = useState("");
   const [loading, setLoading] = useState(false);
-  const [currentPiece, setCurrentPiece] = useState<ScannedPiece | null>(null);
+  const [currentItem, setCurrentItem] = useState<ScannedItem | null>(null);
   const [scanHistory, setScanHistory] = useState<ScanHistoryEntry[]>([]);
   const [containers, setContainers] = useState<PackableContainer[]>([]);
   const [historyLoaded, setHistoryLoaded] = useState(false);
@@ -118,26 +118,26 @@ export function ScannerView() {
   }, []);
 
   // -----------------------------------------------------------------------
-  // Common: process a found piece
+  // Common: process a found item
   // -----------------------------------------------------------------------
-  const processFoundPiece = useCallback((piece: ScannedPiece) => {
-    setCurrentPiece(piece);
+  const processFoundItem = useCallback((item: ScannedItem) => {
+    setCurrentItem(item);
 
     // Prepend to scan history (deduplicate and cap at MAX_HISTORY)
     setScanHistory((prev) => {
       const entry: ScanHistoryEntry = {
-        humanReadableId: piece.humanReadableId,
-        itemName: piece.item.name,
-        status: piece.status,
+        humanReadableId: item.humanReadableId,
+        productName: item.product.name,
+        status: item.status,
         scannedAt: new Date().toISOString(),
       };
       const filtered = prev.filter(
-        (e) => e.humanReadableId !== piece.humanReadableId
+        (e) => e.humanReadableId !== item.humanReadableId
       );
       return [entry, ...filtered].slice(0, MAX_HISTORY);
     });
 
-    toast.success(`${piece.humanReadableId} — ${piece.item.name}`);
+    toast.success(`${item.humanReadableId} — ${item.product.name}`);
 
     // Scroll result into view
     setTimeout(() => {
@@ -152,7 +152,7 @@ export function ScannerView() {
     async (humanReadableId: string) => {
       setLoading(true);
       try {
-        const result = await lookupPieceByBarcode({
+        const result = await lookupItemByBarcode({
           humanReadableId: humanReadableId.trim().toUpperCase(),
         });
 
@@ -161,16 +161,16 @@ export function ScannerView() {
           return;
         }
 
-        processFoundPiece(result.data as ScannedPiece);
+        processFoundItem(result.data as ScannedItem);
       } catch {
-        toast.error("Failed to look up piece");
+        toast.error("Failed to look up item");
       } finally {
         setLoading(false);
         setBarcode("");
         inputRef.current?.focus();
       }
     },
-    [processFoundPiece]
+    [processFoundItem]
   );
 
   // -----------------------------------------------------------------------
@@ -188,9 +188,9 @@ export function ScannerView() {
 
         let result;
         if (isUuid) {
-          result = await lookupPieceById(scannedValue);
+          result = await lookupItemById(scannedValue);
         } else {
-          result = await lookupPieceByBarcode({
+          result = await lookupItemByBarcode({
             humanReadableId: scannedValue.trim().toUpperCase(),
           });
         }
@@ -200,19 +200,19 @@ export function ScannerView() {
           return;
         }
 
-        const piece = result.data as ScannedPiece;
-        processFoundPiece(piece);
+        const item = result.data as ScannedItem;
+        processFoundItem(item);
 
         // Stop camera after successful scan so the result is visible
         cameraScannerRef.current?.stop();
         setShowCamera(false);
       } catch {
-        toast.error("Failed to look up scanned piece");
+        toast.error("Failed to look up scanned item");
       } finally {
         setLoading(false);
       }
     },
-    [processFoundPiece]
+    [processFoundItem]
   );
 
   // -----------------------------------------------------------------------
@@ -226,23 +226,23 @@ export function ScannerView() {
   }
 
   // -----------------------------------------------------------------------
-  // Action complete callback (re-fetch piece + containers, re-focus)
+  // Action complete callback (re-fetch item + containers, re-focus)
   // -----------------------------------------------------------------------
   const handleActionComplete = useCallback(async () => {
-    if (currentPiece) {
-      // Re-fetch the current piece
-      const pieceResult = await lookupPieceByBarcode({
-        humanReadableId: currentPiece.humanReadableId,
+    if (currentItem) {
+      // Re-fetch the current item
+      const itemResult = await lookupItemByBarcode({
+        humanReadableId: currentItem.humanReadableId,
       });
-      if ("data" in pieceResult) {
-        const refreshedPiece = pieceResult.data as ScannedPiece;
-        setCurrentPiece(refreshedPiece);
+      if ("data" in itemResult) {
+        const refreshedItem = itemResult.data as ScannedItem;
+        setCurrentItem(refreshedItem);
 
         // Update history entry with new status
         setScanHistory((prev) =>
           prev.map((entry) =>
-            entry.humanReadableId === refreshedPiece.humanReadableId
-              ? { ...entry, status: refreshedPiece.status }
+            entry.humanReadableId === refreshedItem.humanReadableId
+              ? { ...entry, status: refreshedItem.status }
               : entry
           )
         );
@@ -256,7 +256,7 @@ export function ScannerView() {
     }
 
     inputRef.current?.focus();
-  }, [currentPiece]);
+  }, [currentItem]);
 
   // -----------------------------------------------------------------------
   // History entry click
@@ -289,7 +289,7 @@ export function ScannerView() {
                   ref={inputRef}
                   value={barcode}
                   onChange={(e) => setBarcode(e.target.value)}
-                  placeholder="Scan barcode or type piece ID..."
+                  placeholder="Scan barcode or type item ID..."
                   className="pl-10 text-lg h-12"
                   disabled={loading}
                   autoComplete="off"
@@ -329,11 +329,11 @@ export function ScannerView() {
         )}
 
         {/* Result + Quick Actions */}
-        {currentPiece ? (
+        {currentItem ? (
           <div ref={resultRef} className="space-y-6">
-            <ScanResultCard piece={currentPiece} />
+            <ScanResultCard item={currentItem} />
             <QuickActions
-              piece={currentPiece}
+              item={currentItem}
               containers={containers}
               onActionComplete={handleActionComplete}
             />
@@ -343,11 +343,11 @@ export function ScannerView() {
                 className="w-full"
                 onClick={() => {
                   setShowCamera(true);
-                  setCurrentPiece(null);
+                  setCurrentItem(null);
                 }}
               >
                 <Camera className="size-4 mr-2" />
-                Scan Another Piece
+                Scan Another Item
               </Button>
             )}
           </div>
@@ -356,10 +356,10 @@ export function ScannerView() {
             <CardContent className="flex flex-col items-center justify-center py-16 text-center">
               <ScanLine className="size-12 text-muted-foreground mb-4" />
               <h3 className="text-lg font-medium">
-                Scan a piece to get started
+                Scan an item to get started
               </h3>
               <p className="text-sm text-muted-foreground mt-1">
-                Use a barcode scanner, type a piece ID, or open the camera
+                Use a barcode scanner, type an item ID, or open the camera
               </p>
             </CardContent>
           </Card>
@@ -378,7 +378,7 @@ export function ScannerView() {
           <CardContent>
             {scanHistory.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-8">
-                No pieces scanned yet
+                No items scanned yet
               </p>
             ) : (
               <div className="space-y-2">
@@ -394,11 +394,11 @@ export function ScannerView() {
                       </span>
                       <StatusBadge
                         status={entry.status}
-                        label={PIECE_STATUS_LABELS[entry.status] ?? entry.status}
+                        label={ITEM_STATUS_LABELS[entry.status] ?? entry.status}
                       />
                     </div>
                     <div className="mt-1 flex items-center justify-between text-muted-foreground">
-                      <span className="truncate mr-2">{entry.itemName}</span>
+                      <span className="truncate mr-2">{entry.productName}</span>
                       <span className="flex items-center gap-1 shrink-0">
                         <Clock className="size-3" />
                         {formatRelativeTime(entry.scannedAt)}
