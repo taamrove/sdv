@@ -17,7 +17,7 @@ import {
 import { Eye, MapPin } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   ITEM_STATUS_LABELS,
   ITEM_CONDITION_LABELS,
@@ -48,90 +48,108 @@ interface PaginationData {
   totalPages: number;
 }
 
-const columns: ColumnDef<Item>[] = [
-  {
-    accessorKey: "humanReadableId",
-    header: "ID",
-    cell: ({ row }) => (
-      <div className="flex items-center gap-1.5">
-        <span className="font-mono text-sm font-medium">
-          {row.original.humanReadableId}
-        </span>
-        {row.original.isExternal && (
-          <Badge variant="secondary" className="text-xs">
-            External
-          </Badge>
-        )}
-      </div>
-    ),
-  },
-  {
-    accessorKey: "product.name",
-    header: "Product",
-    cell: ({ row }) => (
-      <div>
-        <div className="font-medium">{row.original.product.name}</div>
-        <div className="text-xs text-muted-foreground">
-          {row.original.category.name}
-        </div>
-      </div>
-    ),
-  },
-  {
-    accessorKey: "status",
-    header: "Status",
-    cell: ({ row }) => (
-      <StatusBadge
-        status={row.original.status}
-        label={ITEM_STATUS_LABELS[row.original.status]}
-      />
-    ),
-  },
-  {
-    accessorKey: "condition",
-    header: "Condition",
-    cell: ({ row }) => (
-      <StatusBadge
-        status={row.original.condition}
-        label={ITEM_CONDITION_LABELS[row.original.condition]}
-      />
-    ),
-  },
-  {
-    accessorKey: "warehouseLocation",
-    header: "Location",
-    cell: ({ row }) =>
-      row.original.warehouseLocation ? (
-        <Badge variant="outline" className="gap-1">
-          <MapPin className="h-3 w-3" />
-          {row.original.warehouseLocation.label}
-        </Badge>
-      ) : (
-        <span className="text-muted-foreground text-sm">—</span>
-      ),
-  },
-  {
-    id: "actions",
-    cell: ({ row }) => (
-      <Link href={`/inventory/${row.original.id}`}>
-        <Button variant="ghost" size="icon">
-          <Eye className="h-4 w-4" />
-        </Button>
-      </Link>
-    ),
-  },
-];
-
 interface ItemListProps {
   items: Item[];
   categories: Category[];
   pagination: PaginationData;
+  /** When set, links use /inventory/{productId}/items/{itemId} and hides product column */
+  productId?: string;
 }
 
-export function ItemList({ items, categories, pagination }: ItemListProps) {
+function buildColumns(productId?: string): ColumnDef<Item>[] {
+  const cols: ColumnDef<Item>[] = [
+    {
+      accessorKey: "humanReadableId",
+      header: "ID",
+      cell: ({ row }) => (
+        <div className="flex items-center gap-1.5">
+          <span className="font-mono text-sm font-medium">
+            {row.original.humanReadableId}
+          </span>
+          {row.original.isExternal && (
+            <Badge variant="secondary" className="text-xs">
+              External
+            </Badge>
+          )}
+        </div>
+      ),
+    },
+  ];
+
+  // Only show product column when not scoped to a single product
+  if (!productId) {
+    cols.push({
+      accessorKey: "product.name",
+      header: "Product",
+      cell: ({ row }) => (
+        <div>
+          <div className="font-medium">{row.original.product.name}</div>
+          <div className="text-xs text-muted-foreground">
+            {row.original.category.name}
+          </div>
+        </div>
+      ),
+    });
+  }
+
+  cols.push(
+    {
+      accessorKey: "status",
+      header: "Status",
+      cell: ({ row }) => (
+        <StatusBadge
+          status={row.original.status}
+          label={ITEM_STATUS_LABELS[row.original.status]}
+        />
+      ),
+    },
+    {
+      accessorKey: "condition",
+      header: "Condition",
+      cell: ({ row }) => (
+        <StatusBadge
+          status={row.original.condition}
+          label={ITEM_CONDITION_LABELS[row.original.condition]}
+        />
+      ),
+    },
+    {
+      accessorKey: "warehouseLocation",
+      header: "Location",
+      cell: ({ row }) =>
+        row.original.warehouseLocation ? (
+          <Badge variant="outline" className="gap-1">
+            <MapPin className="h-3 w-3" />
+            {row.original.warehouseLocation.label}
+          </Badge>
+        ) : (
+          <span className="text-muted-foreground text-sm">—</span>
+        ),
+    },
+    {
+      id: "actions",
+      cell: ({ row }) => {
+        const pid = productId ?? row.original.product.id;
+        return (
+          <Link href={`/inventory/${pid}/items/${row.original.id}`}>
+            <Button variant="ghost" size="icon">
+              <Eye className="h-4 w-4" />
+            </Button>
+          </Link>
+        );
+      },
+    }
+  );
+
+  return cols;
+}
+
+export function ItemList({ items, categories, pagination, productId }: ItemListProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [search, setSearch] = useState(searchParams.get("search") ?? "");
+
+  const columns = useMemo(() => buildColumns(productId), [productId]);
 
   function applyFilters(params: Record<string, string>) {
     const sp = new URLSearchParams(searchParams.toString());
@@ -155,24 +173,27 @@ export function ItemList({ items, categories, pagination }: ItemListProps) {
           }}
           className="max-w-sm"
         />
-        <Select
-          value={searchParams.get("categoryId") ?? "all"}
-          onValueChange={(val) =>
-            applyFilters({ categoryId: val === "all" ? "" : val })
-          }
-        >
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="All categories" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All categories</SelectItem>
-            {categories.map((cat) => (
-              <SelectItem key={cat.id} value={cat.id}>
-                {cat.code} - {cat.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        {/* Hide category filter when scoped to a product (same category) */}
+        {!productId && (
+          <Select
+            value={searchParams.get("categoryId") ?? "all"}
+            onValueChange={(val) =>
+              applyFilters({ categoryId: val === "all" ? "" : val })
+            }
+          >
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="All categories" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All categories</SelectItem>
+              {categories.map((cat) => (
+                <SelectItem key={cat.id} value={cat.id}>
+                  {cat.code} - {cat.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
         <Select
           value={searchParams.get("status") ?? "all"}
           onValueChange={(val) =>

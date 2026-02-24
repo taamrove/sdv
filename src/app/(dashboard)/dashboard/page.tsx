@@ -62,7 +62,7 @@ export default async function DashboardPage() {
         orderBy: { createdAt: "desc" },
         take: 10,
         include: {
-          item: { select: { humanReadableId: true, id: true } },
+          item: { select: { humanReadableId: true, id: true, productId: true } },
           performedBy: { select: { firstName: true, lastName: true } },
         },
       }),
@@ -250,7 +250,7 @@ export default async function DashboardPage() {
                       <div className="flex items-center gap-2 flex-wrap">
                         <StatusBadge status={entry.action} />
                         <Link
-                          href={`/inventory/${entry.item.id}`}
+                          href={`/inventory/${entry.item.productId}/items/${entry.item.id}`}
                           className="font-mono text-xs hover:underline"
                         >
                           {entry.item.humanReadableId}

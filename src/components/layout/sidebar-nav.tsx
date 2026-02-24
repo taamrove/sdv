@@ -71,23 +71,9 @@ const navigation: NavGroup[] = [
     title: "Inventory",
     items: [
       {
-        label: "Items",
+        label: "Inventory",
         href: "/inventory",
         icon: Package,
-        permission: "items:read",
-        featureFlag: "items",
-      },
-      {
-        label: "Categories",
-        href: "/inventory/categories",
-        icon: FolderTree,
-        permission: "category:read",
-        featureFlag: "categories",
-      },
-      {
-        label: "Products",
-        href: "/inventory/products",
-        icon: ShoppingBag,
         permission: "products:read",
         featureFlag: "products",
       },
@@ -172,6 +158,13 @@ const navigation: NavGroup[] = [
     title: "Admin",
     items: [
       {
+        label: "Categories",
+        href: "/admin/categories",
+        icon: FolderTree,
+        permission: "category:read",
+        featureFlag: "categories",
+      },
+      {
         label: "Users",
         href: "/admin/users",
         icon: UserCog,
@@ -249,6 +242,9 @@ export function SidebarNav({ collapsed = false, onNavigate }: SidebarNavProps) {
 
   function isActive(href: string): boolean {
     if (href === "/dashboard") return pathname === "/dashboard";
+    // Exact match for /inventory so it doesn't highlight when on /inventory/availability
+    if (href === "/inventory")
+      return pathname === "/inventory" || (pathname.startsWith("/inventory/") && !pathname.startsWith("/inventory/availability"));
     return pathname === href || pathname.startsWith(href + "/");
   }
 

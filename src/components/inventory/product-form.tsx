@@ -82,7 +82,7 @@ export function ProductForm({ categories, product }: ProductFormProps) {
         }
         toast.success("Product created");
       }
-      router.push("/inventory/products");
+      router.push(isEditing ? `/inventory/${product.id}` : "/inventory");
       router.refresh();
     } catch {
       toast.error("Something went wrong");

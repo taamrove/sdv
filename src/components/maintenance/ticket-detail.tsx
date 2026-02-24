@@ -435,7 +435,7 @@ export function TicketDetail({ ticket, users }: TicketDetailProps) {
                 <div className="flex items-center gap-2">
                   <Wrench className="h-4 w-4 text-muted-foreground" />
                   <Link
-                    href={`/inventory/${ticket.item.id}`}
+                    href={`/inventory/${ticket.item.product.id}/items/${ticket.item.id}`}
                     className="text-primary hover:underline flex items-center gap-1"
                   >
                     <span className="font-mono">
@@ -786,7 +786,7 @@ export function TicketDetail({ ticket, users }: TicketDetailProps) {
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
               <Link
-                href={`/inventory/${ticket.item.id}`}
+                href={`/inventory/${ticket.item.product.id}/items/${ticket.item.id}`}
                 className="text-primary hover:underline flex items-center gap-1"
               >
                 View Item

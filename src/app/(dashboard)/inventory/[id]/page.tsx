@@ -2,96 +2,93 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { redirect, notFound } from "next/navigation";
 import { PageHeader } from "@/components/shared/page-header";
-import { ItemDetail } from "@/components/inventory/item-detail";
+import { ProductDetail } from "@/components/inventory/product-detail";
+import { ItemStatus, Prisma } from "@prisma/client";
 
-export default async function ItemDetailPage({
+interface SearchParams {
+  page?: string;
+  search?: string;
+  status?: string;
+}
+
+export default async function ProductDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<SearchParams>;
 }) {
   const session = await auth();
   if (!session) redirect("/login");
 
   const { id } = await params;
+  const sp = await searchParams;
+  const page = parseInt(sp.page ?? "1");
+  const limit = 20;
+  const skip = (page - 1) * limit;
 
-  const item = await prisma.item.findUnique({
+  const product = await prisma.product.findUnique({
     where: { id },
     include: {
-      product: true,
       category: true,
-      warehouseLocation: true,
+      _count: { select: { items: true } },
     },
   });
 
-  if (!item) notFound();
+  if (!product) notFound();
 
-  const history = await prisma.itemHistory.findMany({
-    where: { itemId: id },
-    include: { performedBy: { select: { firstName: true, lastName: true, email: true } } },
-    orderBy: { createdAt: "desc" },
-    take: 50,
-  });
+  // Build item filters scoped to this product
+  const itemWhere: Prisma.ItemWhereInput = { productId: id };
+  if (sp.search) {
+    itemWhere.OR = [
+      { humanReadableId: { contains: sp.search, mode: "insensitive" } },
+      { product: { name: { contains: sp.search, mode: "insensitive" } } },
+    ];
+  }
+  if (sp.status) {
+    itemWhere.status = sp.status as ItemStatus;
+  }
 
-  const locations = await prisma.warehouseLocation.findMany({
-    orderBy: { label: "asc" },
-  });
-
-  // Fetch active project bookings for this item
-  const bookingItems = await prisma.bookingItem.findMany({
-    where: {
-      itemId: id,
-      booking: {
-        project: {
-          status: { notIn: ["COMPLETED", "CANCELLED"] },
-        },
+  const [rawItems, itemTotal, categories] = await Promise.all([
+    prisma.item.findMany({
+      where: itemWhere,
+      include: {
+        product: true,
+        category: true,
+        warehouseLocation: true,
       },
-    },
-    include: {
-      booking: {
-        include: {
-          kit: { select: { name: true } },
-          project: {
-            select: {
-              id: true,
-              name: true,
-              status: true,
-              startDate: true,
-              endDate: true,
-            },
-          },
-        },
-      },
-    },
-    orderBy: { booking: { project: { startDate: "asc" } } },
-  });
-
-  const serializedBookings = bookingItems.map((bi) => ({
-    bookingItemId: bi.id,
-    kitName: bi.booking.kit.name,
-    projectId: bi.booking.project.id,
-    projectName: bi.booking.project.name,
-    projectStatus: bi.booking.project.status,
-    startDate: bi.booking.project.startDate?.toISOString() ?? null,
-    endDate: bi.booking.project.endDate?.toISOString() ?? null,
-  }));
+      orderBy: { createdAt: "desc" },
+      skip,
+      take: limit,
+    }),
+    prisma.item.count({ where: itemWhere }),
+    prisma.category.findMany({ orderBy: { code: "asc" } }),
+  ]);
 
   // Serialize Decimal to number for client component
-  const serializedItem = {
+  const items = rawItems.map((item) => ({
     ...item,
     purchasePrice: item.purchasePrice ? Number(item.purchasePrice) : null,
-  };
+  }));
+
+  const productCode = `${product.category.code}-${String(product.number).padStart(3, "0")}`;
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title={item.humanReadableId}
-        description={`${item.product.name} — ${item.category.name}`}
+        title={product.name}
+        description={`${productCode} — ${product.category.name}`}
       />
-      <ItemDetail
-        item={serializedItem}
-        history={history}
-        locations={locations}
-        bookings={serializedBookings}
+      <ProductDetail
+        product={product}
+        items={items}
+        categories={categories}
+        pagination={{
+          page,
+          limit,
+          total: itemTotal,
+          totalPages: Math.ceil(itemTotal / limit),
+        }}
       />
     </div>
   );

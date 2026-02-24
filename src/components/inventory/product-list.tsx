@@ -13,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Pencil, Package } from "lucide-react";
+import { Eye, Package } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
@@ -91,9 +91,9 @@ const columns: ColumnDef<Product>[] = [
   {
     id: "actions",
     cell: ({ row }) => (
-      <Link href={`/inventory/products/${row.original.id}`}>
+      <Link href={`/inventory/${row.original.id}`}>
         <Button variant="ghost" size="icon">
-          <Pencil className="h-4 w-4" />
+          <Eye className="h-4 w-4" />
         </Button>
       </Link>
     ),

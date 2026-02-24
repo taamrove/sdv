@@ -45,15 +45,17 @@ interface Location {
 interface ItemFormProps {
   products: Product[];
   locations: Location[];
+  /** When set, pre-selects and locks the product dropdown */
+  defaultProductId?: string;
 }
 
-export function ItemForm({ products, locations }: ItemFormProps) {
+export function ItemForm({ products, locations, defaultProductId }: ItemFormProps) {
   const router = useRouter();
 
   const form = useForm<CreateItemInput>({
     resolver: zodResolver(createItemSchema),
     defaultValues: {
-      productId: "",
+      productId: defaultProductId ?? "",
       color: "",
       notes: "",
       condition: "NEW",
@@ -72,7 +74,7 @@ export function ItemForm({ products, locations }: ItemFormProps) {
         return;
       }
       toast.success("Item created");
-      router.push("/inventory");
+      router.push(defaultProductId ? `/inventory/${defaultProductId}` : "/inventory");
       router.refresh();
     } catch {
       toast.error("Something went wrong");
@@ -92,6 +94,7 @@ export function ItemForm({ products, locations }: ItemFormProps) {
               <Select
                 value={form.watch("productId")}
                 onValueChange={(val) => form.setValue("productId", val)}
+                disabled={!!defaultProductId}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select a product" />
