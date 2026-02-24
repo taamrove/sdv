@@ -25,45 +25,45 @@ export default async function ItemDetailPage({
 
   if (!item || item.productId !== productId) notFound();
 
-  const history = await prisma.itemHistory.findMany({
-    where: { itemId },
-    include: { performedBy: { select: { firstName: true, lastName: true, email: true } } },
-    orderBy: { createdAt: "desc" },
-    take: 50,
-  });
-
-  const locations = await prisma.warehouseLocation.findMany({
-    orderBy: { label: "asc" },
-  });
-
-  // Fetch active project bookings for this item
-  const bookingItems = await prisma.bookingItem.findMany({
-    where: {
-      itemId,
-      booking: {
-        project: {
-          status: { notIn: ["COMPLETED", "CANCELLED"] },
+  // Run independent queries in parallel (saves ~2 round-trips)
+  const [history, locations, bookingItems] = await Promise.all([
+    prisma.itemHistory.findMany({
+      where: { itemId },
+      include: { performedBy: { select: { firstName: true, lastName: true, email: true } } },
+      orderBy: { createdAt: "desc" },
+      take: 50,
+    }),
+    prisma.warehouseLocation.findMany({
+      orderBy: { label: "asc" },
+    }),
+    prisma.bookingItem.findMany({
+      where: {
+        itemId,
+        booking: {
+          project: {
+            status: { notIn: ["COMPLETED", "CANCELLED"] },
+          },
         },
       },
-    },
-    include: {
-      booking: {
-        include: {
-          kit: { select: { name: true } },
-          project: {
-            select: {
-              id: true,
-              name: true,
-              status: true,
-              startDate: true,
-              endDate: true,
+      include: {
+        booking: {
+          include: {
+            kit: { select: { name: true } },
+            project: {
+              select: {
+                id: true,
+                name: true,
+                status: true,
+                startDate: true,
+                endDate: true,
+              },
             },
           },
         },
       },
-    },
-    orderBy: { booking: { project: { startDate: "asc" } } },
-  });
+      orderBy: { booking: { project: { startDate: "asc" } } },
+    }),
+  ]);
 
   const serializedBookings = bookingItems.map((bi) => ({
     bookingItemId: bi.id,
