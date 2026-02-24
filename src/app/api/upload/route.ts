@@ -8,9 +8,6 @@ import { randomUUID } from "crypto";
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 const MAX_SIZE = 5 * 1024 * 1024; // 5MB
 
-/** Use Vercel Blob when the token is available (production), filesystem otherwise (local dev). */
-const useBlob = !!process.env.BLOB_READ_WRITE_TOKEN;
-
 export async function POST(request: NextRequest) {
   try {
     const session = await auth();
@@ -56,11 +53,15 @@ export async function POST(request: NextRequest) {
 
     let url: string;
 
-    if (useBlob) {
+    // Check at request time (not module load) so env vars are always fresh
+    const blobToken = process.env.BLOB_READ_WRITE_TOKEN;
+
+    if (blobToken) {
       // --- Vercel Blob (production) ---
       const blob = await put(`${safeFolder}/${filename}`, file, {
         access: "public",
         contentType: file.type,
+        token: blobToken,
       });
       url = blob.url;
     } else {
@@ -78,8 +79,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ url });
   } catch (err) {
     console.error("Upload error:", err);
+    const message = err instanceof Error ? err.message : "Internal server error";
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: message },
       { status: 500 }
     );
   }
