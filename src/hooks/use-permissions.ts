@@ -1,10 +1,16 @@
 "use client";
 
 import { useSession } from "next-auth/react";
+import { useServerSession } from "@/providers/server-session-provider";
 
 export function usePermissions() {
-  const { data: session } = useSession();
-  const permissions = session?.user?.permissions ?? [];
+  const { data: clientSession } = useSession();
+  const serverUser = useServerSession();
+
+  // Prefer client session (stays in sync), but fall back to server session
+  // which is available immediately on first render (no async fetch).
+  const user = clientSession?.user ?? serverUser;
+  const permissions = user?.permissions ?? [];
 
   function hasPermission(perm: string): boolean {
     if (permissions.includes("*")) return true;
@@ -14,5 +20,5 @@ export function usePermissions() {
     return false;
   }
 
-  return { permissions, hasPermission, user: session?.user ?? null };
+  return { permissions, hasPermission, user: user ?? null };
 }
