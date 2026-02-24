@@ -213,7 +213,14 @@ export function ItemList({ items, categories, pagination, productId }: ItemListP
           </SelectContent>
         </Select>
       </div>
-      <DataTable columns={columns} data={items} />
+      <DataTable
+        columns={columns}
+        data={items}
+        onRowClick={(item) => {
+          const pid = productId ?? item.product.id;
+          router.push(`/inventory/${pid}/items/${item.id}`);
+        }}
+      />
       <Pagination {...pagination} />
     </div>
   );

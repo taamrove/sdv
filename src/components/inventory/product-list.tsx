@@ -150,7 +150,11 @@ export function ProductList({
           </SelectContent>
         </Select>
       </div>
-      <DataTable columns={columns} data={products} />
+      <DataTable
+        columns={columns}
+        data={products}
+        onRowClick={(product) => router.push(`/inventory/${product.id}`)}
+      />
       <Pagination {...pagination} />
     </div>
   );

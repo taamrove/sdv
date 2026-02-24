@@ -29,6 +29,7 @@ import { ImageUpload } from "@/components/shared/image-upload";
 import { ITEM_CONDITION_LABELS } from "@/lib/constants";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { useRef } from "react";
 
 interface Product {
   id: string;
@@ -51,6 +52,7 @@ interface ItemFormProps {
 
 export function ItemForm({ products, locations, defaultProductId }: ItemFormProps) {
   const router = useRouter();
+  const closeAfterSave = useRef(false);
 
   const form = useForm<CreateItemInput>({
     resolver: zodResolver(createItemSchema),
@@ -74,7 +76,17 @@ export function ItemForm({ products, locations, defaultProductId }: ItemFormProp
         return;
       }
       toast.success("Item created");
-      router.push(defaultProductId ? `/inventory/${defaultProductId}` : "/inventory");
+      if (closeAfterSave.current) {
+        router.push(defaultProductId ? `/inventory/${defaultProductId}` : "/inventory");
+      } else {
+        form.reset({
+          productId: defaultProductId ?? "",
+          color: "",
+          notes: "",
+          condition: "NEW",
+          isExternal: false,
+        });
+      }
       router.refresh();
     } catch {
       toast.error("Something went wrong");
@@ -354,8 +366,20 @@ export function ItemForm({ products, locations, defaultProductId }: ItemFormProp
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={form.formState.isSubmitting}>
-                {form.formState.isSubmitting ? "Creating..." : "Create Item"}
+              <Button
+                type="submit"
+                variant="secondary"
+                disabled={form.formState.isSubmitting}
+                onClick={() => { closeAfterSave.current = false; }}
+              >
+                {form.formState.isSubmitting ? "Creating..." : "Add"}
+              </Button>
+              <Button
+                type="submit"
+                disabled={form.formState.isSubmitting}
+                onClick={() => { closeAfterSave.current = true; }}
+              >
+                {form.formState.isSubmitting ? "Creating..." : "Add & Close"}
               </Button>
             </div>
           </form>

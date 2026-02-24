@@ -23,6 +23,7 @@ import { createProduct, updateProduct } from "@/actions/products";
 import { ImageUpload } from "@/components/shared/image-upload";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { useRef } from "react";
 
 interface Category {
   id: string;
@@ -46,6 +47,7 @@ interface ProductFormProps {
 export function ProductForm({ categories, product }: ProductFormProps) {
   const router = useRouter();
   const isEditing = !!product;
+  const closeAfterSave = useRef(false);
 
   const form = useForm<CreateProductInput>({
     resolver: zodResolver(createProductSchema),
@@ -82,7 +84,18 @@ export function ProductForm({ categories, product }: ProductFormProps) {
         }
         toast.success("Product created");
       }
-      router.push(isEditing ? `/inventory/${product.id}` : "/inventory");
+      if (isEditing || closeAfterSave.current) {
+        router.push(isEditing ? `/inventory/${product.id}` : "/inventory");
+      } else {
+        form.reset({
+          categoryId: "",
+          name: "",
+          description: "",
+          imageUrl: undefined,
+          size: undefined,
+          allowsSizeFlexibility: true,
+        });
+      }
       router.refresh();
     } catch {
       toast.error("Something went wrong");
@@ -185,13 +198,29 @@ export function ProductForm({ categories, product }: ProductFormProps) {
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={form.formState.isSubmitting}>
-              {form.formState.isSubmitting
-                ? "Saving..."
-                : isEditing
-                  ? "Update"
-                  : "Create"}
-            </Button>
+            {isEditing ? (
+              <Button type="submit" disabled={form.formState.isSubmitting}>
+                {form.formState.isSubmitting ? "Saving..." : "Update"}
+              </Button>
+            ) : (
+              <>
+                <Button
+                  type="submit"
+                  variant="secondary"
+                  disabled={form.formState.isSubmitting}
+                  onClick={() => { closeAfterSave.current = false; }}
+                >
+                  {form.formState.isSubmitting ? "Creating..." : "Add"}
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={form.formState.isSubmitting}
+                  onClick={() => { closeAfterSave.current = true; }}
+                >
+                  {form.formState.isSubmitting ? "Creating..." : "Add & Close"}
+                </Button>
+              </>
+            )}
           </div>
         </form>
       </CardContent>
