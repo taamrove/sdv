@@ -20,6 +20,8 @@ export interface ProductAvailability {
   assignedItems: number;
   maintenanceItems: number;
   externalItems: number;
+  /** Items available for a specific date range (= availableItems when no dates set) */
+  effectiveAvailableItems: number;
 }
 
 export interface ItemAvailability {
@@ -32,6 +34,10 @@ export interface ItemAvailability {
 
 interface AvailabilityByCategoryParams {
   categoryId?: string;
+  /** ISO date string e.g. "2025-12-01" */
+  dateFrom?: string;
+  /** ISO date string e.g. "2025-12-15" */
+  dateTo?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -44,9 +50,14 @@ export async function getAvailabilityByProduct(
   try {
     await requirePermission("items:read");
 
-    // Build a WHERE clause for the category filter
-    const categoryFilter = params?.categoryId
-      ? `AND i."categoryId" = '${params.categoryId}'`
+    // Validate categoryId to prevent injection (it's used in raw SQL)
+    const categoryId = params?.categoryId;
+    if (categoryId && !/^[0-9a-f-]{36}$/i.test(categoryId)) {
+      return { error: "Invalid categoryId" };
+    }
+
+    const categoryFilter = categoryId
+      ? `AND i."categoryId" = '${categoryId}'`
       : "";
 
     const rows = await prisma.$queryRawUnsafe<
@@ -75,9 +86,9 @@ export async function getAvailabilityByProduct(
         COUNT(i."id") FILTER (WHERE i."status" = 'ASSIGNED')    AS "assignedItems",
         COUNT(i."id") FILTER (WHERE i."status" = 'MAINTENANCE') AS "maintenanceItems",
         COUNT(i."id") FILTER (WHERE i."isExternal" = true)       AS "externalItems"
-      FROM items i
-      JOIN products p ON p."id" = i."productId"
-      JOIN categories c ON c."id" = i."categoryId"
+      FROM "Item" i
+      JOIN "Product" p ON p."id" = i."productId"
+      JOIN "Category" c ON c."id" = i."categoryId"
       WHERE 1=1 ${categoryFilter}
       GROUP BY p."id", p."name", c."name", c."code", p."size"
       ORDER BY c."code" ASC, p."name" ASC
@@ -95,7 +106,55 @@ export async function getAvailabilityByProduct(
       assignedItems: Number(row.assignedItems),
       maintenanceItems: Number(row.maintenanceItems),
       externalItems: Number(row.externalItems),
+      effectiveAvailableItems: Number(row.availableItems), // default = current available
     }));
+
+    // Date-aware: add ASSIGNED items that are free during the requested period
+    if (params?.dateFrom && params?.dateTo) {
+      const dateFrom = new Date(params.dateFrom);
+      const dateTo = new Date(params.dateTo);
+      dateTo.setHours(23, 59, 59, 999);
+
+      // Find ASSIGNED items per product that have NO blocking booking in the range.
+      // A booking is "blocking" if its project is active AND dates are unknown (null)
+      // OR overlap with [dateFrom, dateTo].
+      const freeAssigned = await prisma.item.groupBy({
+        by: ["productId"],
+        where: {
+          status: "ASSIGNED",
+          ...(categoryId ? { categoryId } : {}),
+          bookingItems: {
+            none: {
+              booking: {
+                project: {
+                  status: { notIn: ["COMPLETED", "CANCELLED"] },
+                  OR: [
+                    { startDate: null },
+                    { endDate: null },
+                    {
+                      AND: [
+                        { startDate: { lte: dateTo } },
+                        { endDate: { gte: dateFrom } },
+                      ],
+                    },
+                  ],
+                },
+              },
+            },
+          },
+        },
+        _count: { id: true },
+      });
+
+      const freeMap = new Map(
+        freeAssigned.map((r) => [r.productId, r._count.id])
+      );
+
+      for (const row of result) {
+        row.effectiveAvailableItems =
+          row.availableItems + (freeMap.get(row.productId) ?? 0);
+      }
+    }
 
     return { data: result };
   } catch (error) {

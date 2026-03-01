@@ -9,6 +9,8 @@ interface SearchParams {
   page?: string;
   search?: string;
   status?: string;
+  external?: string;
+  noLocation?: string;
 }
 
 export default async function ProductDetailPage({
@@ -47,6 +49,13 @@ export default async function ProductDetailPage({
   }
   if (sp.status) {
     itemWhere.status = sp.status as ItemStatus;
+  }
+  if (sp.external === "true") {
+    itemWhere.isExternal = true;
+  }
+  if (sp.noLocation === "true") {
+    itemWhere.warehouseLocationId = null;
+    itemWhere.isExternal = false;
   }
 
   const [rawItems, itemTotal, categories] = await Promise.all([

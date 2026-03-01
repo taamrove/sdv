@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 import { ProjectForm } from "./project-form";
 import { AddPerformerDialog } from "./add-performer-dialog";
+import { PerformerNotesPanel } from "./performer-notes-panel";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { removePerformer } from "@/actions/projects";
 import {
@@ -58,6 +59,13 @@ interface Booking {
   items: BookingItem[];
 }
 
+interface AssignmentNote {
+  id: string;
+  notes: string;
+  createdAt: Date | string;
+  bookingId: string | null;
+}
+
 interface Assignment {
   id: string;
   role: string | null;
@@ -67,6 +75,7 @@ interface Assignment {
     email: string | null;
     type: string;
   };
+  bookingNotes: AssignmentNote[];
 }
 
 interface Project {
@@ -297,32 +306,38 @@ export function ProjectDetail({
               <div className="space-y-2">
                 {project.assignments.map((assignment) => (
                   <Card key={assignment.id}>
-                    <CardContent className="flex items-center justify-between py-4">
-                      <div className="flex items-center gap-3">
-                        <div>
-                          <div className="font-medium">
-                            {assignment.performer.name}
-                          </div>
-                          <div className="flex items-center gap-2 mt-1">
-                            <Badge variant="outline" className="text-xs">
-                              {PERFORMER_TYPE_LABELS[assignment.performer.type] ??
-                                assignment.performer.type}
-                            </Badge>
-                            {assignment.role && (
-                              <span className="text-xs text-muted-foreground">
-                                Role: {assignment.role}
-                              </span>
-                            )}
+                    <CardContent className="py-4">
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-3">
+                          <div>
+                            <div className="font-medium">
+                              {assignment.performer.name}
+                            </div>
+                            <div className="flex items-center gap-2 mt-1">
+                              <Badge variant="outline" className="text-xs">
+                                {PERFORMER_TYPE_LABELS[assignment.performer.type] ??
+                                  assignment.performer.type}
+                              </Badge>
+                              {assignment.role && (
+                                <span className="text-xs text-muted-foreground">
+                                  Role: {assignment.role}
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setRemovingAssignment(assignment)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => setRemovingAssignment(assignment)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      <PerformerNotesPanel
+                        assignmentId={assignment.id}
+                        notes={assignment.bookingNotes}
+                      />
                     </CardContent>
                   </Card>
                 ))}

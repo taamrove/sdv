@@ -7,6 +7,8 @@ import { getAvailabilityByProduct } from "@/actions/availability";
 
 interface SearchParams {
   categoryId?: string;
+  dateFrom?: string;
+  dateTo?: string;
 }
 
 export default async function AvailabilityPage({
@@ -20,9 +22,11 @@ export default async function AvailabilityPage({
   const params = await searchParams;
 
   const [availabilityResult, categories] = await Promise.all([
-    getAvailabilityByProduct(
-      params.categoryId ? { categoryId: params.categoryId } : undefined
-    ),
+    getAvailabilityByProduct({
+      categoryId: params.categoryId,
+      dateFrom: params.dateFrom,
+      dateTo: params.dateTo,
+    }),
     prisma.category.findMany({ orderBy: { code: "asc" } }),
   ]);
 
@@ -34,7 +38,12 @@ export default async function AvailabilityPage({
         title="Availability"
         description="Overview of item availability by product type"
       />
-      <AvailabilityDashboard groups={groups} categories={categories} />
+      <AvailabilityDashboard
+        groups={groups}
+        categories={categories}
+        dateFrom={params.dateFrom}
+        dateTo={params.dateTo}
+      />
     </div>
   );
 }

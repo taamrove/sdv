@@ -30,6 +30,8 @@ import { ITEM_CONDITION_LABELS } from "@/lib/constants";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { useRef } from "react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertTriangle } from "lucide-react";
 
 interface Product {
   id: string;
@@ -183,11 +185,6 @@ export function ItemForm({ products, locations, defaultProductId }: ItemFormProp
                 This item is externally owned. Warehouse location is optional.
               </p>
             )}
-            {!form.watch("isExternal") && (
-              <p className="text-xs text-muted-foreground">
-                Company-owned item. A warehouse location is recommended.
-              </p>
-            )}
 
             <div className="space-y-2">
               <Label htmlFor="warehouseLocationId">
@@ -216,6 +213,15 @@ export function ItemForm({ products, locations, defaultProductId }: ItemFormProp
                 </SelectContent>
               </Select>
             </div>
+
+            {!form.watch("isExternal") && !form.watch("warehouseLocationId") && (
+              <Alert variant="default" className="border-yellow-300 bg-yellow-50 text-yellow-800 dark:border-yellow-800 dark:bg-yellow-950/30 dark:text-yellow-300">
+                <AlertTriangle className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+                <AlertDescription>
+                  Company-owned items should have a warehouse location assigned. Add a location so this item can be found in the warehouse.
+                </AlertDescription>
+              </Alert>
+            )}
 
             <div className="border rounded-lg p-4 space-y-4">
               <h3 className="font-medium text-sm">Sizes (optional)</h3>
