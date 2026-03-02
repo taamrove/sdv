@@ -10,6 +10,8 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -17,7 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Eye, Package } from "lucide-react";
+import { Eye, Package, CalendarRange, X } from "lucide-react";
 import { AvailabilityDetail } from "./availability-detail";
 import type { ProductAvailability } from "@/actions/availability";
 
@@ -30,11 +32,15 @@ interface Category {
 interface AvailabilityDashboardProps {
   groups: ProductAvailability[];
   categories: Category[];
+  dateFrom?: string;
+  dateTo?: string;
 }
 
 export function AvailabilityDashboard({
   groups,
   categories,
+  dateFrom,
+  dateTo,
 }: AvailabilityDashboardProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -42,16 +48,32 @@ export function AvailabilityDashboard({
   const [drillDownProductId, setDrillDownProductId] = useState<string | null>(null);
   const [drillDownProductName, setDrillDownProductName] = useState<string>("");
 
-  function handleCategoryFilter(value: string) {
+  const isDateFiltered = !!(dateFrom && dateTo);
+
+  function pushParams(updates: Record<string, string | undefined>) {
     startTransition(() => {
       const sp = new URLSearchParams(searchParams.toString());
-      if (value === "all") {
-        sp.delete("categoryId");
-      } else {
-        sp.set("categoryId", value);
+      for (const [k, v] of Object.entries(updates)) {
+        if (v) sp.set(k, v); else sp.delete(k);
       }
       router.push(`?${sp.toString()}`);
     });
+  }
+
+  function handleCategoryFilter(value: string) {
+    pushParams({ categoryId: value === "all" ? undefined : value });
+  }
+
+  function handleDateFrom(e: React.ChangeEvent<HTMLInputElement>) {
+    pushParams({ dateFrom: e.target.value || undefined });
+  }
+
+  function handleDateTo(e: React.ChangeEvent<HTMLInputElement>) {
+    pushParams({ dateTo: e.target.value || undefined });
+  }
+
+  function clearDates() {
+    pushParams({ dateFrom: undefined, dateTo: undefined });
   }
 
   function handleDrillDown(productId: string, productName: string) {
@@ -77,29 +99,75 @@ export function AvailabilityDashboard({
   return (
     <div className="space-y-4">
       {/* Filter Bar */}
-      <div className="flex gap-4">
-        <Select
-          value={searchParams.get("categoryId") ?? "all"}
-          onValueChange={handleCategoryFilter}
-        >
-          <SelectTrigger className="w-[220px]">
-            <SelectValue placeholder="All categories" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All categories</SelectItem>
-            {categories.map((cat) => (
-              <SelectItem key={cat.id} value={cat.id}>
-                {cat.code} - {cat.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      <div className="flex flex-wrap gap-3 items-end">
+        <div>
+          <Select
+            value={searchParams.get("categoryId") ?? "all"}
+            onValueChange={handleCategoryFilter}
+          >
+            <SelectTrigger className="w-[220px]">
+              <SelectValue placeholder="All categories" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All categories</SelectItem>
+              {categories.map((cat) => (
+                <SelectItem key={cat.id} value={cat.id}>
+                  {cat.code} - {cat.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Date range picker */}
+        <div className="flex items-end gap-2">
+          <div className="space-y-1">
+            <Label className="text-xs text-muted-foreground">From</Label>
+            <Input
+              type="date"
+              className="w-[160px]"
+              value={dateFrom ?? ""}
+              onChange={handleDateFrom}
+            />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs text-muted-foreground">To</Label>
+            <Input
+              type="date"
+              className="w-[160px]"
+              value={dateTo ?? ""}
+              min={dateFrom}
+              onChange={handleDateTo}
+            />
+          </div>
+          {isDateFiltered && (
+            <Button variant="ghost" size="icon" onClick={clearDates} title="Clear dates">
+              <X className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
+
         {isPending && (
           <span className="text-sm text-muted-foreground self-center">
             Loading...
           </span>
         )}
       </div>
+
+      {/* Date filter banner */}
+      {isDateFiltered && (
+        <div className="flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-4 py-2 text-sm text-blue-800 dark:border-blue-800 dark:bg-blue-950/30 dark:text-blue-300">
+          <CalendarRange className="h-4 w-4 shrink-0" />
+          <span>
+            Showing effective availability for{" "}
+            <strong>
+              {new Date(dateFrom!).toLocaleDateString()} –{" "}
+              {new Date(dateTo!).toLocaleDateString()}
+            </strong>
+            . Counts include currently assigned items that are free during this period.
+          </span>
+        </div>
+      )}
 
       {/* Empty State */}
       {groups.length === 0 ? (
@@ -124,16 +192,23 @@ export function AvailabilityDashboard({
                     {group.categoryCode} - {group.categoryName}
                   </Badge>
                 </div>
+                {group.size && (
+                  <p className="text-xs text-muted-foreground">
+                    Size: {group.size}
+                  </p>
+                )}
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {/* Available - big green number */}
+                  {/* Available count */}
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-muted-foreground">
-                      Available
+                      {isDateFiltered ? "Available for period" : "Available"}
                     </span>
                     <span className="text-2xl font-bold text-green-600">
-                      {group.availableItems}
+                      {isDateFiltered
+                        ? group.effectiveAvailableItems
+                        : group.availableItems}
                     </span>
                   </div>
 
@@ -157,10 +232,18 @@ export function AvailabilityDashboard({
                     </div>
                   </div>
 
+                  {/* External split */}
                   {group.externalItems > 0 && (
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">External</span>
-                      <Badge variant="secondary">{group.externalItems}</Badge>
+                      <span className="text-muted-foreground">
+                        Own / External
+                      </span>
+                      <span className="text-muted-foreground">
+                        {group.totalItems - group.externalItems}{" "}
+                        <span className="text-xs">own</span> /{" "}
+                        {group.externalItems}{" "}
+                        <span className="text-xs">ext</span>
+                      </span>
                     </div>
                   )}
 

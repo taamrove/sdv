@@ -21,6 +21,9 @@ export default async function ProjectDetailPage({
         assignments: {
           include: {
             performer: true,
+            bookingNotes: {
+              orderBy: { createdAt: "asc" },
+            },
           },
           orderBy: { performer: { name: "asc" } },
         },

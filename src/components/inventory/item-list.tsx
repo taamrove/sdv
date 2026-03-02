@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Eye, MapPin } from "lucide-react";
+import { Eye, MapPin, AlertTriangle } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
@@ -122,8 +122,13 @@ function buildColumns(productId?: string): ColumnDef<Item>[] {
             <MapPin className="h-3 w-3" />
             {row.original.warehouseLocation.label}
           </Badge>
-        ) : (
+        ) : row.original.isExternal ? (
           <span className="text-muted-foreground text-sm">—</span>
+        ) : (
+          <span className="flex items-center gap-1 text-yellow-600 dark:text-yellow-400 text-sm">
+            <AlertTriangle className="h-3 w-3" />
+            Missing
+          </span>
         ),
     },
     {
@@ -210,6 +215,30 @@ export function ItemList({ items, categories, pagination, productId }: ItemListP
                 {label}
               </SelectItem>
             ))}
+          </SelectContent>
+        </Select>
+        <Select
+          value={
+            searchParams.get("external") === "true"
+              ? "external"
+              : searchParams.get("noLocation") === "true"
+              ? "noLocation"
+              : "all"
+          }
+          onValueChange={(val) =>
+            applyFilters({
+              external: val === "external" ? "true" : "",
+              noLocation: val === "noLocation" ? "true" : "",
+            })
+          }
+        >
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="All items" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All items</SelectItem>
+            <SelectItem value="external">External only</SelectItem>
+            <SelectItem value="noLocation">Missing location</SelectItem>
           </SelectContent>
         </Select>
       </div>
