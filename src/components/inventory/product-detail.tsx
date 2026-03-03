@@ -6,7 +6,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ItemList } from "@/components/inventory/item-list";
-import { Pencil, Plus, Package } from "lucide-react";
+import { Pencil, Plus, Package, Layers } from "lucide-react";
+
+interface SubCategory {
+  id: string;
+  name: string;
+  sizeMode: string | null;
+}
 
 interface Product {
   id: string;
@@ -14,10 +20,10 @@ interface Product {
   number: number;
   description: string | null;
   imageUrl: string | null;
-  size: string | null;
   allowsSizeFlexibility: boolean;
   active: boolean;
   category: { id: string; code: string; name: string };
+  subCategory: SubCategory | null;
   _count: { items: number };
 }
 
@@ -28,7 +34,8 @@ interface Item {
   condition: string;
   color: string | null;
   isExternal: boolean;
-  product: { id: string; name: string; number: number };
+  archived: boolean;
+  product: { id: string; name: string; number: number; imageUrl: string | null };
   category: { id: string; code: string; name: string };
   warehouseLocation: { id: string; label: string } | null;
 }
@@ -68,10 +75,21 @@ export function ProductDetail({
                   {productCode}
                 </span>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <Badge variant="outline">{product.category.name}</Badge>
+                {product.subCategory && (
+                  <Badge variant="secondary" className="flex items-center gap-1">
+                    <Layers className="h-3 w-3" />
+                    {product.subCategory.name}
+                  </Badge>
+                )}
                 {!product.active && (
                   <Badge variant="destructive">Inactive</Badge>
+                )}
+                {product.allowsSizeFlexibility && (
+                  <Badge variant="outline" className="text-xs text-muted-foreground">
+                    Flexible sizing
+                  </Badge>
                 )}
               </div>
             </div>
@@ -101,23 +119,12 @@ export function ProductDetail({
                   {product.description}
                 </p>
               )}
-              <div className="flex gap-6 text-sm">
-                {product.size && (
-                  <div>
-                    <span className="font-medium">Size: </span>
-                    <span className="text-muted-foreground">{product.size}</span>
-                    {product.allowsSizeFlexibility && (
-                      <span className="text-muted-foreground"> (flexible)</span>
-                    )}
-                  </div>
-                )}
-                <div className="flex items-center gap-1">
-                  <Package className="h-4 w-4 text-muted-foreground" />
-                  <span className="font-medium">{product._count.items}</span>
-                  <span className="text-muted-foreground">
-                    item{product._count.items !== 1 ? "s" : ""}
-                  </span>
-                </div>
+              <div className="flex items-center gap-1 text-sm">
+                <Package className="h-4 w-4 text-muted-foreground" />
+                <span className="font-medium">{product._count.items}</span>
+                <span className="text-muted-foreground">
+                  item{product._count.items !== 1 ? "s" : ""}
+                </span>
               </div>
             </div>
           </div>

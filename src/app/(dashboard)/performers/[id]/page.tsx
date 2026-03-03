@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { redirect, notFound } from "next/navigation";
 import { PageHeader } from "@/components/shared/page-header";
 import { PerformerForm } from "@/components/performers/performer-form";
+import { getFullName } from "@/lib/format-name";
 
 export default async function EditPerformerPage({
   params,
@@ -18,7 +19,8 @@ export default async function EditPerformerPage({
     where: { id },
     select: {
       id: true,
-      name: true,
+      firstName: true,
+      lastName: true,
       email: true,
       phone: true,
       type: true,
@@ -34,7 +36,10 @@ export default async function EditPerformerPage({
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Edit Performer" description={performer.name} />
+      <PageHeader
+        title="Edit Performer"
+        description={getFullName(performer)}
+      />
       <PerformerForm performer={performer} />
     </div>
   );

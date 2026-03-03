@@ -17,16 +17,21 @@ export default async function ItemDetailPage({
   const item = await prisma.item.findUnique({
     where: { id: itemId },
     include: {
-      product: true,
+      product: {
+        include: { subCategory: true },
+      },
       category: true,
       warehouseLocation: true,
+      mainPerformer: {
+        select: { id: true, firstName: true, lastName: true },
+      },
     },
   });
 
   if (!item || item.productId !== productId) notFound();
 
-  // Run independent queries in parallel (saves ~2 round-trips)
-  const [history, locations, bookingItems] = await Promise.all([
+  // Run independent queries in parallel
+  const [history, locations, bookingItems, performers] = await Promise.all([
     prisma.itemHistory.findMany({
       where: { itemId },
       include: { performedBy: { select: { firstName: true, lastName: true, email: true } } },
@@ -63,6 +68,11 @@ export default async function ItemDetailPage({
       },
       orderBy: { booking: { project: { startDate: "asc" } } },
     }),
+    prisma.performer.findMany({
+      where: { active: true },
+      orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
+      select: { id: true, firstName: true, lastName: true },
+    }),
   ]);
 
   const serializedBookings = bookingItems.map((bi) => ({
@@ -75,10 +85,30 @@ export default async function ItemDetailPage({
     endDate: bi.booking.project.endDate?.toISOString() ?? null,
   }));
 
-  // Serialize Decimal to number for client component
+  const sizeMode = item.product.subCategory?.sizeMode ?? null;
+
+  // Serialize Decimal to number and shape for client component
   const serializedItem = {
-    ...item,
+    id: item.id,
+    humanReadableId: item.humanReadableId,
+    status: item.status,
+    condition: item.condition,
+    color: item.color,
+    sizes: item.sizes,
+    notes: item.notes,
+    purchaseDate: item.purchaseDate,
     purchasePrice: item.purchasePrice ? Number(item.purchasePrice) : null,
+    imageUrl: item.imageUrl,
+    archived: item.archived,
+    createdAt: item.createdAt,
+    product: { id: item.product.id, name: item.product.name, number: item.product.number },
+    category: { id: item.category.id, code: item.category.code, name: item.category.name },
+    warehouseLocation: item.warehouseLocation
+      ? { id: item.warehouseLocation.id, label: item.warehouseLocation.label }
+      : null,
+    mainPerformer: item.mainPerformer
+      ? { id: item.mainPerformer.id, firstName: item.mainPerformer.firstName, lastName: item.mainPerformer.lastName }
+      : null,
   };
 
   return (
@@ -92,6 +122,8 @@ export default async function ItemDetailPage({
         history={history}
         locations={locations}
         bookings={serializedBookings}
+        sizeMode={sizeMode}
+        performers={performers}
       />
     </div>
   );

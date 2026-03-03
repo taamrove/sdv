@@ -1,6 +1,7 @@
 "use client";
 
 import { ColumnDef } from "@tanstack/react-table";
+import Image from "next/image";
 import { DataTable } from "@/components/shared/data-table";
 import { Pagination } from "@/components/shared/pagination";
 import { StatusBadge } from "@/components/shared/status-badge";
@@ -14,7 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Eye, MapPin, AlertTriangle } from "lucide-react";
+import { Eye, MapPin, AlertTriangle, Package, Archive } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
@@ -30,7 +31,8 @@ interface Item {
   condition: string;
   color: string | null;
   isExternal: boolean;
-  product: { id: string; name: string; number: number };
+  archived: boolean;
+  product: { id: string; name: string; number: number; imageUrl: string | null };
   category: { id: string; code: string; name: string };
   warehouseLocation: { id: string; label: string } | null;
 }
@@ -59,6 +61,23 @@ interface ItemListProps {
 function buildColumns(productId?: string): ColumnDef<Item>[] {
   const cols: ColumnDef<Item>[] = [
     {
+      id: "thumbnail",
+      header: "",
+      size: 52,
+      cell: ({ row }) => {
+        const src = row.original.product.imageUrl;
+        return src ? (
+          <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded border">
+            <Image src={src} alt="" fill className="object-cover" />
+          </div>
+        ) : (
+          <div className="flex h-9 w-9 items-center justify-center rounded border bg-muted text-muted-foreground">
+            <Package className="h-4 w-4" />
+          </div>
+        );
+      },
+    },
+    {
       accessorKey: "humanReadableId",
       header: "ID",
       cell: ({ row }) => (
@@ -69,6 +88,12 @@ function buildColumns(productId?: string): ColumnDef<Item>[] {
           {row.original.isExternal && (
             <Badge variant="secondary" className="text-xs">
               External
+            </Badge>
+          )}
+          {row.original.archived && (
+            <Badge variant="outline" className="text-xs text-muted-foreground">
+              <Archive className="mr-1 h-3 w-3" />
+              Archived
             </Badge>
           )}
         </div>
@@ -155,6 +180,7 @@ export function ItemList({ items, categories, pagination, productId }: ItemListP
   const [search, setSearch] = useState(searchParams.get("search") ?? "");
 
   const columns = useMemo(() => buildColumns(productId), [productId]);
+  const showArchived = searchParams.get("archived") === "true";
 
   function applyFilters(params: Record<string, string>) {
     const sp = new URLSearchParams(searchParams.toString());
@@ -168,7 +194,7 @@ export function ItemList({ items, categories, pagination, productId }: ItemListP
 
   return (
     <div className="space-y-4">
-      <div className="flex gap-4">
+      <div className="flex flex-wrap gap-3">
         <Input
           placeholder="Search by ID or name..."
           value={search}
@@ -241,6 +267,17 @@ export function ItemList({ items, categories, pagination, productId }: ItemListP
             <SelectItem value="noLocation">Missing location</SelectItem>
           </SelectContent>
         </Select>
+        <Button
+          variant={showArchived ? "secondary" : "outline"}
+          size="sm"
+          onClick={() =>
+            applyFilters({ archived: showArchived ? "" : "true" })
+          }
+          className="gap-1.5"
+        >
+          <Archive className="h-4 w-4" />
+          {showArchived ? "Hide archived" : "Show archived"}
+        </Button>
       </div>
       <DataTable
         columns={columns}

@@ -132,8 +132,26 @@ model Category {
 
   products           Product[]
   items              Item[]
+  subCategories      SubCategory[]
   quarantineDefaults CategoryQuarantineDefault[]
 
+  @@schema("public")
+}
+
+/// SubCategory = admin-managed sub-type within a category (e.g. "Jacket" under "Costume").
+/// sizeMode drives which size fields appear on Items: "clothing" | "shoes" | "hat" | "measurements"
+model SubCategory {
+  id         String   @id @default(uuid())
+  categoryId String
+  name       String
+  sizeMode   String?
+  order      Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  category Category  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  products Product[]
+
+  @@unique([categoryId, name])
   @@schema("public")
 }
 
@@ -141,17 +159,18 @@ model Category {
 model Product {
   id                    String   @id @default(uuid())
   categoryId            String
+  subCategoryId         String?
   number                Int
   name                  String
   description           String?
   imageUrl              String?
-  size                  String?
   allowsSizeFlexibility Boolean  @default(true)
   active                Boolean  @default(true)
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
 
   category           Category           @relation(fields: [categoryId], references: [id])
+  subCategory        SubCategory?       @relation(fields: [subCategoryId], references: [id])
   items              Item[]
   kitVariantProducts KitVariantProduct[]
   packs              Pack[]
@@ -177,12 +196,15 @@ model Item {
   warehouseLocationId String?
   imageUrl            String?
   isExternal          Boolean       @default(false)
+  archived            Boolean       @default(false)
+  mainPerformerId     String?
   createdAt           DateTime      @default(now())
   updatedAt           DateTime      @updatedAt
 
   category           Category           @relation(fields: [categoryId], references: [id])
   product            Product            @relation(fields: [productId], references: [id])
   warehouseLocation  WarehouseLocation? @relation(fields: [warehouseLocationId], references: [id])
+  mainPerformer      Performer?         @relation("ItemMainPerformer", fields: [mainPerformerId], references: [id])
   bookingItems       BookingItem[]
   containerItems     ContainerItem[]
   maintenanceTickets MaintenanceTicket[]
@@ -341,7 +363,8 @@ model WarehouseLocation {
 
 model Performer {
   id                String        @id @default(uuid())
-  name              String
+  firstName         String
+  lastName          String
   email             String?
   phone             String?
   type              PerformerType @default(DANCER)
@@ -354,7 +377,8 @@ model Performer {
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
 
-  assignments PerformerAssignment[]
+  assignments  PerformerAssignment[]
+  primaryItems Item[]                @relation("ItemMainPerformer")
 
   @@schema("public")
 }

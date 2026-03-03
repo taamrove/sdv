@@ -7,12 +7,18 @@ import { Download, Printer } from "lucide-react";
 interface QRCodeDisplayProps {
   itemId: string;
   humanReadableId: string;
+  /** Optional product name shown on the print label */
+  productName?: string;
+  /** Optional sizes map to show on the print label */
+  sizes?: Record<string, string>;
   size?: number;
 }
 
 export function QRCodeDisplay({
   itemId,
   humanReadableId,
+  productName,
+  sizes,
   size = 200,
 }: QRCodeDisplayProps) {
   const qrUrl = `/api/qr/${itemId}`;
@@ -25,16 +31,51 @@ export function QRCodeDisplay({
     link.click();
   }
 
+  function buildSizeString() {
+    if (!sizes) return "";
+    const parts: string[] = [];
+    if (sizes["size"]) parts.push(sizes["size"]);
+    if (sizes["shoe"]) parts.push(`Shoe ${sizes["shoe"]}`);
+    if (sizes["hat"]) parts.push(`Hat ${sizes["hat"]}`);
+    if (sizes["chest"]) parts.push(`C${sizes["chest"]}`);
+    if (sizes["waist"]) parts.push(`W${sizes["waist"]}`);
+    if (sizes["hip"]) parts.push(`H${sizes["hip"]}`);
+    return parts.join(" / ");
+  }
+
   function handlePrint() {
     setPrinting(true);
     const printWindow = window.open("", "_blank");
     if (printWindow) {
+      const sizeStr = buildSizeString();
       printWindow.document.write(`
         <html>
-          <head><title>QR Code - ${humanReadableId}</title></head>
-          <body style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;margin:0;font-family:system-ui,-apple-system,sans-serif;">
-            <img src="${qrUrl}" width="300" height="300" />
-            <p style="font-size:24px;font-weight:bold;font-family:monospace;margin-top:16px;">${humanReadableId}</p>
+          <head>
+            <title>QR Label — ${humanReadableId}</title>
+            <style>
+              @page { margin: 0; size: 58mm auto; }
+              body {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: flex-start;
+                margin: 0;
+                padding: 6px;
+                font-family: monospace, sans-serif;
+                width: 220px;
+                box-sizing: border-box;
+              }
+              img { display: block; width: 200px; height: 200px; }
+              .id { font-size: 20px; font-weight: bold; margin-top: 4px; text-align: center; }
+              .name { font-size: 12px; margin-top: 2px; text-align: center; font-family: sans-serif; }
+              .sizes { font-size: 11px; margin-top: 2px; text-align: center; color: #555; font-family: sans-serif; }
+            </style>
+          </head>
+          <body>
+            <img src="${qrUrl}" />
+            <div class="id">${humanReadableId}</div>
+            ${productName ? `<div class="name">${productName}</div>` : ""}
+            ${sizeStr ? `<div class="sizes">${sizeStr}</div>` : ""}
           </body>
         </html>
       `);

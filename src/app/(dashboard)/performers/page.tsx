@@ -30,7 +30,8 @@ export default async function PerformersPage({
   const where: Prisma.PerformerWhereInput = {};
   if (params.search) {
     where.OR = [
-      { name: { contains: params.search, mode: "insensitive" } },
+      { firstName: { contains: params.search, mode: "insensitive" } },
+      { lastName: { contains: params.search, mode: "insensitive" } },
       { email: { contains: params.search, mode: "insensitive" } },
     ];
   }
@@ -41,7 +42,7 @@ export default async function PerformersPage({
   const [performers, total] = await Promise.all([
     prisma.performer.findMany({
       where,
-      orderBy: { name: "asc" },
+      orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
       skip,
       take: limit,
     }),

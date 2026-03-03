@@ -11,6 +11,7 @@ interface SearchParams {
   status?: string;
   external?: string;
   noLocation?: string;
+  archived?: string;
 }
 
 export default async function ProductDetailPage({
@@ -33,6 +34,7 @@ export default async function ProductDetailPage({
     where: { id },
     include: {
       category: true,
+      subCategory: true,
       _count: { select: { items: true } },
     },
   });
@@ -40,7 +42,10 @@ export default async function ProductDetailPage({
   if (!product) notFound();
 
   // Build item filters scoped to this product
-  const itemWhere: Prisma.ItemWhereInput = { productId: id };
+  const itemWhere: Prisma.ItemWhereInput = {
+    productId: id,
+    archived: sp.archived === "true" ? undefined : false,
+  };
   if (sp.search) {
     itemWhere.OR = [
       { humanReadableId: { contains: sp.search, mode: "insensitive" } },

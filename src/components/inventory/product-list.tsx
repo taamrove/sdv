@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Eye, Package } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
@@ -23,8 +24,10 @@ interface Product {
   name: string;
   number: number;
   description: string | null;
+  imageUrl: string | null;
   active: boolean;
   category: { id: string; code: string; name: string };
+  subCategory: { id: string; name: string } | null;
   _count: { items: number };
 }
 
@@ -49,6 +52,26 @@ interface ProductListProps {
 
 const columns: ColumnDef<Product>[] = [
   {
+    id: "image",
+    header: "",
+    cell: ({ row }) =>
+      row.original.imageUrl ? (
+        <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded border">
+          <Image
+            src={row.original.imageUrl}
+            alt={row.original.name}
+            fill
+            className="object-cover"
+            sizes="40px"
+          />
+        </div>
+      ) : (
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded border bg-muted">
+          <Package className="h-4 w-4 text-muted-foreground" />
+        </div>
+      ),
+  },
+  {
     accessorKey: "number",
     header: "ID",
     cell: ({ row }) => (
@@ -62,9 +85,17 @@ const columns: ColumnDef<Product>[] = [
     header: "Name",
     cell: ({ row }) => (
       <div>
-        <div className="font-medium">{row.original.name}</div>
-        {row.original.description && (
-          <div className="text-sm text-muted-foreground truncate max-w-[300px]">
+        <div className="flex items-center gap-1.5">
+          <span className="font-medium">{row.original.name}</span>
+          {!row.original.active && (
+            <Badge variant="destructive" className="text-xs">Inactive</Badge>
+          )}
+        </div>
+        {row.original.subCategory && (
+          <div className="text-xs text-muted-foreground">{row.original.subCategory.name}</div>
+        )}
+        {!row.original.subCategory && row.original.description && (
+          <div className="text-xs text-muted-foreground truncate max-w-[280px]">
             {row.original.description}
           </div>
         )}
@@ -82,8 +113,8 @@ const columns: ColumnDef<Product>[] = [
     accessorKey: "_count.items",
     header: "Items",
     cell: ({ row }) => (
-      <div className="flex items-center gap-1">
-        <Package className="h-3 w-3" />
+      <div className="flex items-center gap-1 text-sm">
+        <Package className="h-3 w-3 text-muted-foreground" />
         {row.original._count.items}
       </div>
     ),
@@ -100,11 +131,7 @@ const columns: ColumnDef<Product>[] = [
   },
 ];
 
-export function ProductList({
-  products,
-  categories,
-  pagination,
-}: ProductListProps) {
+export function ProductList({ products, categories, pagination }: ProductListProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [search, setSearch] = useState(searchParams.get("search") ?? "");

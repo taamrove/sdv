@@ -25,7 +25,7 @@ export default async function ProjectDetailPage({
               orderBy: { createdAt: "asc" },
             },
           },
-          orderBy: { performer: { name: "asc" } },
+          orderBy: [{ performer: { lastName: "asc" } }, { performer: { firstName: "asc" } }],
         },
         bookings: {
           include: {
@@ -52,8 +52,8 @@ export default async function ProjectDetailPage({
     }),
     prisma.performer.findMany({
       where: { active: true },
-      orderBy: { name: "asc" },
-      select: { id: true, name: true, type: true },
+      orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
+      select: { id: true, firstName: true, lastName: true, type: true },
     }),
   ]);
 

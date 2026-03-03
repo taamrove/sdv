@@ -26,13 +26,18 @@ import {
 } from "@/lib/validators/item";
 import { createItem } from "@/actions/items";
 import { ImageUpload } from "@/components/shared/image-upload";
-import { ITEM_CONDITION_LABELS } from "@/lib/constants";
+import {
+  ITEM_CONDITION_LABELS,
+  CLOTHING_SIZES,
+  SHOE_SIZES_EU,
+  HAT_SIZES_CM,
+} from "@/lib/constants";
+import { getFullName } from "@/lib/format-name";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { useRef } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertTriangle } from "lucide-react";
-
 interface Product {
   id: string;
   name: string;
@@ -45,14 +50,30 @@ interface Location {
   label: string;
 }
 
+interface Performer {
+  id: string;
+  firstName: string;
+  lastName: string;
+}
+
 interface ItemFormProps {
   products: Product[];
   locations: Location[];
   /** When set, pre-selects and locks the product dropdown */
   defaultProductId?: string;
+  /** sizeMode from the product's sub-category — drives which size fields appear */
+  sizeMode?: string | null;
+  /** Performers for main performer assignment */
+  performers?: Performer[];
 }
 
-export function ItemForm({ products, locations, defaultProductId }: ItemFormProps) {
+export function ItemForm({
+  products,
+  locations,
+  defaultProductId,
+  sizeMode,
+  performers = [],
+}: ItemFormProps) {
   const router = useRouter();
   const closeAfterSave = useRef(false);
 
@@ -93,6 +114,189 @@ export function ItemForm({ products, locations, defaultProductId }: ItemFormProp
     } catch {
       toast.error("Something went wrong");
     }
+  }
+
+  /** Render the size inputs appropriate for sizeMode */
+  function renderSizeFields() {
+    if (sizeMode === "clothing") {
+      return (
+        <div className="border rounded-lg p-4 space-y-3">
+          <h3 className="font-medium text-sm">Size</h3>
+          <div className="space-y-1">
+            <Label htmlFor="size" className="text-xs">Clothing Size</Label>
+            <Select
+              onValueChange={(val) => {
+                const sizes = form.getValues("sizes") ?? {};
+                form.setValue("sizes", { ...sizes, size: val });
+              }}
+            >
+              <SelectTrigger id="size">
+                <SelectValue placeholder="Select size" />
+              </SelectTrigger>
+              <SelectContent>
+                {CLOTHING_SIZES.map((s) => (
+                  <SelectItem key={s} value={s}>{s}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      );
+    }
+
+    if (sizeMode === "shoes") {
+      return (
+        <div className="border rounded-lg p-4 space-y-3">
+          <h3 className="font-medium text-sm">Size</h3>
+          <div className="space-y-1">
+            <Label htmlFor="shoe" className="text-xs">Shoe Size (EU)</Label>
+            <Select
+              onValueChange={(val) => {
+                const sizes = form.getValues("sizes") ?? {};
+                form.setValue("sizes", { ...sizes, shoe: val });
+              }}
+            >
+              <SelectTrigger id="shoe">
+                <SelectValue placeholder="Select EU size" />
+              </SelectTrigger>
+              <SelectContent>
+                {SHOE_SIZES_EU.map((s) => (
+                  <SelectItem key={s} value={s}>{s}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      );
+    }
+
+    if (sizeMode === "hat") {
+      return (
+        <div className="border rounded-lg p-4 space-y-3">
+          <h3 className="font-medium text-sm">Size</h3>
+          <div className="space-y-1">
+            <Label htmlFor="hat" className="text-xs">Hat Size (cm)</Label>
+            <Select
+              onValueChange={(val) => {
+                const sizes = form.getValues("sizes") ?? {};
+                form.setValue("sizes", { ...sizes, hat: val });
+              }}
+            >
+              <SelectTrigger id="hat">
+                <SelectValue placeholder="Select hat size" />
+              </SelectTrigger>
+              <SelectContent>
+                {HAT_SIZES_CM.map((s) => (
+                  <SelectItem key={s} value={s}>{s}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      );
+    }
+
+    if (sizeMode === "measurements") {
+      return (
+        <div className="border rounded-lg p-4 space-y-4">
+          <h3 className="font-medium text-sm">Measurements (optional)</h3>
+          <div className="grid grid-cols-2 gap-4">
+            {[
+              { key: "chest", label: "Chest", placeholder: "e.g., 90cm" },
+              { key: "waist", label: "Waist", placeholder: "e.g., 75cm" },
+              { key: "hip", label: "Hip", placeholder: "e.g., 95cm" },
+            ].map(({ key, label, placeholder }) => (
+              <div key={key} className="space-y-1">
+                <Label htmlFor={key} className="text-xs">{label}</Label>
+                <Input
+                  id={key}
+                  placeholder={placeholder}
+                  onChange={(e) => {
+                    const sizes = form.getValues("sizes") ?? {};
+                    form.setValue("sizes", { ...sizes, [key]: e.target.value });
+                  }}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    // No sizeMode — show all fields as free text
+    return (
+      <div className="border rounded-lg p-4 space-y-4">
+        <h3 className="font-medium text-sm">Sizes (optional)</h3>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-1">
+            <Label htmlFor="size" className="text-xs">General Size</Label>
+            <Input
+              id="size"
+              placeholder="e.g., M, L, XL"
+              onChange={(e) => {
+                const sizes = form.getValues("sizes") ?? {};
+                form.setValue("sizes", { ...sizes, size: e.target.value });
+              }}
+            />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="chest" className="text-xs">Chest</Label>
+            <Input
+              id="chest"
+              placeholder="e.g., 90cm"
+              onChange={(e) => {
+                const sizes = form.getValues("sizes") ?? {};
+                form.setValue("sizes", { ...sizes, chest: e.target.value });
+              }}
+            />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="waist" className="text-xs">Waist</Label>
+            <Input
+              id="waist"
+              placeholder="e.g., 75cm"
+              onChange={(e) => {
+                const sizes = form.getValues("sizes") ?? {};
+                form.setValue("sizes", { ...sizes, waist: e.target.value });
+              }}
+            />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="hip" className="text-xs">Hip</Label>
+            <Input
+              id="hip"
+              placeholder="e.g., 95cm"
+              onChange={(e) => {
+                const sizes = form.getValues("sizes") ?? {};
+                form.setValue("sizes", { ...sizes, hip: e.target.value });
+              }}
+            />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="shoe" className="text-xs">Shoe Size</Label>
+            <Input
+              id="shoe"
+              placeholder="e.g., 42"
+              onChange={(e) => {
+                const sizes = form.getValues("sizes") ?? {};
+                form.setValue("sizes", { ...sizes, shoe: e.target.value });
+              }}
+            />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="hat" className="text-xs">Hat Size</Label>
+            <Input
+              id="hat"
+              placeholder="e.g., 58"
+              onChange={(e) => {
+                const sizes = form.getValues("sizes") ?? {};
+                form.setValue("sizes", { ...sizes, hat: e.target.value });
+              }}
+            />
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -223,107 +427,33 @@ export function ItemForm({ products, locations, defaultProductId }: ItemFormProp
               </Alert>
             )}
 
-            <div className="border rounded-lg p-4 space-y-4">
-              <h3 className="font-medium text-sm">Sizes (optional)</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <Label htmlFor="size" className="text-xs">
-                    General Size
-                  </Label>
-                  <Input
-                    id="size"
-                    placeholder="e.g., M, L, XL"
-                    onChange={(e) => {
-                      const sizes = form.getValues("sizes") ?? {};
-                      form.setValue("sizes", {
-                        ...sizes,
-                        size: e.target.value,
-                      });
-                    }}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label htmlFor="chest" className="text-xs">
-                    Chest
-                  </Label>
-                  <Input
-                    id="chest"
-                    placeholder="e.g., 90cm"
-                    onChange={(e) => {
-                      const sizes = form.getValues("sizes") ?? {};
-                      form.setValue("sizes", {
-                        ...sizes,
-                        chest: e.target.value,
-                      });
-                    }}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label htmlFor="waist" className="text-xs">
-                    Waist
-                  </Label>
-                  <Input
-                    id="waist"
-                    placeholder="e.g., 75cm"
-                    onChange={(e) => {
-                      const sizes = form.getValues("sizes") ?? {};
-                      form.setValue("sizes", {
-                        ...sizes,
-                        waist: e.target.value,
-                      });
-                    }}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label htmlFor="hip" className="text-xs">
-                    Hip
-                  </Label>
-                  <Input
-                    id="hip"
-                    placeholder="e.g., 95cm"
-                    onChange={(e) => {
-                      const sizes = form.getValues("sizes") ?? {};
-                      form.setValue("sizes", {
-                        ...sizes,
-                        hip: e.target.value,
-                      });
-                    }}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label htmlFor="shoe" className="text-xs">
-                    Shoe Size
-                  </Label>
-                  <Input
-                    id="shoe"
-                    placeholder="e.g., 42"
-                    onChange={(e) => {
-                      const sizes = form.getValues("sizes") ?? {};
-                      form.setValue("sizes", {
-                        ...sizes,
-                        shoe: e.target.value,
-                      });
-                    }}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label htmlFor="hat" className="text-xs">
-                    Hat Size
-                  </Label>
-                  <Input
-                    id="hat"
-                    placeholder="e.g., 58"
-                    onChange={(e) => {
-                      const sizes = form.getValues("sizes") ?? {};
-                      form.setValue("sizes", {
-                        ...sizes,
-                        hat: e.target.value,
-                      });
-                    }}
-                  />
-                </div>
+            {/* Size fields driven by sizeMode */}
+            {renderSizeFields()}
+
+            {/* Main performer */}
+            {performers.length > 0 && (
+              <div className="space-y-2">
+                <Label htmlFor="mainPerformerId">Main Performer (optional)</Label>
+                <Select
+                  value={form.watch("mainPerformerId") ?? "none"}
+                  onValueChange={(val) =>
+                    form.setValue("mainPerformerId", val === "none" ? undefined : val)
+                  }
+                >
+                  <SelectTrigger id="mainPerformerId">
+                    <SelectValue placeholder="No performer assigned" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No performer assigned</SelectItem>
+                    {performers.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {getFullName(p)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-            </div>
+            )}
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">

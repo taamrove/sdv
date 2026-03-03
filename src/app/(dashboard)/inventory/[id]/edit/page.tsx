@@ -14,7 +14,7 @@ export default async function EditProductPage({
 
   const { id } = await params;
 
-  const [product, categories] = await Promise.all([
+  const [product, categories, subCategories] = await Promise.all([
     prisma.product.findUnique({
       where: { id },
       select: {
@@ -22,20 +22,21 @@ export default async function EditProductPage({
         name: true,
         description: true,
         categoryId: true,
+        subCategoryId: true,
         imageUrl: true,
-        size: true,
         allowsSizeFlexibility: true,
       },
     }),
     prisma.category.findMany({ orderBy: { code: "asc" } }),
+    prisma.subCategory.findMany({ orderBy: [{ order: "asc" }, { name: "asc" }] }),
   ]);
 
   if (!product) notFound();
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Edit Product" description={product.name} />
-      <ProductForm categories={categories} product={product} />
+      <PageHeader title={`Edit: ${product.name}`} description="Edit product details" />
+      <ProductForm categories={categories} subCategories={subCategories} product={product} />
     </div>
   );
 }

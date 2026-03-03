@@ -38,7 +38,8 @@ interface SizeProfile {
 interface PerformerFormProps {
   performer?: {
     id: string;
-    name: string;
+    firstName: string;
+    lastName: string;
     email: string | null;
     phone: string | null;
     type: string;
@@ -59,7 +60,8 @@ export function PerformerForm({ performer }: PerformerFormProps) {
   const form = useForm<CreatePerformerInput>({
     resolver: zodResolver(createPerformerSchema),
     defaultValues: {
-      name: performer?.name ?? "",
+      firstName: performer?.firstName ?? "",
+      lastName: performer?.lastName ?? "",
       email: performer?.email ?? undefined,
       phone: performer?.phone ?? undefined,
       type: (performer?.type as CreatePerformerInput["type"]) ?? "DANCER",
@@ -105,18 +107,33 @@ export function PerformerForm({ performer }: PerformerFormProps) {
         </CardHeader>
         <CardContent>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="name">Name *</Label>
-              <Input
-                id="name"
-                placeholder="e.g., Maria Garcia"
-                {...form.register("name")}
-              />
-              {form.formState.errors.name && (
-                <p className="text-sm text-destructive">
-                  {form.formState.errors.name.message}
-                </p>
-              )}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="firstName">First Name *</Label>
+                <Input
+                  id="firstName"
+                  placeholder="e.g., Maria"
+                  {...form.register("firstName")}
+                />
+                {form.formState.errors.firstName && (
+                  <p className="text-sm text-destructive">
+                    {form.formState.errors.firstName.message}
+                  </p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="lastName">Last Name *</Label>
+                <Input
+                  id="lastName"
+                  placeholder="e.g., Garcia"
+                  {...form.register("lastName")}
+                />
+                {form.formState.errors.lastName && (
+                  <p className="text-sm text-destructive">
+                    {form.formState.errors.lastName.message}
+                  </p>
+                )}
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -174,106 +191,34 @@ export function PerformerForm({ performer }: PerformerFormProps) {
               <h3 className="font-medium text-sm">Size Profile (optional)</h3>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <Label htmlFor="size" className="text-xs">
-                    General Size
-                  </Label>
-                  <Input
-                    id="size"
-                    placeholder="e.g., M, L, XL"
-                    defaultValue={existingSizes.size ?? ""}
-                    onChange={(e) => {
-                      const sizes = form.getValues("sizes") ?? {};
-                      form.setValue("sizes", {
-                        ...sizes,
-                        size: e.target.value,
-                      });
-                    }}
-                  />
+                  <Label htmlFor="size" className="text-xs">General Size</Label>
+                  <Input id="size" placeholder="e.g., M, L, XL" defaultValue={existingSizes.size ?? ""}
+                    onChange={(e) => { const s = form.getValues("sizes") ?? {}; form.setValue("sizes", { ...s, size: e.target.value }); }} />
                 </div>
                 <div className="space-y-1">
-                  <Label htmlFor="chest" className="text-xs">
-                    Chest
-                  </Label>
-                  <Input
-                    id="chest"
-                    placeholder="e.g., 90cm"
-                    defaultValue={existingSizes.chest ?? ""}
-                    onChange={(e) => {
-                      const sizes = form.getValues("sizes") ?? {};
-                      form.setValue("sizes", {
-                        ...sizes,
-                        chest: e.target.value,
-                      });
-                    }}
-                  />
+                  <Label htmlFor="chest" className="text-xs">Chest</Label>
+                  <Input id="chest" placeholder="e.g., 90cm" defaultValue={existingSizes.chest ?? ""}
+                    onChange={(e) => { const s = form.getValues("sizes") ?? {}; form.setValue("sizes", { ...s, chest: e.target.value }); }} />
                 </div>
                 <div className="space-y-1">
-                  <Label htmlFor="waist" className="text-xs">
-                    Waist
-                  </Label>
-                  <Input
-                    id="waist"
-                    placeholder="e.g., 75cm"
-                    defaultValue={existingSizes.waist ?? ""}
-                    onChange={(e) => {
-                      const sizes = form.getValues("sizes") ?? {};
-                      form.setValue("sizes", {
-                        ...sizes,
-                        waist: e.target.value,
-                      });
-                    }}
-                  />
+                  <Label htmlFor="waist" className="text-xs">Waist</Label>
+                  <Input id="waist" placeholder="e.g., 75cm" defaultValue={existingSizes.waist ?? ""}
+                    onChange={(e) => { const s = form.getValues("sizes") ?? {}; form.setValue("sizes", { ...s, waist: e.target.value }); }} />
                 </div>
                 <div className="space-y-1">
-                  <Label htmlFor="hip" className="text-xs">
-                    Hip
-                  </Label>
-                  <Input
-                    id="hip"
-                    placeholder="e.g., 95cm"
-                    defaultValue={existingSizes.hip ?? ""}
-                    onChange={(e) => {
-                      const sizes = form.getValues("sizes") ?? {};
-                      form.setValue("sizes", {
-                        ...sizes,
-                        hip: e.target.value,
-                      });
-                    }}
-                  />
+                  <Label htmlFor="hip" className="text-xs">Hip</Label>
+                  <Input id="hip" placeholder="e.g., 95cm" defaultValue={existingSizes.hip ?? ""}
+                    onChange={(e) => { const s = form.getValues("sizes") ?? {}; form.setValue("sizes", { ...s, hip: e.target.value }); }} />
                 </div>
                 <div className="space-y-1">
-                  <Label htmlFor="shoe" className="text-xs">
-                    Shoe Size
-                  </Label>
-                  <Input
-                    id="shoe"
-                    placeholder="e.g., 42"
-                    defaultValue={existingSizes.shoe ?? ""}
-                    onChange={(e) => {
-                      const sizes = form.getValues("sizes") ?? {};
-                      form.setValue("sizes", {
-                        ...sizes,
-                        shoe: e.target.value,
-                      });
-                    }}
-                  />
+                  <Label htmlFor="shoe" className="text-xs">Shoe Size</Label>
+                  <Input id="shoe" placeholder="e.g., 42" defaultValue={existingSizes.shoe ?? ""}
+                    onChange={(e) => { const s = form.getValues("sizes") ?? {}; form.setValue("sizes", { ...s, shoe: e.target.value }); }} />
                 </div>
                 <div className="space-y-1">
-                  <Label htmlFor="hat" className="text-xs">
-                    Hat Size
-                  </Label>
-                  <Input
-                    id="hat"
-                    placeholder="e.g., 58"
-                    defaultValue={existingSizes.hat ?? ""}
-                    onChange={(e) => {
-                      const sizes = form.getValues("sizes") ?? {};
-                      form.setValue("sizes", {
-                        ...sizes,
-                        hat: e.target.value,
-                      });
-                    }}
-                  />
+                  <Label htmlFor="hat" className="text-xs">Hat Size</Label>
+                  <Input id="hat" placeholder="e.g., 58" defaultValue={existingSizes.hat ?? ""}
+                    onChange={(e) => { const s = form.getValues("sizes") ?? {}; form.setValue("sizes", { ...s, hat: e.target.value }); }} />
                 </div>
               </div>
 
@@ -283,9 +228,7 @@ export function PerformerForm({ performer }: PerformerFormProps) {
                   checked={form.watch("requiresExactSize") ?? false}
                   onCheckedChange={(checked) => {
                     form.setValue("requiresExactSize", checked);
-                    if (checked) {
-                      form.setValue("sizeFlexDirection", null);
-                    }
+                    if (checked) form.setValue("sizeFlexDirection", null);
                   }}
                 />
                 <Label htmlFor="requiresExactSize">Requires Exact Size</Label>
@@ -299,12 +242,7 @@ export function PerformerForm({ performer }: PerformerFormProps) {
                   <Select
                     value={form.watch("sizeFlexDirection") ?? "none"}
                     onValueChange={(val) =>
-                      form.setValue(
-                        "sizeFlexDirection",
-                        val === "none"
-                          ? null
-                          : (val as CreatePerformerInput["sizeFlexDirection"])
-                      )
+                      form.setValue("sizeFlexDirection", val === "none" ? null : (val as CreatePerformerInput["sizeFlexDirection"]))
                     }
                   >
                     <SelectTrigger>
@@ -312,13 +250,9 @@ export function PerformerForm({ performer }: PerformerFormProps) {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">No preference</SelectItem>
-                      {Object.entries(SIZE_FLEX_DIRECTION_LABELS).map(
-                        ([key, label]) => (
-                          <SelectItem key={key} value={key}>
-                            {label}
-                          </SelectItem>
-                        )
-                      )}
+                      {Object.entries(SIZE_FLEX_DIRECTION_LABELS).map(([key, label]) => (
+                        <SelectItem key={key} value={key}>{label}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -327,11 +261,7 @@ export function PerformerForm({ performer }: PerformerFormProps) {
 
             <div className="space-y-2">
               <Label htmlFor="notes">Notes</Label>
-              <Textarea
-                id="notes"
-                placeholder="Optional notes..."
-                {...form.register("notes")}
-              />
+              <Textarea id="notes" placeholder="Optional notes..." {...form.register("notes")} />
             </div>
 
             <div className="flex items-center gap-3">
@@ -344,19 +274,11 @@ export function PerformerForm({ performer }: PerformerFormProps) {
             </div>
 
             <div className="flex justify-end gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => router.back()}
-              >
+              <Button type="button" variant="outline" onClick={() => router.back()}>
                 Cancel
               </Button>
               <Button type="submit" disabled={form.formState.isSubmitting}>
-                {form.formState.isSubmitting
-                  ? "Saving..."
-                  : isEditing
-                    ? "Update"
-                    : "Create"}
+                {form.formState.isSubmitting ? "Saving..." : isEditing ? "Update" : "Create"}
               </Button>
             </div>
           </form>

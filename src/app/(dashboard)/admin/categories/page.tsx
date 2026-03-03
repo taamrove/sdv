@@ -12,6 +12,7 @@ export default async function CategoriesPage() {
     orderBy: { code: "asc" },
     include: {
       _count: { select: { products: true, items: true } },
+    subCategories: { orderBy: [{ order: "asc" }, { name: "asc" }] },
     },
   });
 

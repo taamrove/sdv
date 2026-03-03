@@ -29,6 +29,7 @@ interface ItemListParams {
   warehouseLocationId?: string;
   page?: number;
   limit?: number;
+  includeArchived?: boolean;
 }
 
 type ActionResult<T> = { data: T } | { error: string };
@@ -78,6 +79,11 @@ export async function getItems(
           },
         },
       ];
+    }
+
+    // By default, exclude archived items unless explicitly requested
+    if (!params?.includeArchived) {
+      where.archived = false;
     }
 
     const [items, total] = await Promise.all([
@@ -202,6 +208,7 @@ export async function createItem(
           imageUrl: parsed.data.imageUrl ?? undefined,
           condition: parsed.data.condition ?? undefined,
           isExternal: parsed.data.isExternal ?? false,
+          mainPerformerId: parsed.data.mainPerformerId ?? undefined,
         },
         include: {
           product: true,

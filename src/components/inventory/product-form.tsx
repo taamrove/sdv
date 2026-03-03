@@ -31,20 +31,27 @@ interface Category {
   name: string;
 }
 
+interface SubCategory {
+  id: string;
+  name: string;
+  categoryId: string;
+}
+
 interface ProductFormProps {
   categories: Category[];
+  subCategories: SubCategory[];
   product?: {
     id: string;
     name: string;
     description: string | null;
     categoryId: string;
+    subCategoryId: string | null;
     imageUrl: string | null;
-    size: string | null;
     allowsSizeFlexibility: boolean;
   };
 }
 
-export function ProductForm({ categories, product }: ProductFormProps) {
+export function ProductForm({ categories, subCategories, product }: ProductFormProps) {
   const router = useRouter();
   const isEditing = !!product;
   const closeAfterSave = useRef(false);
@@ -53,22 +60,27 @@ export function ProductForm({ categories, product }: ProductFormProps) {
     resolver: zodResolver(createProductSchema),
     defaultValues: {
       categoryId: product?.categoryId ?? "",
+      subCategoryId: product?.subCategoryId ?? undefined,
       name: product?.name ?? "",
       description: product?.description ?? "",
       imageUrl: product?.imageUrl ?? undefined,
-      size: product?.size ?? undefined,
       allowsSizeFlexibility: product?.allowsSizeFlexibility ?? true,
     },
   });
+
+  const selectedCategoryId = form.watch("categoryId");
+  const filteredSubCategories = subCategories.filter(
+    (s) => s.categoryId === (isEditing ? product.categoryId : selectedCategoryId)
+  );
 
   async function onSubmit(data: CreateProductInput) {
     try {
       if (isEditing) {
         const result = await updateProduct(product.id, {
+          subCategoryId: data.subCategoryId,
           name: data.name,
           description: data.description,
           imageUrl: data.imageUrl,
-          size: data.size,
           allowsSizeFlexibility: data.allowsSizeFlexibility,
         });
         if ("error" in result) {
@@ -76,6 +88,7 @@ export function ProductForm({ categories, product }: ProductFormProps) {
           return;
         }
         toast.success("Product updated");
+        router.push(`/inventory/${product.id}`);
       } else {
         const result = await createProduct(data);
         if ("error" in result) {
@@ -83,18 +96,20 @@ export function ProductForm({ categories, product }: ProductFormProps) {
           return;
         }
         toast.success("Product created");
-      }
-      if (isEditing || closeAfterSave.current) {
-        router.push(isEditing ? `/inventory/${product.id}` : "/inventory");
-      } else {
-        form.reset({
-          categoryId: "",
-          name: "",
-          description: "",
-          imageUrl: undefined,
-          size: undefined,
-          allowsSizeFlexibility: true,
-        });
+        if (closeAfterSave.current) {
+          // Navigate to the newly created product's detail page
+          const created = result.data as { id: string };
+          router.push(`/inventory/${created.id}`);
+        } else {
+          form.reset({
+            categoryId: "",
+            subCategoryId: undefined,
+            name: "",
+            description: "",
+            imageUrl: undefined,
+            allowsSizeFlexibility: true,
+          });
+        }
       }
       router.refresh();
     } catch {
@@ -114,7 +129,10 @@ export function ProductForm({ categories, product }: ProductFormProps) {
               <Label htmlFor="categoryId">Category</Label>
               <Select
                 value={form.watch("categoryId")}
-                onValueChange={(val) => form.setValue("categoryId", val)}
+                onValueChange={(val) => {
+                  form.setValue("categoryId", val);
+                  form.setValue("subCategoryId", undefined);
+                }}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select a category" />
@@ -132,6 +150,33 @@ export function ProductForm({ categories, product }: ProductFormProps) {
                   {form.formState.errors.categoryId.message}
                 </p>
               )}
+            </div>
+          )}
+
+          {filteredSubCategories.length > 0 && (
+            <div className="space-y-2">
+              <Label htmlFor="subCategoryId">Type</Label>
+              <Select
+                value={form.watch("subCategoryId") ?? "none"}
+                onValueChange={(val) =>
+                  form.setValue("subCategoryId", val === "none" ? undefined : val)
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select type (optional)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No type</SelectItem>
+                  {filteredSubCategories.map((sub) => (
+                    <SelectItem key={sub.id} value={sub.id}>
+                      {sub.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Sub-type within the category (e.g. Jacket, Boots).
+              </p>
             </div>
           )}
 
@@ -158,26 +203,19 @@ export function ProductForm({ categories, product }: ProductFormProps) {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="size">Size</Label>
-              <Input
-                id="size"
-                placeholder="e.g., S, M, L, 38"
-                {...form.register("size")}
-              />
-            </div>
-            <div className="flex items-center gap-3 pt-7">
-              <Switch
-                id="allowsSizeFlexibility"
-                checked={form.watch("allowsSizeFlexibility") ?? true}
-                onCheckedChange={(checked) =>
-                  form.setValue("allowsSizeFlexibility", checked)
-                }
-              />
-              <Label htmlFor="allowsSizeFlexibility">
-                Allows size flexibility
-              </Label>
+          <div className="flex items-center gap-3">
+            <Switch
+              id="allowsSizeFlexibility"
+              checked={form.watch("allowsSizeFlexibility") ?? true}
+              onCheckedChange={(checked) =>
+                form.setValue("allowsSizeFlexibility", checked)
+              }
+            />
+            <div>
+              <Label htmlFor="allowsSizeFlexibility">Flexible sizing</Label>
+              <p className="text-xs text-muted-foreground">
+                Items of this product can fit performers outside their exact size.
+              </p>
             </div>
           </div>
 
@@ -191,11 +229,7 @@ export function ProductForm({ categories, product }: ProductFormProps) {
           </div>
 
           <div className="flex justify-end gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => router.back()}
-            >
+            <Button type="button" variant="outline" onClick={() => router.back()}>
               Cancel
             </Button>
             {isEditing ? (

@@ -44,7 +44,7 @@ export async function lookupItemByBarcode(
     const item = await prisma.item.findUnique({
       where: { humanReadableId: normalized },
       include: {
-        product: { select: { id: true, name: true, number: true, size: true } },
+        product: { select: { id: true, name: true, number: true } },
         category: { select: { id: true, code: true, name: true } },
         warehouseLocation: { select: { id: true, label: true } },
         containerItems: {
@@ -115,7 +115,7 @@ export async function lookupItemById(
     const item = await prisma.item.findUnique({
       where: { id },
       include: {
-        product: { select: { id: true, name: true, number: true, size: true } },
+        product: { select: { id: true, name: true, number: true } },
         category: { select: { id: true, code: true, name: true } },
         warehouseLocation: { select: { id: true, label: true } },
         containerItems: {

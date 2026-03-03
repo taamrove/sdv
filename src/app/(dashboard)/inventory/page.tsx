@@ -28,7 +28,10 @@ export default async function InventoryPage({
 
   const where: Record<string, unknown> = {};
   if (params.search) {
-    where.name = { contains: params.search, mode: "insensitive" };
+    where.OR = [
+      { name: { contains: params.search, mode: "insensitive" } },
+      { description: { contains: params.search, mode: "insensitive" } },
+    ];
   }
   if (params.categoryId) {
     where.categoryId = params.categoryId;
@@ -39,6 +42,7 @@ export default async function InventoryPage({
       where,
       include: {
         category: true,
+        subCategory: true,
         _count: { select: { items: true } },
       },
       orderBy: [{ category: { code: "asc" } }, { number: "asc" }],

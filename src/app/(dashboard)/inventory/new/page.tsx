@@ -8,14 +8,15 @@ export default async function NewProductPage() {
   const session = await auth();
   if (!session) redirect("/login");
 
-  const categories = await prisma.category.findMany({
-    orderBy: { code: "asc" },
-  });
+  const [categories, subCategories] = await Promise.all([
+    prisma.category.findMany({ orderBy: { code: "asc" } }),
+    prisma.subCategory.findMany({ orderBy: [{ order: "asc" }, { name: "asc" }] }),
+  ]);
 
   return (
     <div className="space-y-6">
       <PageHeader title="New Product" description="Create a new product type" />
-      <ProductForm categories={categories} />
+      <ProductForm categories={categories} subCategories={subCategories} />
     </div>
   );
 }

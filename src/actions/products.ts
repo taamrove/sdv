@@ -60,7 +60,7 @@ export async function getProducts(
     const [products, total] = await Promise.all([
       prisma.product.findMany({
         where,
-        include: { category: true },
+        include: { category: true, subCategory: true },
         orderBy: [{ category: { code: "asc" } }, { number: "asc" }],
         skip,
         take: limit,
@@ -97,7 +97,7 @@ export async function getProductById(
 
     const product = await prisma.product.findUnique({
       where: { id },
-      include: { category: true },
+      include: { category: true, subCategory: true },
     });
 
     if (!product) {
@@ -143,7 +143,7 @@ export async function createProduct(
         ...parsed.data,
         number,
       },
-      include: { category: true },
+      include: { category: true, subCategory: true },
     });
 
     return { data: product };
@@ -179,7 +179,7 @@ export async function updateProduct(
     const product = await prisma.product.update({
       where: { id },
       data: parsed.data,
-      include: { category: true },
+      include: { category: true, subCategory: true },
     });
 
     return { data: product };

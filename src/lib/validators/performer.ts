@@ -13,7 +13,8 @@ export const performerSizesSchema = z
   .passthrough(); // Allow additional size fields
 
 export const createPerformerSchema = z.object({
-  name: z.string().min(1, "Name is required").max(200),
+  firstName: z.string().min(1, "First name is required").max(100),
+  lastName: z.string().min(1, "Last name is required").max(100),
   email: z.string().email("Invalid email").optional(),
   phone: z.string().optional(),
   type: z.enum(["DANCER", "VOCALIST", "MUSICIAN", "ACROBAT", "ACTOR", "OTHER"]),
@@ -27,7 +28,8 @@ export const createPerformerSchema = z.object({
 export type CreatePerformerInput = z.infer<typeof createPerformerSchema>;
 
 export const updatePerformerSchema = z.object({
-  name: z.string().min(1, "Name is required").max(200).optional(),
+  firstName: z.string().min(1, "First name is required").max(100).optional(),
+  lastName: z.string().min(1, "Last name is required").max(100).optional(),
   email: z.string().email("Invalid email").optional().nullable(),
   phone: z.string().optional().nullable(),
   type: z

@@ -54,13 +54,16 @@ export async function getPerformers(
     }
 
     if (params?.search) {
-      where.name = { contains: params.search, mode: "insensitive" };
+      where.OR = [
+        { firstName: { contains: params.search, mode: "insensitive" } },
+        { lastName: { contains: params.search, mode: "insensitive" } },
+      ];
     }
 
     const [performers, total] = await Promise.all([
       prisma.performer.findMany({
         where,
-        orderBy: { name: "asc" },
+        orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
         skip,
         take: limit,
       }),

@@ -13,12 +13,14 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { assignPerformer } from "@/actions/projects";
 import { PERFORMER_TYPE_LABELS } from "@/lib/constants";
+import { getFullName } from "@/lib/format-name";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 
 interface Performer {
   id: string;
-  name: string;
+  firstName: string;
+  lastName: string;
   type: string;
 }
 
@@ -45,7 +47,7 @@ export function AddPerformerDialog({
   const available = performers.filter(
     (p) =>
       !assignedPerformerIds.includes(p.id) &&
-      p.name.toLowerCase().includes(search.toLowerCase())
+      getFullName(p).toLowerCase().includes(search.toLowerCase())
   );
 
   async function handleAdd(performerId: string) {
@@ -103,7 +105,7 @@ export function AddPerformerDialog({
                   className="flex items-center justify-between rounded-md border px-3 py-2 hover:bg-muted/50"
                 >
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium">{performer.name}</span>
+                    <span className="text-sm font-medium">{getFullName(performer)}</span>
                     <Badge variant="outline" className="text-xs">
                       {PERFORMER_TYPE_LABELS[performer.type] ?? performer.type}
                     </Badge>

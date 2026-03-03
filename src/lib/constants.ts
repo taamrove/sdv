@@ -127,3 +127,19 @@ export const SIZE_FLEX_DIRECTION_LABELS: Record<string, string> = {
   DOWN: "Size Down",
   BOTH: "Up or Down",
 };
+
+// Item size mode options (driven by SubCategory)
+export const SIZE_MODE_LABELS: Record<string, string> = {
+  clothing: "Clothing (XS–XXL)",
+  shoes: "Shoes (EU 35–48)",
+  hat: "Hat (54–62 cm)",
+  measurements: "Body measurements",
+};
+
+export const CLOTHING_SIZES = [
+  "XS", "S", "M", "L", "XL", "XXL", "XXXL", "One Size",
+];
+
+export const SHOE_SIZES_EU = Array.from({ length: 14 }, (_, i) => String(35 + i));
+
+export const HAT_SIZES_CM = ["54", "55", "56", "57", "58", "59", "60", "61", "62"];

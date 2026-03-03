@@ -23,6 +23,7 @@ export const createItemSchema = z.object({
   imageUrl: z.string().url().optional().nullable(),
   condition: z.enum(["NEW", "EXCELLENT", "GOOD", "FAIR", "POOR"]).optional(),
   isExternal: z.boolean().optional(),
+  mainPerformerId: z.string().uuid().optional().nullable(),
 });
 
 export type CreateItemInput = z.infer<typeof createItemSchema>;
@@ -36,6 +37,8 @@ export const updateItemSchema = z.object({
   condition: z.enum(["NEW", "EXCELLENT", "GOOD", "FAIR", "POOR"]).optional(),
   status: z.enum(["AVAILABLE", "ASSIGNED", "PACKED", "IN_USE", "MAINTENANCE", "RETIRED", "LOST"]).optional(),
   isExternal: z.boolean().optional(),
+  mainPerformerId: z.string().uuid().optional().nullable(),
+  archived: z.boolean().optional(),
 });
 
 export type UpdateItemInput = z.infer<typeof updateItemSchema>;

@@ -18,10 +18,12 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { PERFORMER_TYPE_LABELS } from "@/lib/constants";
+import { getFullName } from "@/lib/format-name";
 
 interface Performer {
   id: string;
-  name: string;
+  firstName: string;
+  lastName: string;
   email: string | null;
   phone: string | null;
   type: string;
@@ -42,10 +44,10 @@ interface PerformerListProps {
 
 const columns: ColumnDef<Performer>[] = [
   {
-    accessorKey: "name",
+    id: "name",
     header: "Name",
     cell: ({ row }) => (
-      <div className="font-medium">{row.original.name}</div>
+      <div className="font-medium">{getFullName(row.original)}</div>
     ),
   },
   {
