@@ -235,8 +235,8 @@ export const CameraScanner = forwardRef<CameraScannerHandle, CameraScannerProps>
           </CardTitle>
           <div className="flex gap-2">
             {isActive && (
-              <Button variant="outline" size="sm" onClick={toggleCamera}>
-                <SwitchCamera className="mr-1 h-3 w-3" />
+              <Button variant="outline" size="default" onClick={toggleCamera}>
+                <SwitchCamera className="mr-1 h-4 w-4" />
                 Flip
               </Button>
             )}
@@ -267,7 +267,7 @@ export const CameraScanner = forwardRef<CameraScannerHandle, CameraScannerProps>
         >
           <video
             ref={videoRef}
-            className="w-full h-auto max-h-[400px] object-cover"
+            className="w-full aspect-video object-cover"
             playsInline
             muted
             autoPlay

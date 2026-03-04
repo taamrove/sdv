@@ -148,7 +148,7 @@ export function ProductList({ products, categories, pagination }: ProductListPro
 
   return (
     <div className="space-y-4">
-      <div className="flex gap-4">
+      <div className="flex flex-wrap gap-3">
         <Input
           placeholder="Search products..."
           value={search}
@@ -156,7 +156,7 @@ export function ProductList({ products, categories, pagination }: ProductListPro
           onKeyDown={(e) => {
             if (e.key === "Enter") applyFilters({ search });
           }}
-          className="max-w-sm"
+          className="flex-1 min-w-[180px] max-w-sm"
         />
         <Select
           value={searchParams.get("categoryId") ?? "all"}
@@ -164,7 +164,7 @@ export function ProductList({ products, categories, pagination }: ProductListPro
             applyFilters({ categoryId: val === "all" ? "" : val })
           }
         >
-          <SelectTrigger className="w-[180px]">
+          <SelectTrigger className="w-full sm:w-[180px]">
             <SelectValue placeholder="All categories" />
           </SelectTrigger>
           <SelectContent>
@@ -177,11 +177,13 @@ export function ProductList({ products, categories, pagination }: ProductListPro
           </SelectContent>
         </Select>
       </div>
-      <DataTable
-        columns={columns}
-        data={products}
-        onRowClick={(product) => router.push(`/inventory/${product.id}`)}
-      />
+      <div className="overflow-x-auto">
+        <DataTable
+          columns={columns}
+          data={products}
+          onRowClick={(product) => router.push(`/inventory/${product.id}`)}
+        />
+      </div>
       <Pagination {...pagination} />
     </div>
   );

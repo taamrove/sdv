@@ -279,14 +279,16 @@ export function ItemList({ items, categories, pagination, productId }: ItemListP
           {showArchived ? "Hide archived" : "Show archived"}
         </Button>
       </div>
-      <DataTable
-        columns={columns}
-        data={items}
-        onRowClick={(item) => {
-          const pid = productId ?? item.product.id;
-          router.push(`/inventory/${pid}/items/${item.id}`);
-        }}
-      />
+      <div className="overflow-x-auto">
+        <DataTable
+          columns={columns}
+          data={items}
+          onRowClick={(item) => {
+            const pid = productId ?? item.product.id;
+            router.push(`/inventory/${pid}/items/${item.id}`);
+          }}
+        />
+      </div>
       <Pagination {...pagination} />
     </div>
   );

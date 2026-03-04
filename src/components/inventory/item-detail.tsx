@@ -280,7 +280,7 @@ export function ItemDetail({
       return (
         <div className="border rounded-lg p-4 space-y-4">
           <h3 className="font-medium text-sm">Measurements</h3>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {[
               { key: "chest", label: "Chest", placeholder: "e.g., 90cm" },
               { key: "waist", label: "Waist", placeholder: "e.g., 75cm" },
@@ -303,7 +303,7 @@ export function ItemDetail({
     return (
       <div className="border rounded-lg p-4 space-y-4">
         <h3 className="font-medium text-sm">Sizes</h3>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {["size", "chest", "waist", "hip", "shoe", "hat"].map((key) => (
             <div key={key} className="space-y-1">
               <Label className="text-xs capitalize">{key}</Label>
@@ -321,8 +321,8 @@ export function ItemDetail({
 
   return (
     <>
-    <div className="grid gap-6 lg:grid-cols-3">
-      <div className="lg:col-span-2 space-y-6">
+    <div className="grid gap-6 md:grid-cols-3">
+      <div className="md:col-span-2 space-y-6 order-2 md:order-1">
         {/* Main Info */}
         <Card>
           <CardHeader>
@@ -364,7 +364,7 @@ export function ItemDetail({
             )}
 
             {/* Static info */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <p className="text-sm text-muted-foreground">Product</p>
                 <p className="font-medium">{item.product.name}</p>
@@ -496,8 +496,8 @@ export function ItemDetail({
         </Card>
       </div>
 
-      {/* Sidebar */}
-      <div className="space-y-6">
+      {/* Sidebar — shown first on mobile via CSS order */}
+      <div className="space-y-6 order-1 md:order-2">
         <Card>
           <CardHeader>
             <CardTitle>Status & Location</CardTitle>

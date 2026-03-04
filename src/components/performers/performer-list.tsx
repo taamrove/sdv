@@ -109,7 +109,7 @@ export function PerformerList({
 
   return (
     <div className="space-y-4">
-      <div className="flex gap-4">
+      <div className="flex flex-wrap gap-3">
         <Input
           placeholder="Search performers..."
           value={search}
@@ -117,7 +117,7 @@ export function PerformerList({
           onKeyDown={(e) => {
             if (e.key === "Enter") applyFilters({ search });
           }}
-          className="max-w-sm"
+          className="flex-1 min-w-[180px] max-w-sm"
         />
         <Select
           value={searchParams.get("type") ?? "all"}
@@ -125,7 +125,7 @@ export function PerformerList({
             applyFilters({ type: val === "all" ? "" : val })
           }
         >
-          <SelectTrigger className="w-[180px]">
+          <SelectTrigger className="w-full sm:w-[180px]">
             <SelectValue placeholder="All types" />
           </SelectTrigger>
           <SelectContent>
@@ -138,7 +138,9 @@ export function PerformerList({
           </SelectContent>
         </Select>
       </div>
-      <DataTable columns={columns} data={performers} />
+      <div className="overflow-x-auto">
+        <DataTable columns={columns} data={performers} />
+      </div>
       <Pagination {...pagination} />
     </div>
   );

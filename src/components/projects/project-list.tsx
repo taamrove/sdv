@@ -75,14 +75,14 @@ export function ProjectList({ projects }: ProjectListProps) {
 
   return (
     <div className="space-y-4">
-      <div className="flex gap-4">
+      <div className="flex flex-wrap gap-3">
         <Select
           value={searchParams.get("status") ?? "all"}
           onValueChange={(val) =>
             applyFilters({ status: val === "all" ? "" : val })
           }
         >
-          <SelectTrigger className="w-[200px]">
+          <SelectTrigger className="w-full sm:w-[200px]">
             <SelectValue placeholder="All statuses" />
           </SelectTrigger>
           <SelectContent>

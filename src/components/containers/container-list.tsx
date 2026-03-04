@@ -211,7 +211,9 @@ export function ContainerList({
           </Button>
         </div>
       </div>
-      <DataTable columns={columns} data={containers} />
+      <div className="overflow-x-auto">
+        <DataTable columns={columns} data={containers} />
+      </div>
       <Pagination {...pagination} />
 
       <ContainerFormDialog

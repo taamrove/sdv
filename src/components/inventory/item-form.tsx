@@ -214,7 +214,7 @@ export function ItemForm({
       return (
         <div className="border rounded-lg p-4 space-y-4">
           <h3 className="font-medium text-sm">Measurements (optional)</h3>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {[
               { key: "chest", label: "Chest", placeholder: "e.g., 90cm" },
               { key: "waist", label: "Waist", placeholder: "e.g., 75cm" },
@@ -241,7 +241,7 @@ export function ItemForm({
     return (
       <div className="border rounded-lg p-4 space-y-4">
         <h3 className="font-medium text-sm">Sizes (optional)</h3>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-1">
             <Label htmlFor="size" className="text-xs">General Size</Label>
             <Input
@@ -351,7 +351,7 @@ export function ItemForm({
               )}
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="quantity">Quantity</Label>
                 <Input
@@ -372,7 +372,7 @@ export function ItemForm({
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="condition">Condition</Label>
                 <Select
@@ -500,7 +500,7 @@ export function ItemForm({
               </div>
             )}
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="purchaseDate">Purchase Date</Label>
                 <Input

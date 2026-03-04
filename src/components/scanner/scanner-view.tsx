@@ -366,8 +366,8 @@ export function ScannerView() {
         ) : null}
       </div>
 
-      {/* Right column: scan history */}
-      <div className="lg:col-span-1">
+      {/* Right column: scan history — desktop only */}
+      <div className="hidden lg:block lg:col-span-1">
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Scan History</CardTitle>
