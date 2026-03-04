@@ -245,7 +245,7 @@ export function ContainerDetail({
         {/* Overview Tab                                                  */}
         {/* ============================================================ */}
         <TabsContent value="overview">
-          <div className="space-y-6">
+          <div className="space-y-4">
             {/* Info Card */}
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0">
@@ -392,7 +392,7 @@ export function ContainerDetail({
         {/* Items Tab                                                     */}
         {/* ============================================================ */}
         <TabsContent value="items">
-          <div className="space-y-6">
+          <div className="space-y-4">
             {/* Scan to Pack */}
             <Card>
               <CardHeader>

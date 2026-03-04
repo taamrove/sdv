@@ -63,7 +63,7 @@ export function ProductDetail({
   const productCode = `${product.category.code}-${String(product.number).padStart(3, "0")}`;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Product Info Card */}
       <Card>
         <CardHeader>

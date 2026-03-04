@@ -106,7 +106,7 @@ export function CategoryFormDialog({
         </DialogHeader>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           {!isEditing && (
-            <div className="space-y-2">
+            <div className="space-y-1">
               <Label htmlFor="code">Code</Label>
               <Input
                 id="code"
@@ -126,7 +126,7 @@ export function CategoryFormDialog({
               )}
             </div>
           )}
-          <div className="space-y-2">
+          <div className="space-y-1">
             <Label htmlFor="name">Name</Label>
             <Input
               id="name"
@@ -139,7 +139,7 @@ export function CategoryFormDialog({
               </p>
             )}
           </div>
-          <div className="space-y-2">
+          <div className="space-y-1">
             <Label htmlFor="description">Description</Label>
             <Textarea
               id="description"

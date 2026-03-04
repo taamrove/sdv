@@ -94,7 +94,7 @@ export function SubCategoryFormDialog({
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
+          <div className="space-y-1">
             <Label htmlFor="sub-name">Name *</Label>
             <Input
               id="sub-name"
@@ -104,7 +104,7 @@ export function SubCategoryFormDialog({
               required
             />
           </div>
-          <div className="space-y-2">
+          <div className="space-y-1">
             <Label htmlFor="sizeMode">Size type</Label>
             <Select value={sizeMode} onValueChange={setSizeMode}>
               <SelectTrigger id="sizeMode">

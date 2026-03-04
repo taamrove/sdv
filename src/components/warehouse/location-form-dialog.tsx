@@ -114,7 +114,7 @@ export function LocationFormDialog({
         </DialogHeader>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
+            <div className="space-y-1">
               <Label htmlFor="zone">Zone *</Label>
               <Input
                 id="zone"
@@ -127,7 +127,7 @@ export function LocationFormDialog({
                 </p>
               )}
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1">
               <Label htmlFor="rack">Rack</Label>
               <Input
                 id="rack"
@@ -135,7 +135,7 @@ export function LocationFormDialog({
                 {...form.register("rack")}
               />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1">
               <Label htmlFor="shelf">Shelf</Label>
               <Input
                 id="shelf"
@@ -143,7 +143,7 @@ export function LocationFormDialog({
                 {...form.register("shelf")}
               />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1">
               <Label htmlFor="bin">Bin</Label>
               <Input
                 id="bin"
@@ -152,7 +152,7 @@ export function LocationFormDialog({
               />
             </div>
           </div>
-          <div className="space-y-2">
+          <div className="space-y-1">
             <Label htmlFor="description">Description</Label>
             <Textarea
               id="description"

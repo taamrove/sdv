@@ -77,7 +77,7 @@ export function AddPerformerDialog({
           <DialogTitle>Add Performer</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
-          <div className="space-y-2">
+          <div className="space-y-1">
             <Label>Role (optional)</Label>
             <Input
               placeholder="e.g., Lead dancer, Backup vocalist"
@@ -85,7 +85,7 @@ export function AddPerformerDialog({
               onChange={(e) => setRole(e.target.value)}
             />
           </div>
-          <div className="space-y-2">
+          <div className="space-y-1">
             <Label>Search performers</Label>
             <Input
               placeholder="Filter by name..."

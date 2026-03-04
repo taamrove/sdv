@@ -130,7 +130,7 @@ export function ContainerFormDialog({
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-          <div className="space-y-2">
+          <div className="space-y-1">
             <Label htmlFor="name">Name *</Label>
             <Input
               id="name"
@@ -144,7 +144,7 @@ export function ContainerFormDialog({
             )}
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-1">
             <Label htmlFor="type">Type</Label>
             <Select
               value={form.watch("type")}
@@ -165,7 +165,7 @@ export function ContainerFormDialog({
             </Select>
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-1">
             <Label htmlFor="projectId">Project</Label>
             <Select
               value={form.watch("projectId") ?? "__none__"}
@@ -187,7 +187,7 @@ export function ContainerFormDialog({
             </Select>
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-1">
             <Label htmlFor="description">Description</Label>
             <Textarea
               id="description"
@@ -196,7 +196,7 @@ export function ContainerFormDialog({
             />
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-1">
             <Label htmlFor="notes">Notes</Label>
             <Textarea
               id="notes"
