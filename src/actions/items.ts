@@ -244,6 +244,105 @@ export async function createItem(
 }
 
 // ---------------------------------------------------------------------------
+// createItems (batch)
+// ---------------------------------------------------------------------------
+
+export async function createItems(
+  data: CreateItemInput,
+  quantity: number
+): Promise<ActionResult<{ count: number }>> {
+  try {
+    await requirePermission("items:create");
+
+    const parsed = createItemSchema.safeParse(data);
+    if (!parsed.success) {
+      return { error: parsed.error.issues.map((i) => i.message).join(", ") };
+    }
+
+    const qty = Math.min(Math.max(1, Math.round(quantity)), 20);
+
+    const product = await prisma.product.findUnique({
+      where: { id: parsed.data.productId },
+      include: { category: true },
+    });
+
+    if (!product) {
+      return { error: "Product not found" };
+    }
+
+    const user = await getCurrentUser();
+
+    const created = await prisma.$transaction(async (tx) => {
+      const lastItem = await tx.item.findFirst({
+        where: { productId: product.id },
+        orderBy: { sequence: "desc" },
+        select: { sequence: true },
+      });
+      let nextSequence = (lastItem?.sequence ?? 0) + 1;
+
+      const items = [];
+      for (let i = 0; i < qty; i++) {
+        const sequence = nextSequence++;
+        const humanReadableId = buildHumanReadableId(
+          product.category.code,
+          product.number,
+          sequence
+        );
+
+        const item = await tx.item.create({
+          data: {
+            categoryId: product.categoryId,
+            productId: product.id,
+            sequence,
+            humanReadableId,
+            sizes: parsed.data.sizes
+              ? (parsed.data.sizes as Record<string, string>)
+              : undefined,
+            color: parsed.data.color,
+            purchaseDate: parsed.data.purchaseDate
+              ? new Date(parsed.data.purchaseDate)
+              : undefined,
+            purchasePrice: parsed.data.purchasePrice,
+            notes: parsed.data.notes,
+            warehouseLocationId: parsed.data.warehouseLocationId ?? undefined,
+            imageUrl: parsed.data.imageUrl ?? undefined,
+            condition: parsed.data.condition ?? undefined,
+            isExternal: parsed.data.isExternal ?? false,
+            mainPerformerId: parsed.data.mainPerformerId ?? undefined,
+          },
+        });
+
+        await tx.itemHistory.create({
+          data: {
+            itemId: item.id,
+            action: "CREATED",
+            performedById: user?.id ?? null,
+            newState: {
+              status: item.status,
+              condition: item.condition,
+              warehouseLocationId: item.warehouseLocationId,
+            },
+          },
+        });
+
+        items.push(item);
+      }
+      return items;
+    });
+
+    return { data: { count: created.length } };
+  } catch (error) {
+    if (error instanceof Error && error.message.startsWith("Forbidden")) {
+      throw error;
+    }
+    return {
+      error:
+        error instanceof Error ? error.message : "Failed to create items",
+    };
+  }
+}
+
+// ---------------------------------------------------------------------------
 // updateItem
 // ---------------------------------------------------------------------------
 

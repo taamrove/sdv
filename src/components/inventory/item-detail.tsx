@@ -31,11 +31,12 @@ import {
 import { updateItem } from "@/actions/items";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { MapPin, Clock, User, Pencil, X, CalendarDays, FolderOpen, QrCode, Archive, UserCheck } from "lucide-react";
+import { MapPin, Clock, User, Pencil, X, CalendarDays, FolderOpen, QrCode, Archive, UserCheck, Plus } from "lucide-react";
 import { QRCodeDisplay } from "@/components/shared/qr-code-display";
 import Image from "next/image";
 import Link from "next/link";
 import { getFullName } from "@/lib/format-name";
+import { LocationFormDialog } from "@/components/warehouse/location-form-dialog";
 
 interface Performer {
   id: string;
@@ -106,6 +107,8 @@ export function ItemDetail({
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [archiving, setArchiving] = useState(false);
+  const [locationDialogOpen, setLocationDialogOpen] = useState(false);
+  const [localLocations, setLocalLocations] = useState(locations);
 
   // Status & location fields (always shown in sidebar)
   const [status, setStatus] = useState(item.status);
@@ -317,6 +320,7 @@ export function ItemDetail({
   }
 
   return (
+    <>
     <div className="grid gap-6 lg:grid-cols-3">
       <div className="lg:col-span-2 space-y-6">
         {/* Main Info */}
@@ -529,7 +533,7 @@ export function ItemDetail({
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">No location</SelectItem>
-                  {locations.map((loc) => (
+                  {localLocations.map((loc) => (
                     <SelectItem key={loc.id} value={loc.id}>
                       <span className="flex items-center gap-1">
                         <MapPin className="h-3 w-3" />
@@ -539,6 +543,16 @@ export function ItemDetail({
                   ))}
                 </SelectContent>
               </Select>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-7 px-2 text-xs text-muted-foreground"
+                onClick={() => setLocationDialogOpen(true)}
+              >
+                <Plus className="mr-1 h-3 w-3" />
+                New location
+              </Button>
             </div>
 
             {performers.length > 0 && (
@@ -645,5 +659,15 @@ export function ItemDetail({
         )}
       </div>
     </div>
+
+    <LocationFormDialog
+      open={locationDialogOpen}
+      onOpenChange={setLocationDialogOpen}
+      onSuccess={(loc) => {
+        setLocalLocations((prev) => [...prev, loc]);
+        setLocationId(loc.id);
+      }}
+    />
+    </>
   );
 }

@@ -24,7 +24,8 @@ import {
   createItemSchema,
   type CreateItemInput,
 } from "@/lib/validators/item";
-import { createItem } from "@/actions/items";
+import { createItem, createItems } from "@/actions/items";
+import { LocationFormDialog } from "@/components/warehouse/location-form-dialog";
 import { ImageUpload } from "@/components/shared/image-upload";
 import {
   ITEM_CONDITION_LABELS,
@@ -35,9 +36,9 @@ import {
 import { getFullName } from "@/lib/format-name";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Plus } from "lucide-react";
 interface Product {
   id: string;
   name: string;
@@ -69,13 +70,16 @@ interface ItemFormProps {
 
 export function ItemForm({
   products,
-  locations,
+  locations: locationsProp,
   defaultProductId,
   sizeMode,
   performers = [],
 }: ItemFormProps) {
   const router = useRouter();
   const closeAfterSave = useRef(false);
+  const [quantity, setQuantity] = useState(1);
+  const [locations, setLocations] = useState(locationsProp);
+  const [locationDialogOpen, setLocationDialogOpen] = useState(false);
 
   const form = useForm<CreateItemInput>({
     resolver: zodResolver(createItemSchema),
@@ -93,12 +97,21 @@ export function ItemForm({
 
   async function onSubmit(data: CreateItemInput) {
     try {
-      const result = await createItem(data);
-      if ("error" in result) {
-        toast.error(result.error);
-        return;
+      if (quantity > 1) {
+        const result = await createItems(data, quantity);
+        if ("error" in result) {
+          toast.error(result.error);
+          return;
+        }
+        toast.success(`${result.data.count} items created`);
+      } else {
+        const result = await createItem(data);
+        if ("error" in result) {
+          toast.error(result.error);
+          return;
+        }
+        toast.success("Item created");
       }
-      toast.success("Item created");
       if (closeAfterSave.current) {
         router.push(defaultProductId ? `/inventory/${defaultProductId}` : "/inventory");
       } else {
@@ -109,6 +122,7 @@ export function ItemForm({
           condition: "NEW",
           isExternal: false,
         });
+        setQuantity(1);
       }
       router.refresh();
     } catch {
@@ -339,6 +353,27 @@ export function ItemForm({
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
+                <Label htmlFor="quantity">Quantity</Label>
+                <Input
+                  id="quantity"
+                  type="number"
+                  min={1}
+                  max={20}
+                  value={quantity}
+                  onChange={(e) =>
+                    setQuantity(Math.min(20, Math.max(1, Number(e.target.value) || 1)))
+                  }
+                />
+                {quantity > 1 && (
+                  <p className="text-xs text-muted-foreground">
+                    Creates {quantity} identical items.
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
                 <Label htmlFor="condition">Condition</Label>
                 <Select
                   value={form.watch("condition") ?? "NEW"}
@@ -416,6 +451,16 @@ export function ItemForm({
                   ))}
                 </SelectContent>
               </Select>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-7 px-2 text-xs text-muted-foreground"
+                onClick={() => setLocationDialogOpen(true)}
+              >
+                <Plus className="mr-1 h-3 w-3" />
+                New location
+              </Button>
             </div>
 
             {!form.watch("isExternal") && !form.watch("warehouseLocationId") && (
@@ -465,7 +510,7 @@ export function ItemForm({
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="purchasePrice">Purchase Price</Label>
+                <Label htmlFor="purchasePrice">Purchase Price (optional)</Label>
                 <Input
                   id="purchasePrice"
                   type="number"
@@ -521,6 +566,15 @@ export function ItemForm({
           </form>
         </CardContent>
       </Card>
+
+      <LocationFormDialog
+        open={locationDialogOpen}
+        onOpenChange={setLocationDialogOpen}
+        onSuccess={(loc) => {
+          setLocations((prev) => [...prev, loc]);
+          form.setValue("warehouseLocationId", loc.id);
+        }}
+      />
     </div>
   );
 }

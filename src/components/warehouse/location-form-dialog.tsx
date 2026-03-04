@@ -38,12 +38,14 @@ interface LocationFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   location?: Location | null;
+  onSuccess?: (location: { id: string; label: string }) => void;
 }
 
 export function LocationFormDialog({
   open,
   onOpenChange,
   location,
+  onSuccess,
 }: LocationFormDialogProps) {
   const router = useRouter();
   const isEditing = !!location;
@@ -89,6 +91,10 @@ export function LocationFormDialog({
           return;
         }
         toast.success("Location created");
+        if (onSuccess && "data" in result && result.data) {
+          const created = result.data as { id: string; label: string };
+          onSuccess({ id: created.id, label: created.label });
+        }
       }
       onOpenChange(false);
       form.reset();
