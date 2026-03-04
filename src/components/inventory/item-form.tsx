@@ -10,6 +10,7 @@ import {
   Select,
   SelectContent,
   SelectItem,
+  SelectSeparator,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -134,194 +135,133 @@ export function ItemForm({
   function renderSizeFields() {
     if (sizeMode === "clothing") {
       return (
-        <div className="border rounded-lg p-4 space-y-3">
-          <h3 className="font-medium text-sm">Size</h3>
-          <div className="space-y-1">
-            <Label htmlFor="size" className="text-xs">Clothing Size</Label>
-            <Select
-              onValueChange={(val) => {
-                const sizes = form.getValues("sizes") ?? {};
-                form.setValue("sizes", { ...sizes, size: val });
-              }}
-            >
-              <SelectTrigger id="size">
-                <SelectValue placeholder="Select size" />
-              </SelectTrigger>
-              <SelectContent>
-                {CLOTHING_SIZES.map((s) => (
-                  <SelectItem key={s} value={s}>{s}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+        <div className="space-y-1">
+          <Label htmlFor="size" className="text-xs">Clothing Size</Label>
+          <Select
+            onValueChange={(val) => {
+              const sizes = form.getValues("sizes") ?? {};
+              form.setValue("sizes", { ...sizes, size: val });
+            }}
+          >
+            <SelectTrigger id="size">
+              <SelectValue placeholder="Select size" />
+            </SelectTrigger>
+            <SelectContent>
+              {CLOTHING_SIZES.map((s) => (
+                <SelectItem key={s} value={s}>{s}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       );
     }
 
     if (sizeMode === "shoes") {
       return (
-        <div className="border rounded-lg p-4 space-y-3">
-          <h3 className="font-medium text-sm">Size</h3>
-          <div className="space-y-1">
-            <Label htmlFor="shoe" className="text-xs">Shoe Size (EU)</Label>
-            <Select
-              onValueChange={(val) => {
-                const sizes = form.getValues("sizes") ?? {};
-                form.setValue("sizes", { ...sizes, shoe: val });
-              }}
-            >
-              <SelectTrigger id="shoe">
-                <SelectValue placeholder="Select EU size" />
-              </SelectTrigger>
-              <SelectContent>
-                {SHOE_SIZES_EU.map((s) => (
-                  <SelectItem key={s} value={s}>{s}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+        <div className="space-y-1">
+          <Label htmlFor="shoe" className="text-xs">Shoe Size (EU)</Label>
+          <Select
+            onValueChange={(val) => {
+              const sizes = form.getValues("sizes") ?? {};
+              form.setValue("sizes", { ...sizes, shoe: val });
+            }}
+          >
+            <SelectTrigger id="shoe">
+              <SelectValue placeholder="Select EU size" />
+            </SelectTrigger>
+            <SelectContent>
+              {SHOE_SIZES_EU.map((s) => (
+                <SelectItem key={s} value={s}>{s}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       );
     }
 
     if (sizeMode === "hat") {
       return (
-        <div className="border rounded-lg p-4 space-y-3">
-          <h3 className="font-medium text-sm">Size</h3>
-          <div className="space-y-1">
-            <Label htmlFor="hat" className="text-xs">Hat Size (cm)</Label>
-            <Select
-              onValueChange={(val) => {
-                const sizes = form.getValues("sizes") ?? {};
-                form.setValue("sizes", { ...sizes, hat: val });
-              }}
-            >
-              <SelectTrigger id="hat">
-                <SelectValue placeholder="Select hat size" />
-              </SelectTrigger>
-              <SelectContent>
-                {HAT_SIZES_CM.map((s) => (
-                  <SelectItem key={s} value={s}>{s}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+        <div className="space-y-1">
+          <Label htmlFor="hat" className="text-xs">Hat Size (cm)</Label>
+          <Select
+            onValueChange={(val) => {
+              const sizes = form.getValues("sizes") ?? {};
+              form.setValue("sizes", { ...sizes, hat: val });
+            }}
+          >
+            <SelectTrigger id="hat">
+              <SelectValue placeholder="Select hat size" />
+            </SelectTrigger>
+            <SelectContent>
+              {HAT_SIZES_CM.map((s) => (
+                <SelectItem key={s} value={s}>{s}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       );
     }
 
     if (sizeMode === "measurements") {
       return (
-        <div className="border rounded-lg p-4 space-y-4">
-          <h3 className="font-medium text-sm">Measurements (optional)</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {[
-              { key: "chest", label: "Chest", placeholder: "e.g., 90cm" },
-              { key: "waist", label: "Waist", placeholder: "e.g., 75cm" },
-              { key: "hip", label: "Hip", placeholder: "e.g., 95cm" },
-            ].map(({ key, label, placeholder }) => (
-              <div key={key} className="space-y-1">
-                <Label htmlFor={key} className="text-xs">{label}</Label>
-                <Input
-                  id={key}
-                  placeholder={placeholder}
-                  onChange={(e) => {
-                    const sizes = form.getValues("sizes") ?? {};
-                    form.setValue("sizes", { ...sizes, [key]: e.target.value });
-                  }}
-                />
-              </div>
-            ))}
-          </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {[
+            { key: "chest", label: "Chest", placeholder: "e.g., 90cm" },
+            { key: "waist", label: "Waist", placeholder: "e.g., 75cm" },
+            { key: "hip", label: "Hip", placeholder: "e.g., 95cm" },
+          ].map(({ key, label, placeholder }) => (
+            <div key={key} className="space-y-1">
+              <Label htmlFor={key} className="text-xs">{label}</Label>
+              <Input
+                id={key}
+                placeholder={placeholder}
+                onChange={(e) => {
+                  const sizes = form.getValues("sizes") ?? {};
+                  form.setValue("sizes", { ...sizes, [key]: e.target.value });
+                }}
+              />
+            </div>
+          ))}
         </div>
       );
     }
 
     // No sizeMode — show all fields as free text
     return (
-      <div className="border rounded-lg p-4 space-y-4">
-        <h3 className="font-medium text-sm">Sizes (optional)</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-1">
-            <Label htmlFor="size" className="text-xs">General Size</Label>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        {[
+          { key: "size", label: "General Size", placeholder: "e.g., M, L, XL" },
+          { key: "chest", label: "Chest", placeholder: "e.g., 90cm" },
+          { key: "waist", label: "Waist", placeholder: "e.g., 75cm" },
+          { key: "hip", label: "Hip", placeholder: "e.g., 95cm" },
+          { key: "shoe", label: "Shoe Size", placeholder: "e.g., 42" },
+          { key: "hat", label: "Hat Size", placeholder: "e.g., 58" },
+        ].map(({ key, label, placeholder }) => (
+          <div key={key} className="space-y-1">
+            <Label htmlFor={key} className="text-xs">{label}</Label>
             <Input
-              id="size"
-              placeholder="e.g., M, L, XL"
+              id={key}
+              placeholder={placeholder}
               onChange={(e) => {
                 const sizes = form.getValues("sizes") ?? {};
-                form.setValue("sizes", { ...sizes, size: e.target.value });
+                form.setValue("sizes", { ...sizes, [key]: e.target.value });
               }}
             />
           </div>
-          <div className="space-y-1">
-            <Label htmlFor="chest" className="text-xs">Chest</Label>
-            <Input
-              id="chest"
-              placeholder="e.g., 90cm"
-              onChange={(e) => {
-                const sizes = form.getValues("sizes") ?? {};
-                form.setValue("sizes", { ...sizes, chest: e.target.value });
-              }}
-            />
-          </div>
-          <div className="space-y-1">
-            <Label htmlFor="waist" className="text-xs">Waist</Label>
-            <Input
-              id="waist"
-              placeholder="e.g., 75cm"
-              onChange={(e) => {
-                const sizes = form.getValues("sizes") ?? {};
-                form.setValue("sizes", { ...sizes, waist: e.target.value });
-              }}
-            />
-          </div>
-          <div className="space-y-1">
-            <Label htmlFor="hip" className="text-xs">Hip</Label>
-            <Input
-              id="hip"
-              placeholder="e.g., 95cm"
-              onChange={(e) => {
-                const sizes = form.getValues("sizes") ?? {};
-                form.setValue("sizes", { ...sizes, hip: e.target.value });
-              }}
-            />
-          </div>
-          <div className="space-y-1">
-            <Label htmlFor="shoe" className="text-xs">Shoe Size</Label>
-            <Input
-              id="shoe"
-              placeholder="e.g., 42"
-              onChange={(e) => {
-                const sizes = form.getValues("sizes") ?? {};
-                form.setValue("sizes", { ...sizes, shoe: e.target.value });
-              }}
-            />
-          </div>
-          <div className="space-y-1">
-            <Label htmlFor="hat" className="text-xs">Hat Size</Label>
-            <Input
-              id="hat"
-              placeholder="e.g., 58"
-              onChange={(e) => {
-                const sizes = form.getValues("sizes") ?? {};
-                form.setValue("sizes", { ...sizes, hat: e.target.value });
-              }}
-            />
-          </div>
-        </div>
+        ))}
       </div>
     );
   }
 
   return (
-    <div className="max-w-2xl space-y-6">
+    <div className="max-w-2xl space-y-4">
       <Card>
         <CardHeader>
           <CardTitle>Create Item</CardTitle>
         </CardHeader>
         <CardContent>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <div className="space-y-2">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <div className="space-y-1">
               <Label htmlFor="productId">Product *</Label>
               <Select
                 value={form.watch("productId")}
@@ -352,7 +292,7 @@ export function ItemForm({
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
+              <div className="space-y-1">
                 <Label htmlFor="quantity">Quantity</Label>
                 <Input
                   id="quantity"
@@ -373,7 +313,7 @@ export function ItemForm({
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
+              <div className="space-y-1">
                 <Label htmlFor="condition">Condition</Label>
                 <Select
                   value={form.watch("condition") ?? "NEW"}
@@ -399,7 +339,7 @@ export function ItemForm({
                 </Select>
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-1">
                 <Label htmlFor="color">Color</Label>
                 <Input
                   id="color"
@@ -425,19 +365,23 @@ export function ItemForm({
               </p>
             )}
 
-            <div className="space-y-2">
+            <div className="space-y-1">
               <Label htmlFor="warehouseLocationId">
                 Warehouse Location
                 {form.watch("isExternal") ? " (optional)" : ""}
               </Label>
               <Select
                 value={form.watch("warehouseLocationId") ?? "none"}
-                onValueChange={(val) =>
+                onValueChange={(val) => {
+                  if (val === "__new_location__") {
+                    setLocationDialogOpen(true);
+                    return;
+                  }
                   form.setValue(
                     "warehouseLocationId",
                     val === "none" ? undefined : val
-                  )
-                }
+                  );
+                }}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="No location" />
@@ -449,18 +393,12 @@ export function ItemForm({
                       {loc.label}
                     </SelectItem>
                   ))}
+                  <SelectSeparator />
+                  <SelectItem value="__new_location__">
+                    <Plus className="mr-1 h-3 w-3 inline-block" /> New location
+                  </SelectItem>
                 </SelectContent>
               </Select>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="h-7 px-2 text-xs text-muted-foreground"
-                onClick={() => setLocationDialogOpen(true)}
-              >
-                <Plus className="mr-1 h-3 w-3" />
-                New location
-              </Button>
             </div>
 
             {!form.watch("isExternal") && !form.watch("warehouseLocationId") && (
@@ -477,7 +415,7 @@ export function ItemForm({
 
             {/* Main performer */}
             {performers.length > 0 && (
-              <div className="space-y-2">
+              <div className="space-y-1">
                 <Label htmlFor="mainPerformerId">Main Performer (optional)</Label>
                 <Select
                   value={form.watch("mainPerformerId") ?? "none"}
@@ -501,7 +439,7 @@ export function ItemForm({
             )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
+              <div className="space-y-1">
                 <Label htmlFor="purchaseDate">Purchase Date</Label>
                 <Input
                   id="purchaseDate"
@@ -509,7 +447,7 @@ export function ItemForm({
                   {...form.register("purchaseDate")}
                 />
               </div>
-              <div className="space-y-2">
+              <div className="space-y-1">
                 <Label htmlFor="purchasePrice">Purchase Price</Label>
                 <Input
                   id="purchasePrice"
@@ -527,7 +465,7 @@ export function ItemForm({
               </div>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-1">
               <Label>Item Image</Label>
               <ImageUpload
                 value={form.watch("imageUrl")}
@@ -536,7 +474,7 @@ export function ItemForm({
               />
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-1">
               <Label htmlFor="notes">Notes</Label>
               <Textarea
                 id="notes"

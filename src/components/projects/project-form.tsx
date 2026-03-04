@@ -101,7 +101,7 @@ export function ProjectForm({ themes, project }: ProjectFormProps) {
       </CardHeader>
       <CardContent>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-          <div className="space-y-2">
+          <div className="space-y-1">
             <Label htmlFor="name">Project Name *</Label>
             <Input
               id="name"
@@ -115,7 +115,7 @@ export function ProjectForm({ themes, project }: ProjectFormProps) {
             )}
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-1">
             <Label htmlFor="description">Description</Label>
             <Textarea
               id="description"
@@ -125,7 +125,7 @@ export function ProjectForm({ themes, project }: ProjectFormProps) {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
+            <div className="space-y-1">
               <Label htmlFor="venue">Venue</Label>
               <Input
                 id="venue"
@@ -133,7 +133,7 @@ export function ProjectForm({ themes, project }: ProjectFormProps) {
                 {...form.register("venue")}
               />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1">
               <Label htmlFor="city">City</Label>
               <Input
                 id="city"
@@ -143,7 +143,7 @@ export function ProjectForm({ themes, project }: ProjectFormProps) {
             </div>
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-1">
             <Label htmlFor="country">Country</Label>
             <Input
               id="country"
@@ -153,7 +153,7 @@ export function ProjectForm({ themes, project }: ProjectFormProps) {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
+            <div className="space-y-1">
               <Label htmlFor="startDate">Start Date</Label>
               <Input
                 id="startDate"
@@ -161,7 +161,7 @@ export function ProjectForm({ themes, project }: ProjectFormProps) {
                 {...form.register("startDate")}
               />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1">
               <Label htmlFor="endDate">End Date</Label>
               <Input
                 id="endDate"
@@ -172,7 +172,7 @@ export function ProjectForm({ themes, project }: ProjectFormProps) {
           </div>
 
           {isEditing && (
-            <div className="space-y-2">
+            <div className="space-y-1">
               <Label htmlFor="status">Status</Label>
               <Select
                 value={form.watch("status") ?? "PLANNING"}
@@ -194,7 +194,7 @@ export function ProjectForm({ themes, project }: ProjectFormProps) {
             </div>
           )}
 
-          <div className="space-y-2">
+          <div className="space-y-1">
             <Label htmlFor="notes">Notes</Label>
             <Textarea
               id="notes"

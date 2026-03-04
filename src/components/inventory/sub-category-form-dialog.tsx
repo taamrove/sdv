@@ -34,6 +34,7 @@ interface SubCategoryFormDialogProps {
   onOpenChange: (open: boolean) => void;
   categoryId: string;
   subCategory?: SubCategory | null;
+  onSuccess?: (sub: { id: string; name: string; sizeMode: string | null }) => void;
 }
 
 export function SubCategoryFormDialog({
@@ -41,6 +42,7 @@ export function SubCategoryFormDialog({
   onOpenChange,
   categoryId,
   subCategory,
+  onSuccess,
 }: SubCategoryFormDialogProps) {
   const router = useRouter();
   const [name, setName] = useState("");
@@ -69,6 +71,10 @@ export function SubCategoryFormDialog({
         toast.error(result.error);
       } else {
         toast.success(isEditing ? "Sub-category updated" : "Sub-category created");
+        if (!isEditing && onSuccess && "data" in result && result.data) {
+          const created = result.data as { id: string; name: string; sizeMode: string | null };
+          onSuccess({ id: created.id, name: created.name, sizeMode: created.sizeMode });
+        }
         onOpenChange(false);
         router.refresh();
       }

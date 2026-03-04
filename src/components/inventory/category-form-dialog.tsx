@@ -31,12 +31,14 @@ interface CategoryFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   category?: Category | null;
+  onSuccess?: (category: { id: string; code: string; name: string }) => void;
 }
 
 export function CategoryFormDialog({
   open,
   onOpenChange,
   category,
+  onSuccess,
 }: CategoryFormDialogProps) {
   const router = useRouter();
   const isEditing = !!category;
@@ -81,6 +83,10 @@ export function CategoryFormDialog({
           return;
         }
         toast.success("Category created");
+        if (onSuccess && "data" in result && result.data) {
+          const created = result.data as { id: string; code: string; name: string };
+          onSuccess({ id: created.id, code: created.code, name: created.name });
+        }
       }
       onOpenChange(false);
       form.reset();

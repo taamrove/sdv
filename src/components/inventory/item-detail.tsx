@@ -16,6 +16,7 @@ import {
   Select,
   SelectContent,
   SelectItem,
+  SelectSeparator,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -230,99 +231,91 @@ export function ItemDetail({
   function renderEditSizeFields() {
     if (sizeMode === "clothing") {
       return (
-        <div className="border rounded-lg p-4 space-y-3">
-          <h3 className="font-medium text-sm">Size</h3>
-          <div className="space-y-1">
-            <Label className="text-xs">Clothing Size</Label>
-            <Select value={sizes["size"] ?? ""} onValueChange={(val) => updateSize("size", val)}>
-              <SelectTrigger><SelectValue placeholder="Select size" /></SelectTrigger>
-              <SelectContent>
-                {CLOTHING_SIZES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
+        <div className="space-y-1">
+          <Label className="text-xs">Clothing Size</Label>
+          <Select value={sizes["size"] ?? ""} onValueChange={(val) => updateSize("size", val)}>
+            <SelectTrigger><SelectValue placeholder="Select size" /></SelectTrigger>
+            <SelectContent>
+              {CLOTHING_SIZES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
       );
     }
     if (sizeMode === "shoes") {
       return (
-        <div className="border rounded-lg p-4 space-y-3">
-          <h3 className="font-medium text-sm">Size</h3>
-          <div className="space-y-1">
-            <Label className="text-xs">Shoe Size (EU)</Label>
-            <Select value={sizes["shoe"] ?? ""} onValueChange={(val) => updateSize("shoe", val)}>
-              <SelectTrigger><SelectValue placeholder="Select EU size" /></SelectTrigger>
-              <SelectContent>
-                {SHOE_SIZES_EU.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
+        <div className="space-y-1">
+          <Label className="text-xs">Shoe Size (EU)</Label>
+          <Select value={sizes["shoe"] ?? ""} onValueChange={(val) => updateSize("shoe", val)}>
+            <SelectTrigger><SelectValue placeholder="Select EU size" /></SelectTrigger>
+            <SelectContent>
+              {SHOE_SIZES_EU.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
       );
     }
     if (sizeMode === "hat") {
       return (
-        <div className="border rounded-lg p-4 space-y-3">
-          <h3 className="font-medium text-sm">Size</h3>
-          <div className="space-y-1">
-            <Label className="text-xs">Hat Size (cm)</Label>
-            <Select value={sizes["hat"] ?? ""} onValueChange={(val) => updateSize("hat", val)}>
-              <SelectTrigger><SelectValue placeholder="Select hat size" /></SelectTrigger>
-              <SelectContent>
-                {HAT_SIZES_CM.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
+        <div className="space-y-1">
+          <Label className="text-xs">Hat Size (cm)</Label>
+          <Select value={sizes["hat"] ?? ""} onValueChange={(val) => updateSize("hat", val)}>
+            <SelectTrigger><SelectValue placeholder="Select hat size" /></SelectTrigger>
+            <SelectContent>
+              {HAT_SIZES_CM.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
       );
     }
     if (sizeMode === "measurements") {
       return (
-        <div className="border rounded-lg p-4 space-y-4">
-          <h3 className="font-medium text-sm">Measurements</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {[
-              { key: "chest", label: "Chest", placeholder: "e.g., 90cm" },
-              { key: "waist", label: "Waist", placeholder: "e.g., 75cm" },
-              { key: "hip", label: "Hip", placeholder: "e.g., 95cm" },
-            ].map(({ key, label, placeholder }) => (
-              <div key={key} className="space-y-1">
-                <Label className="text-xs">{label}</Label>
-                <Input
-                  value={sizes[key] ?? ""}
-                  onChange={(e) => updateSize(key, e.target.value)}
-                  placeholder={placeholder}
-                />
-              </div>
-            ))}
-          </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {[
+            { key: "chest", label: "Chest", placeholder: "e.g., 90cm" },
+            { key: "waist", label: "Waist", placeholder: "e.g., 75cm" },
+            { key: "hip", label: "Hip", placeholder: "e.g., 95cm" },
+          ].map(({ key, label, placeholder }) => (
+            <div key={key} className="space-y-1">
+              <Label className="text-xs">{label}</Label>
+              <Input
+                value={sizes[key] ?? ""}
+                onChange={(e) => updateSize(key, e.target.value)}
+                placeholder={placeholder}
+              />
+            </div>
+          ))}
         </div>
       );
     }
     // Generic
     return (
-      <div className="border rounded-lg p-4 space-y-4">
-        <h3 className="font-medium text-sm">Sizes</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {["size", "chest", "waist", "hip", "shoe", "hat"].map((key) => (
-            <div key={key} className="space-y-1">
-              <Label className="text-xs capitalize">{key}</Label>
-              <Input
-                value={sizes[key] ?? ""}
-                onChange={(e) => updateSize(key, e.target.value)}
-                placeholder={key === "size" ? "e.g., M, L, XL" : key === "shoe" ? "e.g., 42" : "e.g., 90cm"}
-              />
-            </div>
-          ))}
-        </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        {[
+          { key: "size", label: "Size", placeholder: "e.g., M, L, XL" },
+          { key: "chest", label: "Chest", placeholder: "e.g., 90cm" },
+          { key: "waist", label: "Waist", placeholder: "e.g., 75cm" },
+          { key: "hip", label: "Hip", placeholder: "e.g., 95cm" },
+          { key: "shoe", label: "Shoe Size", placeholder: "e.g., 42" },
+          { key: "hat", label: "Hat Size", placeholder: "e.g., 58" },
+        ].map(({ key, label, placeholder }) => (
+          <div key={key} className="space-y-1">
+            <Label className="text-xs">{label}</Label>
+            <Input
+              value={sizes[key] ?? ""}
+              onChange={(e) => updateSize(key, e.target.value)}
+              placeholder={placeholder}
+            />
+          </div>
+        ))}
       </div>
     );
   }
 
   return (
     <>
-    <div className="grid gap-6 md:grid-cols-3">
-      <div className="md:col-span-2 space-y-6 order-2 md:order-1">
+    <div className="grid gap-4 md:grid-cols-3">
+      <div className="md:col-span-2 space-y-4 order-2 md:order-1">
         {/* Main Info */}
         <Card>
           <CardHeader>
@@ -353,7 +346,7 @@ export function ItemDetail({
           <CardContent className="space-y-4">
             {/* Image */}
             {editing ? (
-              <div className="space-y-2">
+              <div className="space-y-1">
                 <Label>Image</Label>
                 <ImageUpload value={imageUrl} onChange={(url) => setImageUrl(url)} folder="items" />
               </div>
@@ -393,7 +386,7 @@ export function ItemDetail({
 
             {/* Color */}
             {editing ? (
-              <div className="space-y-2">
+              <div className="space-y-1">
                 <Label htmlFor="color">Color</Label>
                 <Input id="color" value={color} onChange={(e) => setColor(e.target.value)} placeholder="e.g., Red" />
               </div>
@@ -439,7 +432,7 @@ export function ItemDetail({
 
             {/* Notes */}
             {editing ? (
-              <div className="space-y-2">
+              <div className="space-y-1">
                 <Label htmlFor="notes">Notes</Label>
                 <Textarea id="notes" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Optional notes..." />
               </div>
@@ -497,13 +490,13 @@ export function ItemDetail({
       </div>
 
       {/* Sidebar — shown first on mobile via CSS order */}
-      <div className="space-y-6 order-1 md:order-2">
+      <div className="space-y-4 order-1 md:order-2">
         <Card>
           <CardHeader>
             <CardTitle>Status & Location</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-2">
+            <div className="space-y-1">
               <p className="text-sm font-medium">Status</p>
               <Select value={status} onValueChange={setStatus}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
@@ -515,7 +508,7 @@ export function ItemDetail({
               </Select>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-1">
               <p className="text-sm font-medium">Condition</p>
               <Select value={condition} onValueChange={setCondition}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
@@ -527,9 +520,18 @@ export function ItemDetail({
               </Select>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-1">
               <p className="text-sm font-medium">Location</p>
-              <Select value={locationId} onValueChange={setLocationId}>
+              <Select
+                value={locationId}
+                onValueChange={(val) => {
+                  if (val === "__new_location__") {
+                    setLocationDialogOpen(true);
+                    return;
+                  }
+                  setLocationId(val);
+                }}
+              >
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">No location</SelectItem>
@@ -541,22 +543,16 @@ export function ItemDetail({
                       </span>
                     </SelectItem>
                   ))}
+                  <SelectSeparator />
+                  <SelectItem value="__new_location__">
+                    <Plus className="mr-1 h-3 w-3 inline-block" /> New location
+                  </SelectItem>
                 </SelectContent>
               </Select>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="h-7 px-2 text-xs text-muted-foreground"
-                onClick={() => setLocationDialogOpen(true)}
-              >
-                <Plus className="mr-1 h-3 w-3" />
-                New location
-              </Button>
             </div>
 
             {performers.length > 0 && (
-              <div className="space-y-2">
+              <div className="space-y-1">
                 <p className="text-sm font-medium flex items-center gap-1">
                   <UserCheck className="h-4 w-4" />
                   Main Performer
