@@ -510,13 +510,19 @@ export function ItemForm({
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="purchasePrice">Purchase Price (optional)</Label>
+                <Label htmlFor="purchasePrice">Purchase Price</Label>
                 <Input
                   id="purchasePrice"
                   type="number"
                   step="0.01"
                   placeholder="0.00"
-                  {...form.register("purchasePrice", { valueAsNumber: true })}
+                  {...form.register("purchasePrice", {
+                    setValueAs: (v) => {
+                      if (v === "" || v === null || v === undefined) return undefined;
+                      const n = Number(v);
+                      return isNaN(n) ? undefined : n;
+                    },
+                  })}
                 />
               </div>
             </div>
