@@ -109,8 +109,10 @@ const FIELD_LABELS: Record<string, string> = {
   status: "Status",
   condition: "Condition",
   warehouseLocationId: "Location",
+  mainPerformerName: "Performer",
   color: "Color",
   notes: "Notes",
+  archived: "Archived",
 };
 
 function fmt(key: string, value: unknown, locationLabels: Record<string, string>): string {
