@@ -185,6 +185,54 @@ npx prisma migrate resolve --applied <migration_name>  # record in history
 
 ---
 
+## Activity Logging
+
+**All item mutations must write an `ItemHistory` entry.** This is non-negotiable —
+if an action changes the item, it must be recorded.
+
+### State snapshots
+
+`previousState` and `newState` must capture **every user-visible field**:
+
+```ts
+{
+  status: string,
+  condition: string | null,
+  warehouseLocationId: string | null,
+  mainPerformerName: string | null,   // human name, not UUID
+  color: string | null,
+  notes: string | null,
+  archived: boolean,
+}
+```
+
+Resolve performer names **before** the transaction so the diff is human-readable
+without extra DB lookups at display time.
+
+### Action taxonomy
+
+| `action` value | When to use |
+|---|---|
+| `CREATED` | Item first created |
+| `UPDATED` | Generic field change (fallback) |
+| `STATUS_CHANGED` | `status` field changed |
+| `CONDITION_CHANGED` | `condition` field changed |
+| `LOCATION_CHANGED` | `warehouseLocationId` changed |
+| `RETIRED` | Soft-deleted via `deleteItem` |
+| `PACKED` / `UNPACKED` | Container pack/unpack actions |
+| `MAINTENANCE` | Sent to maintenance |
+
+Use the **most specific** action; fall back to `UPDATED` only when no specific
+action applies.
+
+### Where it's displayed
+
+- `CompactActivityLog` component — embedded on item, product, and performer detail pages
+- `/activity` page — full paginated global log
+- Both consume `ActivityEntry[]` from `src/components/dashboard/activity-log.tsx`
+
+---
+
 ## Dev Servers (.claude/launch.json)
 
 | Name | Command | Port |
