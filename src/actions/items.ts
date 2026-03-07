@@ -176,6 +176,9 @@ export async function createItem(
     }
 
     const user = await getCurrentUser();
+    const userName = user
+      ? `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim()
+      : null;
 
     const item = await prisma.$transaction(async (tx) => {
       // Get next sequence within the transaction for safety
@@ -218,17 +221,20 @@ export async function createItem(
         },
       });
 
-      // Record history
-      await tx.itemHistory.create({
+      // Record activity log
+      await tx.activityLog.create({
         data: {
-          itemId: created.id,
+          entityType: "Item",
+          entityId: created.id,
+          entityLabel: `${humanReadableId} — ${product.name}`,
           action: "CREATED",
-          performedById: user?.id ?? null,
-          newState: {
-            status: created.status,
-            condition: created.condition,
-            warehouseLocationId: created.warehouseLocationId,
+          userId: user?.id ?? null,
+          userName,
+          changes: {
+            status: { from: null, to: created.status },
+            condition: { from: null, to: created.condition },
           },
+          details: { productId: created.productId },
         },
       });
 
@@ -272,6 +278,9 @@ export async function createItems(
     }
 
     const user = await getCurrentUser();
+    const userName = user
+      ? `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim()
+      : null;
 
     const created = await prisma.$transaction(async (tx) => {
       const lastItem = await tx.item.findFirst({
@@ -313,16 +322,19 @@ export async function createItems(
           },
         });
 
-        await tx.itemHistory.create({
+        await tx.activityLog.create({
           data: {
-            itemId: item.id,
+            entityType: "Item",
+            entityId: item.id,
+            entityLabel: `${humanReadableId} — ${product.name}`,
             action: "CREATED",
-            performedById: user?.id ?? null,
-            newState: {
-              status: item.status,
-              condition: item.condition,
-              warehouseLocationId: item.warehouseLocationId,
+            userId: user?.id ?? null,
+            userName,
+            changes: {
+              status: { from: null, to: item.status },
+              condition: { from: null, to: item.condition },
             },
+            details: { productId: item.productId },
           },
         });
 
@@ -359,12 +371,18 @@ export async function updateItem(
       return { error: parsed.error.issues.map((i) => i.message).join(", ") };
     }
 
-    const existing = await prisma.item.findUnique({ where: { id } });
+    const existing = await prisma.item.findUnique({
+      where: { id },
+      include: { product: { select: { name: true } } },
+    });
     if (!existing) {
       return { error: "Item not found" };
     }
 
     const user = await getCurrentUser();
+    const userName = user
+      ? `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim()
+      : null;
 
     // ------------------------------------------------------------------
     // Resolve human-readable performer names for the state snapshot
@@ -397,6 +415,37 @@ export async function updateItem(
     // else: performer explicitly set to null (removed) → nextPerformerName stays null
 
     // ------------------------------------------------------------------
+    // Resolve warehouse location labels
+    // ------------------------------------------------------------------
+    const prevLocRow = existing.warehouseLocationId
+      ? await prisma.warehouseLocation.findUnique({
+          where: { id: existing.warehouseLocationId },
+          select: { label: true, zone: true },
+        })
+      : null;
+    const prevLocationLabel = prevLocRow
+      ? [prevLocRow.zone, prevLocRow.label].filter(Boolean).join(" / ")
+      : null;
+
+    const newLocationId =
+      parsed.data.warehouseLocationId !== undefined
+        ? parsed.data.warehouseLocationId
+        : existing.warehouseLocationId;
+    const nextLocRow =
+      newLocationId && newLocationId !== existing.warehouseLocationId
+        ? await prisma.warehouseLocation.findUnique({
+            where: { id: newLocationId },
+            select: { label: true, zone: true },
+          })
+        : null;
+    const nextLocationLabel =
+      newLocationId === existing.warehouseLocationId
+        ? prevLocationLabel
+        : nextLocRow
+          ? [nextLocRow.zone, nextLocRow.label].filter(Boolean).join(" / ")
+          : null;
+
+    // ------------------------------------------------------------------
     // Determine the most specific history action
     // ------------------------------------------------------------------
     let historyAction: string = "UPDATED";
@@ -427,32 +476,37 @@ export async function updateItem(
         },
       });
 
-      // Full state snapshot — covers every user-visible field
-      await tx.itemHistory.create({
-        data: {
-          itemId: id,
-          action: historyAction as never,
-          performedById: user?.id ?? null,
-          previousState: {
-            status: existing.status,
-            condition: existing.condition,
-            warehouseLocationId: existing.warehouseLocationId,
-            mainPerformerName: prevPerformerName,
-            color: existing.color ?? null,
-            notes: existing.notes ?? null,
-            archived: existing.archived,
+      // Build changes — only include user-visible fields that actually changed
+      const changes: Record<string, { from: unknown; to: unknown }> = {};
+      if (existing.status !== updated.status)
+        changes.status = { from: existing.status, to: updated.status };
+      if (existing.condition !== updated.condition)
+        changes.condition = { from: existing.condition, to: updated.condition };
+      if (prevLocationLabel !== nextLocationLabel)
+        changes.location = { from: prevLocationLabel, to: nextLocationLabel };
+      if (prevPerformerName !== nextPerformerName)
+        changes.performer = { from: prevPerformerName, to: nextPerformerName };
+      if ((existing.color ?? null) !== (updated.color ?? null))
+        changes.color = { from: existing.color ?? null, to: updated.color ?? null };
+      if ((existing.notes ?? null) !== (updated.notes ?? null))
+        changes.notes = { from: existing.notes ?? null, to: updated.notes ?? null };
+      if (existing.archived !== updated.archived)
+        changes.archived = { from: existing.archived, to: updated.archived };
+
+      if (Object.keys(changes).length > 0) {
+        await tx.activityLog.create({
+          data: {
+            entityType: "Item",
+            entityId: id,
+            entityLabel: `${updated.humanReadableId} — ${existing.product.name}`,
+            action: historyAction,
+            userId: user?.id ?? null,
+            userName,
+            changes,
+            details: { productId: updated.productId },
           },
-          newState: {
-            status: updated.status,
-            condition: updated.condition,
-            warehouseLocationId: updated.warehouseLocationId,
-            mainPerformerName: nextPerformerName,
-            color: updated.color ?? null,
-            notes: updated.notes ?? null,
-            archived: updated.archived,
-          },
-        },
-      });
+        });
+      }
 
       return updated;
     });
@@ -476,12 +530,19 @@ export async function deleteItem(
   try {
     await requirePermission("items:delete");
 
-    const existing = await prisma.item.findUnique({ where: { id } });
+    const existing = await prisma.item.findUnique({
+      where: { id },
+      include: { product: { select: { name: true } } },
+    });
     if (!existing) {
       return { error: "Item not found" };
     }
 
     const user = await getCurrentUser();
+    const userName = user
+      ? `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim()
+      : null;
+    const productName = existing.product.name;
 
     const item = await prisma.$transaction(async (tx) => {
       const updated = await tx.item.update({
@@ -494,13 +555,16 @@ export async function deleteItem(
         },
       });
 
-      await tx.itemHistory.create({
+      await tx.activityLog.create({
         data: {
-          itemId: id,
+          entityType: "Item",
+          entityId: id,
+          entityLabel: `${existing.humanReadableId} — ${productName}`,
           action: "RETIRED",
-          performedById: user?.id ?? null,
-          previousState: { status: existing.status },
-          newState: { status: "RETIRED" },
+          userId: user?.id ?? null,
+          userName,
+          changes: { status: { from: existing.status, to: "RETIRED" } },
+          details: { productId: existing.productId },
         },
       });
 
@@ -517,7 +581,7 @@ export async function deleteItem(
 }
 
 // ---------------------------------------------------------------------------
-// getItemHistory
+// getItemHistory — queries activityLog for item events
 // ---------------------------------------------------------------------------
 
 export async function getItemHistory(
@@ -531,13 +595,8 @@ export async function getItemHistory(
       return { error: "Item not found" };
     }
 
-    const history = await prisma.itemHistory.findMany({
-      where: { itemId },
-      include: {
-        performedBy: {
-          select: { id: true, firstName: true, lastName: true, email: true },
-        },
-      },
+    const history = await prisma.activityLog.findMany({
+      where: { entityType: "Item", entityId: itemId },
       orderBy: { createdAt: "desc" },
     });
 

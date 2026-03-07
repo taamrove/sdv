@@ -83,7 +83,6 @@ interface Booking {
 interface ItemDetailProps {
   item: Item;
   history: ActivityEntry[];
-  locationLabels: Record<string, string>;
   locations: Location[];
   bookings?: Booking[];
   sizeMode?: string | null;
@@ -93,7 +92,6 @@ interface ItemDetailProps {
 export function ItemDetail({
   item,
   history,
-  locationLabels,
   locations,
   bookings = [],
   sizeMode,
@@ -460,7 +458,7 @@ export function ItemDetail({
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
-            <CompactActivityLog entries={history} locationLabels={locationLabels} />
+            <CompactActivityLog entries={history} />
           </CardContent>
         </Card>
       </div>

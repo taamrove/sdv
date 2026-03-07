@@ -1,6 +1,5 @@
 "use server";
 
-import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/rbac";
 import { auth } from "@/lib/auth";
@@ -168,6 +167,12 @@ export async function assignItemToBooking(
 
     const session = await auth();
     const userId = session?.user?.id;
+    const sessionUser = session?.user as
+      | { id?: string; firstName?: string; lastName?: string }
+      | undefined;
+    const userName = sessionUser?.firstName
+      ? `${sessionUser.firstName ?? ""} ${sessionUser.lastName ?? ""}`.trim()
+      : null;
 
     const result = await prisma.$transaction(async (tx) => {
       const booking = await tx.projectBooking.findUnique({
@@ -194,6 +199,8 @@ export async function assignItemToBooking(
           id: true,
           humanReadableId: true,
           status: true,
+          productId: true,
+          product: { select: { name: true } },
         },
       });
 
@@ -266,19 +273,22 @@ export async function assignItemToBooking(
         data: { status: "ASSIGNED" },
       });
 
-      // Log history
-      await tx.itemHistory.create({
+      // Log activity
+      await tx.activityLog.create({
         data: {
-          itemId,
+          entityType: "Item",
+          entityId: itemId,
+          entityLabel: `${item.humanReadableId} — ${item.product?.name ?? ""}`,
           action: "ASSIGNED_TO_BOOKING",
-          performedById: userId ?? undefined,
+          userId: userId ?? null,
+          userName,
+          changes: { status: { from: item.status, to: "ASSIGNED" } },
           details: {
+            productId: item.productId,
             bookingId,
             projectId: booking.project.id,
             projectName: booking.project.name,
-          } as unknown as Prisma.InputJsonValue,
-          newState: "ASSIGNED",
-          previousState: item.status,
+          },
         },
       });
 
@@ -311,12 +321,26 @@ export async function removeItemFromBooking(
 
     const session = await auth();
     const userId = session?.user?.id;
+    const sessionUser2 = session?.user as
+      | { id?: string; firstName?: string; lastName?: string }
+      | undefined;
+    const userName2 = sessionUser2?.firstName
+      ? `${sessionUser2.firstName ?? ""} ${sessionUser2.lastName ?? ""}`.trim()
+      : null;
 
     await prisma.$transaction(async (tx) => {
       const bookingItem = await tx.bookingItem.findUnique({
         where: { id: bookingItemId },
         include: {
-          item: { select: { id: true, status: true, humanReadableId: true } },
+          item: {
+            select: {
+              id: true,
+              status: true,
+              humanReadableId: true,
+              productId: true,
+              product: { select: { name: true } },
+            },
+          },
           booking: {
             include: {
               project: { select: { id: true, name: true } },
@@ -342,19 +366,27 @@ export async function removeItemFromBooking(
         });
       }
 
-      // Log history
-      await tx.itemHistory.create({
+      // Log activity
+      await tx.activityLog.create({
         data: {
-          itemId: bookingItem.itemId,
+          entityType: "Item",
+          entityId: bookingItem.item.id,
+          entityLabel: `${bookingItem.item.humanReadableId} — ${bookingItem.item.product?.name ?? ""}`,
           action: "REMOVED_FROM_BOOKING",
-          performedById: userId ?? undefined,
+          userId: userId ?? null,
+          userName: userName2,
+          changes: {
+            status: {
+              from: bookingItem.item.status,
+              to: otherAssignments === 0 ? "AVAILABLE" : bookingItem.item.status,
+            },
+          },
           details: {
+            productId: bookingItem.item.productId,
             bookingId: bookingItem.bookingId,
             projectId: bookingItem.booking.project.id,
             projectName: bookingItem.booking.project.name,
-          } as unknown as Prisma.InputJsonValue,
-          previousState: bookingItem.item.status,
-          newState: otherAssignments === 0 ? "AVAILABLE" : bookingItem.item.status,
+          },
         },
       });
     });
@@ -600,6 +632,12 @@ export async function crossloadItem(
 
     const session = await auth();
     const userId = session?.user?.id;
+    const sessionUser3 = session?.user as
+      | { id?: string; firstName?: string; lastName?: string }
+      | undefined;
+    const userName3 = sessionUser3?.firstName
+      ? `${sessionUser3.firstName ?? ""} ${sessionUser3.lastName ?? ""}`.trim()
+      : null;
 
     const result = await prisma.$transaction(async (tx) => {
       // Get source booking item
@@ -607,7 +645,13 @@ export async function crossloadItem(
         where: { id: bookingItemId },
         include: {
           item: {
-            select: { id: true, humanReadableId: true, status: true },
+            select: {
+              id: true,
+              humanReadableId: true,
+              status: true,
+              productId: true,
+              product: { select: { name: true } },
+            },
           },
           booking: {
             include: {
@@ -664,22 +708,25 @@ export async function crossloadItem(
         },
       });
 
-      // Log crossload history
-      await tx.itemHistory.create({
+      // Log crossload activity
+      await tx.activityLog.create({
         data: {
-          itemId: sourceBookingItem.itemId,
+          entityType: "Item",
+          entityId: sourceBookingItem.item.id,
+          entityLabel: `${sourceBookingItem.item.humanReadableId} — ${sourceBookingItem.item.product?.name ?? ""}`,
           action: "CROSSLOADED",
-          performedById: userId ?? undefined,
+          userId: userId ?? null,
+          userName: userName3,
+          changes: { status: { from: sourceBookingItem.item.status, to: "ASSIGNED" } },
           details: {
-            fromProjectId: sourceBookingItem.booking.project.id,
-            fromProjectName: sourceBookingItem.booking.project.name,
-            fromBookingId: sourceBookingItem.bookingId,
-            toProjectId: targetBooking.project.id,
-            toProjectName: targetBooking.project.name,
-            toBookingId: targetBookingId,
-          } as unknown as Prisma.InputJsonValue,
-          previousState: sourceBookingItem.item.status,
-          newState: "ASSIGNED",
+            productId: sourceBookingItem.item.productId,
+            sourceBookingId: sourceBookingItem.bookingId,
+            sourceProjectId: sourceBookingItem.booking.project.id,
+            sourceProjectName: sourceBookingItem.booking.project.name,
+            targetBookingId,
+            targetProjectId: targetBooking.project.id,
+            targetProjectName: targetBooking.project.name,
+          },
         },
       });
 

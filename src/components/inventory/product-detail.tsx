@@ -57,7 +57,6 @@ interface ProductDetailProps {
   items: Item[];
   categories: { id: string; code: string; name: string }[];
   recentActivity: ActivityEntry[];
-  locationLabels: Record<string, string>;
   pagination: PaginationData;
 }
 
@@ -66,7 +65,6 @@ export function ProductDetail({
   items,
   categories,
   recentActivity,
-  locationLabels,
   pagination,
 }: ProductDetailProps) {
   const router = useRouter();
@@ -237,7 +235,6 @@ export function ProductDetail({
           <CardContent className="pt-0">
             <CompactActivityLog
               entries={recentActivity}
-              locationLabels={locationLabels}
               defaultVisible={5}
             />
           </CardContent>

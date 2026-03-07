@@ -58,20 +58,9 @@ export default async function DashboardPage() {
         where: { status: { in: ["CONFIRMED", "PACKING", "IN_TRANSIT", "ACTIVE"] } },
       }),
       prisma.performer.count({ where: { active: true } }),
-      prisma.itemHistory.findMany({
+      prisma.activityLog.findMany({
         orderBy: { createdAt: "desc" },
         take: 20,
-        include: {
-          item: {
-            select: {
-              humanReadableId: true,
-              id: true,
-              productId: true,
-              product: { select: { name: true } },
-            },
-          },
-          performedBy: { select: { firstName: true, lastName: true } },
-        },
       }),
       prisma.project.findMany({
         where: {
@@ -234,15 +223,7 @@ export default async function DashboardPage() {
         </Card>
 
         {/* Recent Activity */}
-        <ActivityFeed
-          entries={recentActivity.map((e) => ({
-            id: e.id,
-            action: e.action,
-            createdAt: e.createdAt.toISOString(),
-            item: e.item,
-            performedBy: e.performedBy,
-          }))}
-        />
+        <ActivityFeed entries={recentActivity} />
       </div>
     </div>
   );
