@@ -10,6 +10,7 @@ import {
   BarChart3,
   Theater,
   Users,
+  BookUser,
   Palette,
   Warehouse,
   Container,
@@ -102,6 +103,12 @@ const navigation: NavGroup[] = [
         icon: Users,
         permission: "performers:read",
         featureFlag: "performers",
+      },
+      {
+        label: "Contacts",
+        href: "/contacts",
+        icon: BookUser,
+        permission: "performers:read",
       },
       {
         label: "Themes",

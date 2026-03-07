@@ -38,16 +38,19 @@ interface SizeProfile {
 interface PerformerFormProps {
   performer?: {
     id: string;
-    firstName: string;
-    lastName: string;
-    email: string | null;
-    phone: string | null;
     type: string;
     sizes: unknown;
     notes: string | null;
     active: boolean;
     requiresExactSize: boolean;
     sizeFlexDirection: string | null;
+    contact: {
+      id: string;
+      firstName: string;
+      lastName: string;
+      email: string | null;
+      phone: string | null;
+    };
   };
 }
 
@@ -60,10 +63,10 @@ export function PerformerForm({ performer }: PerformerFormProps) {
   const form = useForm<CreatePerformerInput>({
     resolver: zodResolver(createPerformerSchema),
     defaultValues: {
-      firstName: performer?.firstName ?? "",
-      lastName: performer?.lastName ?? "",
-      email: performer?.email ?? undefined,
-      phone: performer?.phone ?? undefined,
+      firstName: performer?.contact.firstName ?? "",
+      lastName: performer?.contact.lastName ?? "",
+      email: performer?.contact.email ?? undefined,
+      phone: performer?.contact.phone ?? undefined,
       type: (performer?.type as CreatePerformerInput["type"]) ?? "DANCER",
       sizes: existingSizes,
       notes: performer?.notes ?? undefined,
@@ -99,68 +102,77 @@ export function PerformerForm({ performer }: PerformerFormProps) {
 
   return (
     <div className="max-w-2xl space-y-6">
+      {/* ── Contact Info ── */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Contact Info</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="firstName">First Name *</Label>
+              <Input
+                id="firstName"
+                placeholder="e.g., Maria"
+                {...form.register("firstName")}
+              />
+              {form.formState.errors.firstName && (
+                <p className="text-sm text-destructive">
+                  {form.formState.errors.firstName.message}
+                </p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="lastName">Last Name *</Label>
+              <Input
+                id="lastName"
+                placeholder="e.g., Garcia"
+                {...form.register("lastName")}
+              />
+              {form.formState.errors.lastName && (
+                <p className="text-sm text-destructive">
+                  {form.formState.errors.lastName.message}
+                </p>
+              )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="email@example.com"
+                {...form.register("email")}
+              />
+              {form.formState.errors.email && (
+                <p className="text-sm text-destructive">
+                  {form.formState.errors.email.message}
+                </p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="phone">Phone</Label>
+              <Input
+                id="phone"
+                placeholder="+1 234 567 890"
+                {...form.register("phone")}
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* ── Performer Profile ── */}
       <Card>
         <CardHeader>
           <CardTitle>
-            {isEditing ? "Edit Performer" : "Create Performer"}
+            {isEditing ? "Edit Performer" : "Performer Profile"}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="firstName">First Name *</Label>
-                <Input
-                  id="firstName"
-                  placeholder="e.g., Maria"
-                  {...form.register("firstName")}
-                />
-                {form.formState.errors.firstName && (
-                  <p className="text-sm text-destructive">
-                    {form.formState.errors.firstName.message}
-                  </p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="lastName">Last Name *</Label>
-                <Input
-                  id="lastName"
-                  placeholder="e.g., Garcia"
-                  {...form.register("lastName")}
-                />
-                {form.formState.errors.lastName && (
-                  <p className="text-sm text-destructive">
-                    {form.formState.errors.lastName.message}
-                  </p>
-                )}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="email@example.com"
-                  {...form.register("email")}
-                />
-                {form.formState.errors.email && (
-                  <p className="text-sm text-destructive">
-                    {form.formState.errors.email.message}
-                  </p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="phone">Phone</Label>
-                <Input
-                  id="phone"
-                  placeholder="+1 234 567 890"
-                  {...form.register("phone")}
-                />
-              </div>
-            </div>
-
             <div className="space-y-2">
               <Label htmlFor="type">Performer Type *</Label>
               <Select

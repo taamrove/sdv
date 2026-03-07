@@ -17,10 +17,14 @@ import { getFullName } from "@/lib/format-name";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 
-interface Performer {
-  id: string;
+interface Contact {
   firstName: string;
   lastName: string;
+}
+
+interface Performer {
+  id: string;
+  contact: Contact;
   type: string;
 }
 
@@ -47,7 +51,7 @@ export function AddPerformerDialog({
   const available = performers.filter(
     (p) =>
       !assignedPerformerIds.includes(p.id) &&
-      getFullName(p).toLowerCase().includes(search.toLowerCase())
+      getFullName(p.contact).toLowerCase().includes(search.toLowerCase())
   );
 
   async function handleAdd(performerId: string) {
@@ -105,7 +109,7 @@ export function AddPerformerDialog({
                   className="flex items-center justify-between rounded-md border px-3 py-2 hover:bg-muted/50"
                 >
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium">{getFullName(performer)}</span>
+                    <span className="text-sm font-medium">{getFullName(performer.contact)}</span>
                     <Badge variant="outline" className="text-xs">
                       {PERFORMER_TYPE_LABELS[performer.type] ?? performer.type}
                     </Badge>

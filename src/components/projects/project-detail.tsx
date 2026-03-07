@@ -72,10 +72,12 @@ interface Assignment {
   role: string | null;
   performer: {
     id: string;
-    firstName: string;
-    lastName: string;
-    email: string | null;
     type: string;
+    contact: {
+      firstName: string;
+      lastName: string;
+      email: string | null;
+    };
   };
   bookingNotes: AssignmentNote[];
 }
@@ -102,9 +104,11 @@ interface Theme {
 
 interface PerformerOption {
   id: string;
-  firstName: string;
-  lastName: string;
   type: string;
+  contact: {
+    firstName: string;
+    lastName: string;
+  };
 }
 
 interface ProjectDetailProps {
@@ -314,7 +318,7 @@ export function ProjectDetail({
                         <div className="flex items-center gap-3">
                           <div>
                             <div className="font-medium">
-                              {getFullName(assignment.performer)}
+                              {getFullName(assignment.performer.contact)}
                             </div>
                             <div className="flex items-center gap-2 mt-1">
                               <Badge variant="outline" className="text-xs">
@@ -498,7 +502,7 @@ export function ProjectDetail({
         open={!!removingAssignment}
         onOpenChange={(open) => !open && setRemovingAssignment(null)}
         title="Remove Performer"
-        description={`Are you sure you want to remove "${removingAssignment ? getFullName(removingAssignment.performer) : ""}" from this project?`}
+        description={`Are you sure you want to remove "${removingAssignment ? getFullName(removingAssignment.performer.contact) : ""}" from this project?`}
         confirmLabel="Remove"
         variant="destructive"
         onConfirm={handleRemovePerformer}

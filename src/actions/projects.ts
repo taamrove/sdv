@@ -98,7 +98,7 @@ export async function getProjectById(
       where: { id },
       include: {
         assignments: {
-          include: { performer: true },
+          include: { performer: { include: { contact: true } } },
         },
         bookings: {
           include: {
@@ -280,7 +280,7 @@ export async function assignPerformer(
         performerId,
         role: role ?? null,
       },
-      include: { performer: true, project: true },
+      include: { performer: { include: { contact: true } }, project: true },
     });
 
     return { data: assignment };

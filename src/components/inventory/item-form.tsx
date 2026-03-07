@@ -414,29 +414,31 @@ export function ItemForm({
             {renderSizeFields()}
 
             {/* Main performer */}
-            {performers.length > 0 && (
-              <div className="space-y-1">
-                <Label htmlFor="mainPerformerId">Main Performer (optional)</Label>
-                <Select
-                  value={form.watch("mainPerformerId") ?? "none"}
-                  onValueChange={(val) =>
-                    form.setValue("mainPerformerId", val === "none" ? undefined : val)
-                  }
-                >
-                  <SelectTrigger id="mainPerformerId">
-                    <SelectValue placeholder="No performer assigned" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">No performer assigned</SelectItem>
-                    {performers.map((p) => (
-                      <SelectItem key={p.id} value={p.id}>
-                        {getFullName(p)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
+            <div className="space-y-1">
+              <Label htmlFor="mainPerformerId">Main Performer (optional)</Label>
+              <Select
+                value={form.watch("mainPerformerId") ?? "none"}
+                onValueChange={(val) =>
+                  form.setValue("mainPerformerId", val === "none" ? undefined : val)
+                }
+                disabled={performers.length === 0}
+              >
+                <SelectTrigger id="mainPerformerId">
+                  <SelectValue placeholder={performers.length === 0 ? "No performers added yet" : "No performer assigned"} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No performer assigned</SelectItem>
+                  {performers.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {getFullName(p)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {performers.length === 0 && (
+                <p className="text-xs text-muted-foreground">Add performers in the Performers section first.</p>
+              )}
+            </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1">

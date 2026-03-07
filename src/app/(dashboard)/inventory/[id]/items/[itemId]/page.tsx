@@ -23,7 +23,10 @@ export default async function ItemDetailPage({
       category: true,
       warehouseLocation: true,
       mainPerformer: {
-        select: { id: true, firstName: true, lastName: true },
+        select: {
+          id: true,
+          contact: { select: { firstName: true, lastName: true } },
+        },
       },
     },
   });
@@ -70,8 +73,11 @@ export default async function ItemDetailPage({
     }),
     prisma.performer.findMany({
       where: { active: true },
-      orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
-      select: { id: true, firstName: true, lastName: true },
+      orderBy: [{ contact: { lastName: "asc" } }, { contact: { firstName: "asc" } }],
+      select: {
+        id: true,
+        contact: { select: { firstName: true, lastName: true } },
+      },
     }),
   ]);
 
@@ -107,7 +113,11 @@ export default async function ItemDetailPage({
       ? { id: item.warehouseLocation.id, label: item.warehouseLocation.label }
       : null,
     mainPerformer: item.mainPerformer
-      ? { id: item.mainPerformer.id, firstName: item.mainPerformer.firstName, lastName: item.mainPerformer.lastName }
+      ? {
+          id: item.mainPerformer.id,
+          firstName: item.mainPerformer.contact.firstName,
+          lastName: item.mainPerformer.contact.lastName,
+        }
       : null,
   };
 
@@ -123,7 +133,11 @@ export default async function ItemDetailPage({
         locations={locations}
         bookings={serializedBookings}
         sizeMode={sizeMode}
-        performers={performers}
+        performers={performers.map((p) => ({
+          id: p.id,
+          firstName: p.contact.firstName,
+          lastName: p.contact.lastName,
+        }))}
       />
     </div>
   );

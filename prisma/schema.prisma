@@ -22,12 +22,15 @@ model User {
   image        String?
   passwordHash String
   roleId       String
+  contactId    String?   @unique
   active       Boolean   @default(true)
   lastLoginAt  DateTime?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
   role                Role               @relation(fields: [roleId], references: [id])
+  // contactId links to public.Contact — Prisma relation intentionally omitted
+  // (cross-schema auth→public FK breaks Prisma query engine in Next.js; use raw lookup when needed)
   maintenanceAssigned MaintenanceTicket[] @relation("AssignedTo")
   maintenanceReported MaintenanceTicket[] @relation("ReportedBy")
   maintenanceComments MaintenanceComment[]
@@ -358,15 +361,102 @@ model WarehouseLocation {
 }
 
 // ============================================================
+// CONTACT HUB — single source of truth for any person
+// ============================================================
+
+model Contact {
+  id        String   @id @default(uuid())
+  firstName String
+  lastName  String
+  email     String?
+  phone     String?
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  performer  Performer?
+  // user back-relation omitted — see User.contactId comment above
+  addresses  ContactAddress[]
+  companies  ContactCompany[]
+
+  @@schema("public")
+}
+
+model Address {
+  id        String   @id @default(uuid())
+  line1     String?
+  line2     String?
+  city      String?
+  postCode  String?
+  country   String?
+  label     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  contacts  ContactAddress[]
+  companies CompanyAddress[]
+
+  @@schema("public")
+}
+
+model ContactAddress {
+  contactId String
+  addressId String
+
+  contact Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  address Address @relation(fields: [addressId], references: [id], onDelete: Cascade)
+
+  @@id([contactId, addressId])
+  @@schema("public")
+}
+
+model Company {
+  id        String   @id @default(uuid())
+  name      String
+  vatNo     String?
+  website   String?
+  email     String?
+  phone     String?
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  addresses CompanyAddress[]
+  contacts  ContactCompany[]
+
+  @@schema("public")
+}
+
+model CompanyAddress {
+  companyId String
+  addressId String
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  address Address @relation(fields: [addressId], references: [id], onDelete: Cascade)
+
+  @@id([companyId, addressId])
+  @@schema("public")
+}
+
+model ContactCompany {
+  contactId String
+  companyId String
+  role      String?
+
+  contact Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@id([contactId, companyId])
+  @@schema("public")
+}
+
+// ============================================================
 // PERFORMER DOMAIN
 // ============================================================
 
 model Performer {
   id                String        @id @default(uuid())
-  firstName         String
-  lastName          String
-  email             String?
-  phone             String?
+  contactId         String        @unique
   type              PerformerType @default(DANCER)
   sizes             Json?
   notes             String?
@@ -377,6 +467,7 @@ model Performer {
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
 
+  contact      Contact               @relation(fields: [contactId], references: [id])
   assignments  PerformerAssignment[]
   primaryItems Item[]                @relation("ItemMainPerformer")
 

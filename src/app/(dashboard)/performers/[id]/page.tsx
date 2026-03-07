@@ -19,16 +19,21 @@ export default async function EditPerformerPage({
     where: { id },
     select: {
       id: true,
-      firstName: true,
-      lastName: true,
-      email: true,
-      phone: true,
       type: true,
       sizes: true,
       notes: true,
       active: true,
       requiresExactSize: true,
       sizeFlexDirection: true,
+      contact: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+          phone: true,
+        },
+      },
     },
   });
 
@@ -38,7 +43,7 @@ export default async function EditPerformerPage({
     <div className="space-y-6">
       <PageHeader
         title="Edit Performer"
-        description={getFullName(performer)}
+        description={getFullName(performer.contact)}
       />
       <PerformerForm performer={performer} />
     </div>

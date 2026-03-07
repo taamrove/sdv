@@ -551,23 +551,26 @@ export function ItemDetail({
               </Select>
             </div>
 
-            {performers.length > 0 && (
-              <div className="space-y-1">
-                <p className="text-sm font-medium flex items-center gap-1">
-                  <UserCheck className="h-4 w-4" />
-                  Main Performer
-                </p>
-                <Select value={mainPerformerId} onValueChange={setMainPerformerId}>
-                  <SelectTrigger><SelectValue placeholder="Not assigned" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Not assigned</SelectItem>
-                    {performers.map((p) => (
-                      <SelectItem key={p.id} value={p.id}>{getFullName(p)}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
+            <div className="space-y-1">
+              <p className="text-sm font-medium flex items-center gap-1">
+                <UserCheck className="h-4 w-4" />
+                Main Performer
+              </p>
+              <Select value={mainPerformerId} onValueChange={setMainPerformerId} disabled={performers.length === 0}>
+                <SelectTrigger>
+                  <SelectValue placeholder={performers.length === 0 ? "No performers added yet" : "Not assigned"} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Not assigned</SelectItem>
+                  {performers.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>{getFullName(p)}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {performers.length === 0 && (
+                <p className="text-xs text-muted-foreground">Add performers in the Performers section first.</p>
+              )}
+            </div>
 
             <Button onClick={handleSave} disabled={saving} className="w-full">
               {saving ? "Saving..." : "Save Changes"}

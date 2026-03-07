@@ -33,6 +33,11 @@ type PaginatedResult<T> =
   | { data: T[]; pagination: Pagination }
   | { error: string };
 
+// Reusable include for all performer queries
+const performerInclude = {
+  contact: true,
+} as const;
+
 // ---------------------------------------------------------------------------
 // getPerformers
 // ---------------------------------------------------------------------------
@@ -47,23 +52,29 @@ export async function getPerformers(
     const limit = params?.limit ?? 20;
     const skip = (page - 1) * limit;
 
-    const where: Record<string, unknown> = {};
+    const where: Prisma.PerformerWhereInput = {};
 
     if (params?.type) {
-      where.type = params.type;
+      where.type = params.type as Prisma.PerformerWhereInput["type"];
     }
 
     if (params?.search) {
-      where.OR = [
-        { firstName: { contains: params.search, mode: "insensitive" } },
-        { lastName: { contains: params.search, mode: "insensitive" } },
-      ];
+      where.contact = {
+        OR: [
+          { firstName: { contains: params.search, mode: "insensitive" } },
+          { lastName: { contains: params.search, mode: "insensitive" } },
+        ],
+      };
     }
 
     const [performers, total] = await Promise.all([
       prisma.performer.findMany({
         where,
-        orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
+        include: performerInclude,
+        orderBy: [
+          { contact: { lastName: "asc" } },
+          { contact: { firstName: "asc" } },
+        ],
         skip,
         take: limit,
       }),
@@ -100,6 +111,7 @@ export async function getPerformerById(
     const performer = await prisma.performer.findUnique({
       where: { id },
       include: {
+        ...performerInclude,
         assignments: {
           include: { project: true },
         },
@@ -134,13 +146,30 @@ export async function createPerformer(
       return { error: parsed.error.issues.map((i) => i.message).join(", ") };
     }
 
-    const performer = await prisma.performer.create({
-      data: {
-        ...parsed.data,
-        sizes: parsed.data.sizes
-          ? (parsed.data.sizes as Record<string, string>)
-          : undefined,
-      },
+    const { firstName, lastName, email, phone, type, sizes, notes, active, requiresExactSize, sizeFlexDirection } = parsed.data;
+
+    const performer = await prisma.$transaction(async (tx) => {
+      const contact = await tx.contact.create({
+        data: {
+          firstName,
+          lastName,
+          email: email || undefined,
+          phone: phone || undefined,
+        },
+      });
+
+      return tx.performer.create({
+        data: {
+          contactId: contact.id,
+          type,
+          sizes: sizes ? (sizes as Record<string, string>) : undefined,
+          notes,
+          active,
+          requiresExactSize,
+          sizeFlexDirection,
+        },
+        include: performerInclude,
+      });
     });
 
     return { data: performer };
@@ -168,22 +197,50 @@ export async function updatePerformer(
       return { error: parsed.error.issues.map((i) => i.message).join(", ") };
     }
 
-    const existing = await prisma.performer.findUnique({ where: { id } });
+    const existing = await prisma.performer.findUnique({
+      where: { id },
+      select: { id: true, contactId: true },
+    });
     if (!existing) {
       return { error: "Performer not found" };
     }
 
-    const { sizes, ...rest } = parsed.data;
-    const updateData = {
-      ...rest,
-      ...(sizes !== undefined
-        ? { sizes: sizes ? (sizes as Record<string, string>) : Prisma.DbNull }
-        : {}),
-    };
+    const {
+      firstName, lastName, email, phone, // contact fields
+      type, sizes, notes, active, requiresExactSize, sizeFlexDirection, // performer fields
+    } = parsed.data;
 
-    const performer = await prisma.performer.update({
-      where: { id },
-      data: updateData as Parameters<typeof prisma.performer.update>[0]["data"],
+    const performer = await prisma.$transaction(async (tx) => {
+      // Update contact if any personal fields provided
+      const contactUpdates: Record<string, unknown> = {};
+      if (firstName !== undefined) contactUpdates.firstName = firstName;
+      if (lastName !== undefined) contactUpdates.lastName = lastName;
+      if (email !== undefined) contactUpdates.email = email || null;
+      if (phone !== undefined) contactUpdates.phone = phone || null;
+
+      if (Object.keys(contactUpdates).length > 0) {
+        await tx.contact.update({
+          where: { id: existing.contactId },
+          data: contactUpdates,
+        });
+      }
+
+      // Build performer update data
+      const performerData: Record<string, unknown> = {};
+      if (type !== undefined) performerData.type = type;
+      if (notes !== undefined) performerData.notes = notes;
+      if (active !== undefined) performerData.active = active;
+      if (requiresExactSize !== undefined) performerData.requiresExactSize = requiresExactSize;
+      if (sizeFlexDirection !== undefined) performerData.sizeFlexDirection = sizeFlexDirection;
+      if (sizes !== undefined) {
+        performerData.sizes = sizes ? (sizes as Record<string, string>) : Prisma.DbNull;
+      }
+
+      return tx.performer.update({
+        where: { id },
+        data: performerData as Parameters<typeof tx.performer.update>[0]["data"],
+        include: performerInclude,
+      });
     });
 
     return { data: performer };

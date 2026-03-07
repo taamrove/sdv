@@ -12,6 +12,7 @@ interface SearchParams {
   page?: string;
   search?: string;
   type?: string;
+  active?: string;
 }
 
 export default async function PerformersPage({
@@ -29,20 +30,28 @@ export default async function PerformersPage({
 
   const where: Prisma.PerformerWhereInput = {};
   if (params.search) {
-    where.OR = [
-      { firstName: { contains: params.search, mode: "insensitive" } },
-      { lastName: { contains: params.search, mode: "insensitive" } },
-      { email: { contains: params.search, mode: "insensitive" } },
-    ];
+    where.contact = {
+      OR: [
+        { firstName: { contains: params.search, mode: "insensitive" } },
+        { lastName: { contains: params.search, mode: "insensitive" } },
+        { email: { contains: params.search, mode: "insensitive" } },
+      ],
+    };
   }
   if (params.type) {
     where.type = params.type as PerformerType;
+  }
+  if (params.active === "true") {
+    where.active = true;
+  } else if (params.active === "false") {
+    where.active = false;
   }
 
   const [performers, total] = await Promise.all([
     prisma.performer.findMany({
       where,
-      orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
+      include: { contact: true },
+      orderBy: [{ contact: { lastName: "asc" } }, { contact: { firstName: "asc" } }],
       skip,
       take: limit,
     }),

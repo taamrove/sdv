@@ -2,11 +2,15 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ItemList } from "@/components/inventory/item-list";
-import { Pencil, Plus, Package, Layers } from "lucide-react";
+import { Pencil, Plus, Package, Layers, PowerOff, Power, Trash2 } from "lucide-react";
+import { updateProduct, deleteProduct } from "@/actions/products";
 
 interface SubCategory {
   id: string;
@@ -60,7 +64,51 @@ export function ProductDetail({
   categories,
   pagination,
 }: ProductDetailProps) {
+  const router = useRouter();
+  const [active, setActive] = useState(product.active);
+  const [toggling, setToggling] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
   const productCode = `${product.category.code}-${String(product.number).padStart(3, "0")}`;
+
+  async function handleToggleActive() {
+    setToggling(true);
+    try {
+      const result = await updateProduct(product.id, { active: !active });
+      if ("error" in result) {
+        toast.error(result.error);
+      } else {
+        setActive(!active);
+        toast.success(active ? "Product disabled" : "Product enabled");
+      }
+    } catch {
+      toast.error("Something went wrong");
+    } finally {
+      setToggling(false);
+    }
+  }
+
+  async function handleDelete() {
+    const confirmed = window.confirm(
+      `Delete "${product.name}"? This cannot be undone.`
+    );
+    if (!confirmed) return;
+    setDeleting(true);
+    try {
+      const result = await deleteProduct(product.id);
+      if ("error" in result) {
+        toast.error(result.error);
+      } else {
+        toast.success("Product deleted");
+        router.push("/inventory");
+        router.refresh();
+      }
+    } catch {
+      toast.error("Something went wrong");
+    } finally {
+      setDeleting(false);
+    }
+  }
 
   return (
     <div className="space-y-4">
@@ -83,7 +131,7 @@ export function ProductDetail({
                     {product.subCategory.name}
                   </Badge>
                 )}
-                {!product.active && (
+                {!active && (
                   <Badge variant="destructive">Inactive</Badge>
                 )}
                 {product.allowsSizeFlexibility && (
@@ -93,12 +141,32 @@ export function ProductDetail({
                 )}
               </div>
             </div>
-            <Link href={`/inventory/${product.id}/edit`}>
-              <Button variant="outline" size="sm">
-                <Pencil className="mr-2 h-4 w-4" />
-                Edit
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleToggleActive}
+                disabled={toggling}
+              >
+                {active ? (
+                  <>
+                    <PowerOff className="mr-2 h-4 w-4" />
+                    {toggling ? "Disabling…" : "Disable"}
+                  </>
+                ) : (
+                  <>
+                    <Power className="mr-2 h-4 w-4" />
+                    {toggling ? "Enabling…" : "Enable"}
+                  </>
+                )}
               </Button>
-            </Link>
+              <Link href={`/inventory/${product.id}/edit`}>
+                <Button variant="outline" size="sm">
+                  <Pencil className="mr-2 h-4 w-4" />
+                  Edit
+                </Button>
+              </Link>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -152,6 +220,37 @@ export function ProductDetail({
           productId={product.id}
         />
       </div>
+
+      {/* Danger Zone */}
+      {product._count.items === 0 && (
+        <Card className="border-destructive/50">
+          <CardHeader>
+            <CardTitle className="text-sm text-destructive flex items-center gap-2">
+              <Trash2 className="h-4 w-4" />
+              Danger Zone
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium">Delete this product</p>
+                <p className="text-xs text-muted-foreground">
+                  Permanently remove the product. Only possible when it has no items.
+                </p>
+              </div>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={handleDelete}
+                disabled={deleting}
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                {deleting ? "Deleting…" : "Delete Product"}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

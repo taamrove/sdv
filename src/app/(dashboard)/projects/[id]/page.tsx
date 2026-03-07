@@ -20,12 +20,15 @@ export default async function ProjectDetailPage({
       include: {
         assignments: {
           include: {
-            performer: true,
+            performer: { include: { contact: true } },
             bookingNotes: {
               orderBy: { createdAt: "asc" },
             },
           },
-          orderBy: [{ performer: { lastName: "asc" } }, { performer: { firstName: "asc" } }],
+          orderBy: [
+            { performer: { contact: { lastName: "asc" } } },
+            { performer: { contact: { firstName: "asc" } } },
+          ],
         },
         bookings: {
           include: {
@@ -52,8 +55,12 @@ export default async function ProjectDetailPage({
     }),
     prisma.performer.findMany({
       where: { active: true },
-      orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
-      select: { id: true, firstName: true, lastName: true, type: true },
+      orderBy: [{ contact: { lastName: "asc" } }, { contact: { firstName: "asc" } }],
+      select: {
+        id: true,
+        type: true,
+        contact: { select: { firstName: true, lastName: true } },
+      },
     }),
   ]);
 

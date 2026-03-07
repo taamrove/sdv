@@ -1,5 +1,22 @@
 import { z } from "zod";
 
+// ---------------------------------------------------------------------------
+// Contact schema — personal data fields (shared across Performer, User, Client)
+// ---------------------------------------------------------------------------
+
+export const contactSchema = z.object({
+  firstName: z.string().min(1, "First name is required").max(100),
+  lastName: z.string().min(1, "Last name is required").max(100),
+  email: z.string().email("Invalid email").optional().or(z.literal("")),
+  phone: z.string().optional(),
+});
+
+export type ContactInput = z.infer<typeof contactSchema>;
+
+// ---------------------------------------------------------------------------
+// Performer size profile
+// ---------------------------------------------------------------------------
+
 export const performerSizesSchema = z
   .object({
     chest: z.string().optional(),
@@ -12,11 +29,11 @@ export const performerSizesSchema = z
   })
   .passthrough(); // Allow additional size fields
 
-export const createPerformerSchema = z.object({
-  firstName: z.string().min(1, "First name is required").max(100),
-  lastName: z.string().min(1, "Last name is required").max(100),
-  email: z.string().email("Invalid email").optional(),
-  phone: z.string().optional(),
+// ---------------------------------------------------------------------------
+// Performer schemas — extend contact with role-specific fields
+// ---------------------------------------------------------------------------
+
+export const createPerformerSchema = contactSchema.extend({
   type: z.enum(["DANCER", "VOCALIST", "MUSICIAN", "ACROBAT", "ACTOR", "OTHER"]),
   sizes: performerSizesSchema.optional(),
   notes: z.string().optional(),
@@ -28,10 +45,12 @@ export const createPerformerSchema = z.object({
 export type CreatePerformerInput = z.infer<typeof createPerformerSchema>;
 
 export const updatePerformerSchema = z.object({
+  // Contact fields (all optional on update)
   firstName: z.string().min(1, "First name is required").max(100).optional(),
   lastName: z.string().min(1, "Last name is required").max(100).optional(),
-  email: z.string().email("Invalid email").optional().nullable(),
+  email: z.string().email("Invalid email").optional().nullable().or(z.literal("")),
   phone: z.string().optional().nullable(),
+  // Performer profile fields
   type: z
     .enum(["DANCER", "VOCALIST", "MUSICIAN", "ACROBAT", "ACTOR", "OTHER"])
     .optional(),

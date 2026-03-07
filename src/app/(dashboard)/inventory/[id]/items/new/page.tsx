@@ -29,8 +29,11 @@ export default async function NewItemPage({
     prisma.warehouseLocation.findMany({ orderBy: { label: "asc" } }),
     prisma.performer.findMany({
       where: { active: true },
-      orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
-      select: { id: true, firstName: true, lastName: true },
+      orderBy: [{ contact: { lastName: "asc" } }, { contact: { firstName: "asc" } }],
+      select: {
+        id: true,
+        contact: { select: { firstName: true, lastName: true } },
+      },
     }),
   ]);
 
@@ -47,7 +50,11 @@ export default async function NewItemPage({
         locations={locations}
         defaultProductId={id}
         sizeMode={product.subCategory?.sizeMode ?? null}
-        performers={performers}
+        performers={performers.map((p) => ({
+          id: p.id,
+          firstName: p.contact.firstName,
+          lastName: p.contact.lastName,
+        }))}
       />
     </div>
   );
