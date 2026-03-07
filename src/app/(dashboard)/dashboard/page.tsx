@@ -33,7 +33,6 @@ export default async function DashboardPage() {
   let recentActivity: any[] = [];
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let upcomingProjects: any[] = [];
-  let locationLabels: Record<string, string> = {};
 
   try {
     // Batch all queries into a single transaction to use ONE connection
@@ -103,13 +102,6 @@ export default async function DashboardPage() {
     recentActivity = _recentActivity;
     upcomingProjects = _upcomingProjects;
 
-    // Build id→label map for warehouse locations
-    const locations = await prisma.warehouseLocation.findMany({
-      select: { id: true, label: true, zone: true },
-    });
-    locationLabels = Object.fromEntries(
-      locations.map((l) => [l.id, [l.zone, l.label].filter(Boolean).join(" / ")])
-    );
   } catch (error) {
     console.error("Dashboard query error:", error);
   }
@@ -242,7 +234,15 @@ export default async function DashboardPage() {
         </Card>
 
         {/* Recent Activity */}
-        <ActivityFeed entries={recentActivity} locationLabels={locationLabels} />
+        <ActivityFeed
+          entries={recentActivity.map((e) => ({
+            id: e.id,
+            action: e.action,
+            createdAt: e.createdAt.toISOString(),
+            item: e.item,
+            performedBy: e.performedBy,
+          }))}
+        />
       </div>
     </div>
   );
