@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { requirePermission, getCurrentUser } from "@/lib/rbac";
 import { buildHumanReadableId } from "@/lib/human-id";
+import { getFullName } from "@/lib/format-name";
 import {
   createItemSchema,
   updateItemSchema,
@@ -365,14 +366,43 @@ export async function updateItem(
 
     const user = await getCurrentUser();
 
-    // Determine the history action based on what changed
+    // ------------------------------------------------------------------
+    // Resolve human-readable performer names for the state snapshot
+    // ------------------------------------------------------------------
+    let prevPerformerName: string | null = null;
+    let nextPerformerName: string | null = null;
+
+    if (existing.mainPerformerId) {
+      const p = await prisma.performer.findUnique({
+        where: { id: existing.mainPerformerId },
+        select: { contact: { select: { firstName: true, lastName: true } } },
+      });
+      if (p) prevPerformerName = getFullName(p.contact);
+    }
+
+    const updatingPerformer = "mainPerformerId" in parsed.data;
+    const newPerformerId = updatingPerformer
+      ? parsed.data.mainPerformerId
+      : existing.mainPerformerId;
+
+    if (newPerformerId && newPerformerId !== existing.mainPerformerId) {
+      const p = await prisma.performer.findUnique({
+        where: { id: newPerformerId },
+        select: { contact: { select: { firstName: true, lastName: true } } },
+      });
+      if (p) nextPerformerName = getFullName(p.contact);
+    } else if (!updatingPerformer || newPerformerId === existing.mainPerformerId) {
+      nextPerformerName = prevPerformerName; // unchanged
+    }
+    // else: performer explicitly set to null (removed) → nextPerformerName stays null
+
+    // ------------------------------------------------------------------
+    // Determine the most specific history action
+    // ------------------------------------------------------------------
     let historyAction: string = "UPDATED";
     if (parsed.data.status && parsed.data.status !== existing.status) {
       historyAction = "STATUS_CHANGED";
-    } else if (
-      parsed.data.condition &&
-      parsed.data.condition !== existing.condition
-    ) {
+    } else if (parsed.data.condition && parsed.data.condition !== existing.condition) {
       historyAction = "CONDITION_CHANGED";
     } else if (
       parsed.data.warehouseLocationId !== undefined &&
@@ -397,6 +427,7 @@ export async function updateItem(
         },
       });
 
+      // Full state snapshot — covers every user-visible field
       await tx.itemHistory.create({
         data: {
           itemId: id,
@@ -406,11 +437,19 @@ export async function updateItem(
             status: existing.status,
             condition: existing.condition,
             warehouseLocationId: existing.warehouseLocationId,
+            mainPerformerName: prevPerformerName,
+            color: existing.color ?? null,
+            notes: existing.notes ?? null,
+            archived: existing.archived,
           },
           newState: {
             status: updated.status,
             condition: updated.condition,
             warehouseLocationId: updated.warehouseLocationId,
+            mainPerformerName: nextPerformerName,
+            color: updated.color ?? null,
+            notes: updated.notes ?? null,
+            archived: updated.archived,
           },
         },
       });
