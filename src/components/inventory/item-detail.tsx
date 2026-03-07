@@ -32,12 +32,13 @@ import {
 import { updateItem } from "@/actions/items";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { MapPin, Clock, User, Pencil, X, CalendarDays, FolderOpen, QrCode, Archive, UserCheck, Plus } from "lucide-react";
+import { MapPin, Clock, Pencil, X, CalendarDays, FolderOpen, QrCode, Archive, UserCheck, Plus } from "lucide-react";
 import { QRCodeDisplay } from "@/components/shared/qr-code-display";
 import Image from "next/image";
 import Link from "next/link";
 import { getFullName } from "@/lib/format-name";
 import { LocationFormDialog } from "@/components/warehouse/location-form-dialog";
+import { CompactActivityLog, type ActivityEntry } from "@/components/dashboard/activity-log";
 
 interface Performer {
   id: string;
@@ -64,14 +65,6 @@ interface Item {
   mainPerformer: Performer | null;
 }
 
-interface HistoryEntry {
-  id: string;
-  action: string;
-  createdAt: Date;
-  details: unknown;
-  performedBy: { firstName: string; lastName: string; email: string } | null;
-}
-
 interface Location {
   id: string;
   label: string;
@@ -89,7 +82,8 @@ interface Booking {
 
 interface ItemDetailProps {
   item: Item;
-  history: HistoryEntry[];
+  history: ActivityEntry[];
+  locationLabels: Record<string, string>;
   locations: Location[];
   bookings?: Booking[];
   sizeMode?: string | null;
@@ -99,6 +93,7 @@ interface ItemDetailProps {
 export function ItemDetail({
   item,
   history,
+  locationLabels,
   locations,
   bookings = [],
   sizeMode,
@@ -458,33 +453,14 @@ export function ItemDetail({
 
         {/* History */}
         <Card>
-          <CardHeader>
-            <CardTitle>History</CardTitle>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-1.5">
+              <Clock className="h-3.5 w-3.5" />
+              History
+            </CardTitle>
           </CardHeader>
-          <CardContent>
-            {history.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No history yet.</p>
-            ) : (
-              <div className="space-y-3">
-                {history.map((entry) => (
-                  <div key={entry.id} className="flex items-start gap-3 text-sm border-b last:border-0 pb-3 last:pb-0">
-                    <Clock className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <StatusBadge status={entry.action} />
-                        <span className="text-muted-foreground">{new Date(entry.createdAt).toLocaleString()}</span>
-                      </div>
-                      {entry.performedBy && (
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
-                          <User className="h-3 w-3" />
-                          {getFullName(entry.performedBy)}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+          <CardContent className="pt-0">
+            <CompactActivityLog entries={history} locationLabels={locationLabels} />
           </CardContent>
         </Card>
       </div>

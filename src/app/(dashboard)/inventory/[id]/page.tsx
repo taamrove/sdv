@@ -63,7 +63,7 @@ export default async function ProductDetailPage({
     itemWhere.isExternal = false;
   }
 
-  const [rawItems, itemTotal, categories] = await Promise.all([
+  const [rawItems, itemTotal, categories, recentHistory, locations] = await Promise.all([
     prisma.item.findMany({
       where: itemWhere,
       include: {
@@ -77,12 +77,48 @@ export default async function ProductDetailPage({
     }),
     prisma.item.count({ where: itemWhere }),
     prisma.category.findMany({ orderBy: { code: "asc" } }),
+    prisma.itemHistory.findMany({
+      where: { item: { productId: id } },
+      select: {
+        id: true,
+        action: true,
+        createdAt: true,
+        details: true,
+        previousState: true,
+        newState: true,
+        performedBy: { select: { firstName: true, lastName: true } },
+        item: {
+          select: {
+            id: true,
+            humanReadableId: true,
+            productId: true,
+            product: { select: { name: true } },
+          },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+      take: 20,
+    }),
+    prisma.warehouseLocation.findMany({ select: { id: true, label: true } }),
   ]);
 
   // Serialize Decimal to number for client component
   const items = rawItems.map((item) => ({
     ...item,
     purchasePrice: item.purchasePrice ? Number(item.purchasePrice) : null,
+  }));
+
+  const locationLabels = Object.fromEntries(locations.map((l) => [l.id, l.label]));
+
+  const serializedHistory = recentHistory.map((e) => ({
+    id: e.id,
+    action: e.action,
+    createdAt: e.createdAt.toISOString(),
+    details: typeof e.details === "string" ? e.details : null,
+    previousState: (e.previousState ?? null) as Record<string, unknown> | null,
+    newState: (e.newState ?? null) as Record<string, unknown> | null,
+    item: e.item,
+    performedBy: e.performedBy,
   }));
 
   const productCode = `${product.category.code}-${String(product.number).padStart(3, "0")}`;
@@ -97,6 +133,8 @@ export default async function ProductDetailPage({
         product={product}
         items={items}
         categories={categories}
+        recentActivity={serializedHistory}
+        locationLabels={locationLabels}
         pagination={{
           page,
           limit,

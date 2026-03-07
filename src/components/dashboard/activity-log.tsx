@@ -25,7 +25,7 @@ interface ActivityState {
   [key: string]: unknown;
 }
 
-interface ActivityEntry {
+export interface ActivityEntry {
   id: string;
   action: string;
   createdAt: string;
@@ -58,6 +58,24 @@ const ACTION_LABELS: Record<string, string> = {
   ASSIGNED: "Assigned",
   RETURNED: "Returned",
   MAINTENANCE: "Sent to maintenance",
+  ASSIGNED_TO_BOOKING: "Booked",
+  REMOVED_FROM_BOOKING: "Unbooked",
+  PACKED: "Packed",
+  UNPACKED: "Unpacked",
+  CHECKED_OUT: "Checked out",
+  CHECKED_IN: "Checked in",
+  CHECKED_IN_TO_INVENTORY: "Back in inventory",
+  LOCATION_CHANGED: "Location changed",
+  SENT_TO_MAINTENANCE: "Sent to maintenance",
+  MAINTENANCE_STARTED: "Maintenance started",
+  MAINTENANCE_COMPLETED: "Maintenance done",
+  CONDITION_CHANGED: "Condition changed",
+  QUARANTINE_STARTED: "Quarantined",
+  QUARANTINE_ENDED: "Quarantine ended",
+  RETIRED: "Retired",
+  LOST: "Lost",
+  FOUND: "Found",
+  CROSSLOADED: "Crossloaded",
 };
 
 const ACTION_COLORS: Record<string, string> = {
@@ -67,12 +85,32 @@ const ACTION_COLORS: Record<string, string> = {
   ASSIGNED: "bg-purple-500/15 text-purple-700 dark:text-purple-400",
   RETURNED: "bg-teal-500/15 text-teal-700 dark:text-teal-400",
   MAINTENANCE: "bg-red-500/15 text-red-700 dark:text-red-400",
+  ASSIGNED_TO_BOOKING: "bg-purple-500/15 text-purple-700 dark:text-purple-400",
+  REMOVED_FROM_BOOKING: "bg-slate-500/15 text-slate-700 dark:text-slate-400",
+  PACKED: "bg-blue-500/15 text-blue-700 dark:text-blue-400",
+  UNPACKED: "bg-slate-500/15 text-slate-700 dark:text-slate-400",
+  CHECKED_OUT: "bg-orange-500/15 text-orange-700 dark:text-orange-400",
+  CHECKED_IN: "bg-teal-500/15 text-teal-700 dark:text-teal-400",
+  CHECKED_IN_TO_INVENTORY: "bg-green-500/15 text-green-700 dark:text-green-400",
+  LOCATION_CHANGED: "bg-blue-500/15 text-blue-700 dark:text-blue-400",
+  SENT_TO_MAINTENANCE: "bg-red-500/15 text-red-700 dark:text-red-400",
+  MAINTENANCE_STARTED: "bg-red-500/15 text-red-700 dark:text-red-400",
+  MAINTENANCE_COMPLETED: "bg-green-500/15 text-green-700 dark:text-green-400",
+  CONDITION_CHANGED: "bg-amber-500/15 text-amber-700 dark:text-amber-400",
+  QUARANTINE_STARTED: "bg-red-500/15 text-red-700 dark:text-red-400",
+  QUARANTINE_ENDED: "bg-teal-500/15 text-teal-700 dark:text-teal-400",
+  RETIRED: "bg-slate-500/15 text-slate-700 dark:text-slate-400",
+  LOST: "bg-red-500/15 text-red-700 dark:text-red-400",
+  FOUND: "bg-green-500/15 text-green-700 dark:text-green-400",
+  CROSSLOADED: "bg-blue-500/15 text-blue-700 dark:text-blue-400",
 };
 
 const FIELD_LABELS: Record<string, string> = {
   status: "Status",
   condition: "Condition",
   warehouseLocationId: "Location",
+  color: "Color",
+  notes: "Notes",
 };
 
 function fmt(key: string, value: unknown, locationLabels: Record<string, string>): string {
@@ -294,6 +332,98 @@ export function ActivityLog({ entries, locationLabels, pagination }: ActivityLog
       </div>
 
       <Pagination {...pagination} />
+
+      <DetailSheet
+        entry={selected}
+        locationLabels={locationLabels}
+        open={!!selected}
+        onOpenChange={(open) => !open && setSelected(null)}
+      />
+    </>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Compact inline variant — for embedding on item / product / performer pages
+// ---------------------------------------------------------------------------
+
+interface CompactActivityLogProps {
+  entries: ActivityEntry[];
+  locationLabels: Record<string, string>;
+  defaultVisible?: number;
+}
+
+export function CompactActivityLog({
+  entries,
+  locationLabels,
+  defaultVisible = 5,
+}: CompactActivityLogProps) {
+  const [selected, setSelected] = useState<ActivityEntry | null>(null);
+  const [showAll, setShowAll] = useState(false);
+
+  if (entries.length === 0) {
+    return <p className="text-xs text-muted-foreground py-1">No history yet.</p>;
+  }
+
+  const visible = showAll ? entries : entries.slice(0, defaultVisible);
+  const remaining = entries.length - defaultVisible;
+
+  return (
+    <>
+      <div className="space-y-px">
+        {visible.map((entry) => {
+          const actionLabel = ACTION_LABELS[entry.action] ?? entry.action;
+          const actionColor = ACTION_COLORS[entry.action] ?? "bg-muted text-muted-foreground";
+          const changes = buildChanges(entry.previousState, entry.newState, locationLabels);
+
+          return (
+            <button
+              key={entry.id}
+              onClick={() => setSelected(entry)}
+              className="w-full text-left flex items-center gap-2 py-1.5 px-1.5 -mx-1.5 rounded hover:bg-muted/50 transition-colors group"
+            >
+              <span className={`shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-semibold leading-none whitespace-nowrap ${actionColor}`}>
+                {actionLabel}
+              </span>
+
+              <div className="flex-1 min-w-0 flex items-center gap-x-2 flex-wrap">
+                {changes.length > 0 ? (
+                  changes.map(({ field, label, from, to }) => (
+                    <span key={field} className="text-xs text-muted-foreground">
+                      {label}:{" "}
+                      {from && <span className="line-through opacity-40">{from} </span>}
+                      <span className="text-foreground font-medium">{to}</span>
+                    </span>
+                  ))
+                ) : (
+                  <span className="text-xs text-muted-foreground">—</span>
+                )}
+              </div>
+
+              <span className="shrink-0 text-[11px] text-muted-foreground whitespace-nowrap">
+                {new Date(entry.createdAt).toLocaleString("en-GB", {
+                  day: "numeric", month: "short",
+                  hour: "2-digit", minute: "2-digit",
+                })}
+                {entry.performedBy && (
+                  <span className="ml-1 opacity-60">· {entry.performedBy.firstName}</span>
+                )}
+              </span>
+
+              <ChevronDown className="h-3 w-3 shrink-0 text-muted-foreground -rotate-90 opacity-0 group-hover:opacity-40 transition-opacity" />
+            </button>
+          );
+        })}
+      </div>
+
+      {!showAll && remaining > 0 && (
+        <button
+          onClick={() => setShowAll(true)}
+          className="mt-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+        >
+          Show {remaining} more…
+        </button>
+      )}
 
       <DetailSheet
         entry={selected}

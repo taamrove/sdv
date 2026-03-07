@@ -37,7 +37,15 @@ export default async function ItemDetailPage({
   const [history, locations, bookingItems, performers] = await Promise.all([
     prisma.itemHistory.findMany({
       where: { itemId },
-      include: { performedBy: { select: { firstName: true, lastName: true, email: true } } },
+      select: {
+        id: true,
+        action: true,
+        createdAt: true,
+        details: true,
+        previousState: true,
+        newState: true,
+        performedBy: { select: { firstName: true, lastName: true } },
+      },
       orderBy: { createdAt: "desc" },
       take: 50,
     }),
@@ -93,6 +101,28 @@ export default async function ItemDetailPage({
 
   const sizeMode = item.product.subCategory?.sizeMode ?? null;
 
+  // Location label map (id → label) for activity log diffs
+  const locationLabels = Object.fromEntries(
+    locations.map((l) => [l.id, l.label])
+  );
+
+  // Serialize history for client component (Date → string, JsonValue → typed)
+  const serializedHistory = history.map((e) => ({
+    id: e.id,
+    action: e.action,
+    createdAt: e.createdAt.toISOString(),
+    details: typeof e.details === "string" ? e.details : null,
+    previousState: (e.previousState ?? null) as Record<string, unknown> | null,
+    newState: (e.newState ?? null) as Record<string, unknown> | null,
+    item: {
+      id: item.id,
+      humanReadableId: item.humanReadableId,
+      productId: item.productId,
+      product: { name: item.product.name },
+    },
+    performedBy: e.performedBy,
+  }));
+
   // Serialize Decimal to number and shape for client component
   const serializedItem = {
     id: item.id,
@@ -129,7 +159,8 @@ export default async function ItemDetailPage({
       />
       <ItemDetail
         item={serializedItem}
-        history={history}
+        history={serializedHistory}
+        locationLabels={locationLabels}
         locations={locations}
         bookings={serializedBookings}
         sizeMode={sizeMode}

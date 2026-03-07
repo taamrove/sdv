@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ItemList } from "@/components/inventory/item-list";
 import { Pencil, Plus, Package, Layers, PowerOff, Power, Trash2 } from "lucide-react";
 import { updateProduct, deleteProduct } from "@/actions/products";
+import { CompactActivityLog, type ActivityEntry } from "@/components/dashboard/activity-log";
 
 interface SubCategory {
   id: string;
@@ -55,6 +56,8 @@ interface ProductDetailProps {
   product: Product;
   items: Item[];
   categories: { id: string; code: string; name: string }[];
+  recentActivity: ActivityEntry[];
+  locationLabels: Record<string, string>;
   pagination: PaginationData;
 }
 
@@ -62,6 +65,8 @@ export function ProductDetail({
   product,
   items,
   categories,
+  recentActivity,
+  locationLabels,
   pagination,
 }: ProductDetailProps) {
   const router = useRouter();
@@ -220,6 +225,24 @@ export function ProductDetail({
           productId={product.id}
         />
       </div>
+
+      {/* Recent Activity */}
+      {recentActivity.length > 0 && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Recent activity
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <CompactActivityLog
+              entries={recentActivity}
+              locationLabels={locationLabels}
+              defaultVisible={5}
+            />
+          </CardContent>
+        </Card>
+      )}
 
       {/* Danger Zone */}
       {product._count.items === 0 && (
