@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { StatusBadge } from "@/components/shared/status-badge";
+import { ActivityFeed } from "@/components/dashboard/activity-feed";
 import Link from "next/link";
 import {
   Package,
@@ -14,7 +15,6 @@ import {
   CheckCircle,
   FolderOpen,
   Users,
-  Clock,
 } from "lucide-react";
 
 export default async function DashboardPage() {
@@ -33,6 +33,7 @@ export default async function DashboardPage() {
   let recentActivity: any[] = [];
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let upcomingProjects: any[] = [];
+  let locationLabels: Record<string, string> = {};
 
   try {
     // Batch all queries into a single transaction to use ONE connection
@@ -60,9 +61,16 @@ export default async function DashboardPage() {
       prisma.performer.count({ where: { active: true } }),
       prisma.itemHistory.findMany({
         orderBy: { createdAt: "desc" },
-        take: 10,
+        take: 20,
         include: {
-          item: { select: { humanReadableId: true, id: true, productId: true } },
+          item: {
+            select: {
+              humanReadableId: true,
+              id: true,
+              productId: true,
+              product: { select: { name: true } },
+            },
+          },
           performedBy: { select: { firstName: true, lastName: true } },
         },
       }),
@@ -94,6 +102,14 @@ export default async function DashboardPage() {
     totalPerformers = _totalPerformers;
     recentActivity = _recentActivity;
     upcomingProjects = _upcomingProjects;
+
+    // Build id→label map for warehouse locations
+    const locations = await prisma.warehouseLocation.findMany({
+      select: { id: true, label: true, zone: true },
+    });
+    locationLabels = Object.fromEntries(
+      locations.map((l) => [l.id, [l.zone, l.label].filter(Boolean).join(" / ")])
+    );
   } catch (error) {
     console.error("Dashboard query error:", error);
   }
@@ -226,51 +242,7 @@ export default async function DashboardPage() {
         </Card>
 
         {/* Recent Activity */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Clock className="h-4 w-4" />
-              Recent Activity
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {recentActivity.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                No recent activity.
-              </p>
-            ) : (
-              <div className="space-y-3">
-                {recentActivity.map((entry) => (
-                  <div
-                    key={entry.id}
-                    className="flex items-start gap-3 text-sm border-b last:border-0 pb-3 last:pb-0"
-                  >
-                    <Clock className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <StatusBadge status={entry.action} />
-                        <Link
-                          href={`/inventory/${entry.item.productId}/items/${entry.item.id}`}
-                          className="font-mono text-xs hover:underline"
-                        >
-                          {entry.item.humanReadableId}
-                        </Link>
-                      </div>
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
-                        <span>
-                          {new Date(entry.createdAt).toLocaleString()}
-                        </span>
-                        {entry.performedBy && (
-                          <span>by {entry.performedBy.firstName} {entry.performedBy.lastName}</span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        <ActivityFeed entries={recentActivity} locationLabels={locationLabels} />
       </div>
     </div>
   );
