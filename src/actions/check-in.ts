@@ -1,6 +1,5 @@
 "use server";
 
-import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requirePermission, getCurrentUser } from "@/lib/rbac";
 import {
@@ -31,7 +30,7 @@ export async function checkInItem(
 
     const item = await prisma.item.findUnique({
       where: { id: parsed.data.itemId },
-      include: { product: true, category: true },
+      include: { product: { select: { name: true } }, category: true },
     });
 
     if (!item) {
@@ -43,6 +42,7 @@ export async function checkInItem(
       return { error: "User not found" };
     }
 
+    const userName = `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim();
     const previousStatus = item.status;
 
     // -----------------------------------------------------------------------
@@ -63,17 +63,16 @@ export async function checkInItem(
           },
         });
 
-        await tx.itemHistory.create({
+        await tx.activityLog.create({
           data: {
-            itemId: parsed.data.itemId,
+            entityType: "Item",
+            entityId: parsed.data.itemId,
+            entityLabel: `${item.humanReadableId} — ${item.product.name}`,
             action: "CHECKED_IN_TO_INVENTORY",
-            performedById: user.id,
-            previousState: previousStatus as unknown as Prisma.InputJsonValue,
-            newState: "AVAILABLE" as unknown as Prisma.InputJsonValue,
-            details: {
-              warehouseLocationId: parsed.data.warehouseLocationId ?? null,
-              notes: parsed.data.notes ?? null,
-            } as Prisma.InputJsonValue,
+            userId: user.id,
+            userName,
+            changes: { status: { from: previousStatus, to: "AVAILABLE" } },
+            details: { productId: item.productId },
           },
         });
 
@@ -123,19 +122,16 @@ export async function checkInItem(
           });
         }
 
-        await tx.itemHistory.create({
+        await tx.activityLog.create({
           data: {
-            itemId: parsed.data.itemId,
+            entityType: "Item",
+            entityId: parsed.data.itemId,
+            entityLabel: `${item.humanReadableId} — ${item.product.name}`,
             action: "SENT_TO_MAINTENANCE",
-            performedById: user.id,
-            previousState: previousStatus as unknown as Prisma.InputJsonValue,
-            newState: newItemStatus as unknown as Prisma.InputJsonValue,
-            details: {
-              ticketId: ticket.id,
-              title: parsed.data.maintenanceTitle,
-              severity: severity,
-              notes: parsed.data.notes ?? null,
-            } as Prisma.InputJsonValue,
+            userId: user.id,
+            userName,
+            changes: { status: { from: previousStatus, to: newItemStatus } },
+            details: { productId: item.productId },
           },
         });
 

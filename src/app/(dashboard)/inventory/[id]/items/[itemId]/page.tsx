@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { redirect, notFound } from "next/navigation";
 import { PageHeader } from "@/components/shared/page-header";
 import { ItemDetail } from "@/components/inventory/item-detail";
+import { getEntityActivity } from "@/actions/activity";
 
 export default async function ItemDetailPage({
   params,
@@ -34,21 +35,8 @@ export default async function ItemDetailPage({
   if (!item || item.productId !== productId) notFound();
 
   // Run independent queries in parallel
-  const [history, locations, bookingItems, performers] = await Promise.all([
-    prisma.itemHistory.findMany({
-      where: { itemId },
-      select: {
-        id: true,
-        action: true,
-        createdAt: true,
-        details: true,
-        previousState: true,
-        newState: true,
-        performedBy: { select: { firstName: true, lastName: true } },
-      },
-      orderBy: { createdAt: "desc" },
-      take: 50,
-    }),
+  const [activityResult, locations, bookingItems, performers] = await Promise.all([
+    getEntityActivity([{ entityType: "Item", entityId: itemId }], 50),
     prisma.warehouseLocation.findMany({
       orderBy: { label: "asc" },
     }),
@@ -89,6 +77,8 @@ export default async function ItemDetailPage({
     }),
   ]);
 
+  const history = "data" in activityResult ? activityResult.data : [];
+
   const serializedBookings = bookingItems.map((bi) => ({
     bookingItemId: bi.id,
     kitName: bi.booking.kit.name,
@@ -100,28 +90,6 @@ export default async function ItemDetailPage({
   }));
 
   const sizeMode = item.product.subCategory?.sizeMode ?? null;
-
-  // Location label map (id → label) for activity log diffs
-  const locationLabels = Object.fromEntries(
-    locations.map((l) => [l.id, l.label])
-  );
-
-  // Serialize history for client component (Date → string, JsonValue → typed)
-  const serializedHistory = history.map((e) => ({
-    id: e.id,
-    action: e.action,
-    createdAt: e.createdAt.toISOString(),
-    details: typeof e.details === "string" ? e.details : null,
-    previousState: (e.previousState ?? null) as Record<string, unknown> | null,
-    newState: (e.newState ?? null) as Record<string, unknown> | null,
-    item: {
-      id: item.id,
-      humanReadableId: item.humanReadableId,
-      productId: item.productId,
-      product: { name: item.product.name },
-    },
-    performedBy: e.performedBy,
-  }));
 
   // Serialize Decimal to number and shape for client component
   const serializedItem = {
@@ -159,8 +127,7 @@ export default async function ItemDetailPage({
       />
       <ItemDetail
         item={serializedItem}
-        history={serializedHistory}
-        locationLabels={locationLabels}
+        history={history}
         locations={locations}
         bookings={serializedBookings}
         sizeMode={sizeMode}

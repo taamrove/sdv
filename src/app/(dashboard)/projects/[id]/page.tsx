@@ -3,6 +3,9 @@ import { auth } from "@/lib/auth";
 import { redirect, notFound } from "next/navigation";
 import { PageHeader } from "@/components/shared/page-header";
 import { ProjectDetail } from "@/components/projects/project-detail";
+import { CompactActivityLog } from "@/components/dashboard/activity-log";
+import { getEntityActivity } from "@/actions/activity";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default async function ProjectDetailPage({
   params,
@@ -66,6 +69,12 @@ export default async function ProjectDetailPage({
 
   if (!project) notFound();
 
+  const activityResult = await getEntityActivity(
+    [{ entityType: "Project", entityId: id }],
+    20
+  );
+  const recentActivity = "data" in activityResult ? activityResult.data : [];
+
   // Find items with potential conflicts (assigned to overlapping projects)
   const itemIds = project.bookings.flatMap((b) =>
     b.items.map((bi) => bi.item.id)
@@ -106,6 +115,16 @@ export default async function ProjectDetailPage({
         allPerformers={allPerformers}
         conflictItemIds={conflictItemIds}
       />
+      {recentActivity.length > 0 && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium">Activity</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <CompactActivityLog entries={recentActivity} defaultVisible={5} />
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

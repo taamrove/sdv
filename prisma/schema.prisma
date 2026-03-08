@@ -35,7 +35,6 @@ model User {
   maintenanceReported MaintenanceTicket[] @relation("ReportedBy")
   maintenanceComments MaintenanceComment[]
   maintenancePhotos   MaintenancePhoto[]
-  itemHistories       ItemHistory[]
   containerPackedBy   ContainerItem[]     @relation("PackedBy")
   containerVerifiedBy ContainerItem[]     @relation("VerifiedBy")
   betaFlags           FeatureFlagUser[]
@@ -211,7 +210,6 @@ model Item {
   bookingItems       BookingItem[]
   containerItems     ContainerItem[]
   maintenanceTickets MaintenanceTicket[]
-  history            ItemHistory[]
   packItems          PackItem[]
 
   @@unique([productId, sequence])
@@ -803,49 +801,24 @@ model MaintenanceComment {
 // AUDIT / HISTORY DOMAIN
 // ============================================================
 
-model ItemHistory {
-  id            String        @id @default(uuid())
-  itemId        String
-  action        HistoryAction
-  performedById String?
-  details       Json?
-  previousState Json?
-  newState      Json?
-  createdAt     DateTime      @default(now())
+model ActivityLog {
+  id          String   @id @default(uuid())
+  entityType  String
+  entityId    String
+  entityLabel String?
+  action      String
+  userId      String?
+  userName    String?
+  changes     Json?
+  details     Json?
 
-  item        Item  @relation(fields: [itemId], references: [id])
-  performedBy User? @relation(fields: [performedById], references: [id])
+  createdAt DateTime @default(now())
 
-  @@index([itemId, createdAt])
-  @@index([action])
+  @@index([entityType, entityId, createdAt])
+  @@index([createdAt])
   @@schema("public")
 }
 
-enum HistoryAction {
-  CREATED
-  UPDATED
-  STATUS_CHANGED
-  ASSIGNED_TO_BOOKING
-  REMOVED_FROM_BOOKING
-  PACKED
-  UNPACKED
-  CHECKED_OUT
-  CHECKED_IN
-  CHECKED_IN_TO_INVENTORY
-  SENT_TO_MAINTENANCE
-  LOCATION_CHANGED
-  MAINTENANCE_STARTED
-  MAINTENANCE_COMPLETED
-  CONDITION_CHANGED
-  QUARANTINE_STARTED
-  QUARANTINE_ENDED
-  RETIRED
-  LOST
-  FOUND
-  CROSSLOADED
-
-  @@schema("public")
-}
 
 // ============================================================
 // FEEDBACK DOMAIN

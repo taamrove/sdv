@@ -345,7 +345,7 @@ export async function packItem(
       // Verify item exists
       const item = await tx.item.findUnique({
         where: { id: parsed.data.itemId },
-        include: { product: true },
+        include: { product: { select: { name: true } } },
       });
       if (!item) {
         throw new Error("Item not found");
@@ -396,16 +396,21 @@ export async function packItem(
         });
       }
 
-      // Record history
-      await tx.itemHistory.create({
+      // Record activity log
+      await tx.activityLog.create({
         data: {
-          itemId: parsed.data.itemId,
+          entityType: "Item",
+          entityId: item.id,
+          entityLabel: `${item.humanReadableId} — ${item.product?.name ?? ""}`,
           action: "PACKED",
-          performedById: user?.id ?? null,
-          previousState: { status: item.status },
-          newState: {
-            status: "PACKED",
-            containerId: parsed.data.containerId,
+          userId: user?.id ?? null,
+          userName: user
+            ? `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim()
+            : null,
+          changes: { status: { from: item.status, to: "PACKED" } },
+          details: {
+            productId: item.productId,
+            containerId: container.id,
             containerName: container.name,
           },
         },
@@ -443,7 +448,7 @@ export async function unpackItem(
       const containerItem = await tx.containerItem.findUnique({
         where: { id: containerItemId },
         include: {
-          item: true,
+          item: { include: { product: { select: { name: true } } } },
           container: true,
         },
       });
@@ -478,18 +483,23 @@ export async function unpackItem(
         });
       }
 
-      // Record history
-      await tx.itemHistory.create({
+      // Record activity log
+      await tx.activityLog.create({
         data: {
-          itemId: containerItem.itemId,
+          entityType: "Item",
+          entityId: containerItem.item.id,
+          entityLabel: `${containerItem.item.humanReadableId} — ${containerItem.item.product?.name ?? ""}`,
           action: "UNPACKED",
-          performedById: user?.id ?? null,
-          previousState: {
-            status: "PACKED",
+          userId: user?.id ?? null,
+          userName: user
+            ? `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim()
+            : null,
+          changes: { status: { from: "PACKED", to: newStatus } },
+          details: {
+            productId: containerItem.item.productId,
             containerId: containerItem.containerId,
-            containerName: containerItem.container.name,
+            containerName: containerItem.container?.name,
           },
-          newState: { status: newStatus },
         },
       });
 

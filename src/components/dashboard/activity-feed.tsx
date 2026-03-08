@@ -10,15 +10,13 @@ import Link from "next/link";
 
 interface ActivityEntry {
   id: string;
+  entityType: string;
+  entityId: string;
+  entityLabel: string | null;
   action: string;
-  createdAt: string;
-  item: {
-    id: string;
-    humanReadableId: string;
-    productId: string;
-    product: { name: string };
-  };
-  performedBy: { firstName: string; lastName: string } | null;
+  userName: string | null;
+  details: Record<string, unknown> | null;
+  createdAt: Date | string;
 }
 
 interface ActivityFeedProps {
@@ -32,20 +30,41 @@ interface ActivityFeedProps {
 const ACTION_LABELS: Record<string, string> = {
   CREATED: "Created",
   UPDATED: "Updated",
+  DELETED: "Deleted",
   STATUS_CHANGED: "Status changed",
   ASSIGNED: "Assigned",
   RETURNED: "Returned",
   MAINTENANCE: "Sent to maintenance",
+  LOCATION_CHANGED: "Location changed",
+  CONDITION_CHANGED: "Condition changed",
+  RETIRED: "Retired",
 };
 
 const ACTION_COLORS: Record<string, string> = {
   CREATED: "bg-green-500/15 text-green-700 dark:text-green-400",
   UPDATED: "bg-blue-500/15 text-blue-700 dark:text-blue-400",
+  DELETED: "bg-red-500/15 text-red-700 dark:text-red-400",
   STATUS_CHANGED: "bg-amber-500/15 text-amber-700 dark:text-amber-400",
   ASSIGNED: "bg-purple-500/15 text-purple-700 dark:text-purple-400",
   RETURNED: "bg-teal-500/15 text-teal-700 dark:text-teal-400",
   MAINTENANCE: "bg-red-500/15 text-red-700 dark:text-red-400",
+  LOCATION_CHANGED: "bg-blue-500/15 text-blue-700 dark:text-blue-400",
+  CONDITION_CHANGED: "bg-amber-500/15 text-amber-700 dark:text-amber-400",
+  RETIRED: "bg-slate-500/15 text-slate-700 dark:text-slate-400",
 };
+
+function getEntityLink(entry: ActivityEntry): string | null {
+  const { entityType, entityId, details } = entry;
+  if (entityType === "Item") {
+    const productId = (details as Record<string, unknown> | null)?.productId as string | undefined;
+    return productId ? `/inventory/${productId}/items/${entityId}` : null;
+  }
+  if (entityType === "Performer") return `/performers/${entityId}`;
+  if (entityType === "Project") return `/projects/${entityId}`;
+  if (entityType === "Product") return `/inventory/${entityId}`;
+  if (entityType === "Contact") return `/contacts/${entityId}`;
+  return null;
+}
 
 // ---------------------------------------------------------------------------
 // Component
@@ -69,6 +88,8 @@ export function ActivityFeed({ entries }: ActivityFeedProps) {
               const isLast = i === entries.length - 1;
               const actionLabel = ACTION_LABELS[entry.action] ?? entry.action;
               const actionColor = ACTION_COLORS[entry.action] ?? "bg-muted text-muted-foreground";
+              const label = entry.entityLabel ?? entry.entityType;
+              const href = getEntityLink(entry);
 
               return (
                 <div
@@ -80,14 +101,18 @@ export function ActivityFeed({ entries }: ActivityFeedProps) {
                   </span>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      <Link
-                        href={`/inventory/${entry.item.productId}/items/${entry.item.id}`}
-                        className="font-mono text-xs font-semibold hover:underline"
-                      >
-                        {entry.item.humanReadableId}
-                      </Link>
+                      {href ? (
+                        <Link
+                          href={href}
+                          className="font-mono text-xs font-semibold hover:underline"
+                        >
+                          {label}
+                        </Link>
+                      ) : (
+                        <span className="font-mono text-xs font-semibold">{label}</span>
+                      )}
                       <span className="text-xs text-muted-foreground truncate">
-                        {entry.item.product.name}
+                        {entry.entityType}
                       </span>
                     </div>
                   </div>
@@ -100,9 +125,9 @@ export function ActivityFeed({ entries }: ActivityFeedProps) {
                         minute: "2-digit",
                       })}
                     </div>
-                    {entry.performedBy && (
+                    {entry.userName && (
                       <div className="opacity-60">
-                        {entry.performedBy.firstName}
+                        {entry.userName.split(" ")[0]}
                       </div>
                     )}
                   </div>
