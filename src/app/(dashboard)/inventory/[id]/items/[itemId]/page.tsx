@@ -108,6 +108,9 @@ export default async function ItemDetailPage({
     createdAt: item.createdAt,
     product: { id: item.product.id, name: item.product.name, number: item.product.number },
     category: { id: item.category.id, code: item.category.code, name: item.category.name },
+    subCategory: item.product.subCategory
+      ? { name: item.product.subCategory.name }
+      : null,
     warehouseLocation: item.warehouseLocation
       ? {
           id: item.warehouseLocation.id,

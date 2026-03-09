@@ -72,6 +72,7 @@ interface Item {
   createdAt: Date;
   product: { id: string; name: string; number: number };
   category: { id: string; code: string; name: string };
+  subCategory: { name: string } | null;
   warehouseLocation: FullLocation | null;
   mainPerformer: Performer | null;
 }
@@ -235,46 +236,43 @@ export function ItemDetail({
   function renderEditSizeFields() {
     if (sizeMode === "clothing") {
       return (
-        <div className="space-y-1">
-          <Label className="text-xs">Clothing Size</Label>
+        <FormRow label="Sizes">
           <Select value={sizes["size"] ?? ""} onValueChange={(val) => updateSize("size", val)}>
             <SelectTrigger><SelectValue placeholder="Select size" /></SelectTrigger>
             <SelectContent>
               {CLOTHING_SIZES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
             </SelectContent>
           </Select>
-        </div>
+        </FormRow>
       );
     }
     if (sizeMode === "shoes") {
       return (
-        <div className="space-y-1">
-          <Label className="text-xs">Shoe Size (EU)</Label>
+        <FormRow label="Sizes">
           <Select value={sizes["shoe"] ?? ""} onValueChange={(val) => updateSize("shoe", val)}>
             <SelectTrigger><SelectValue placeholder="Select EU size" /></SelectTrigger>
             <SelectContent>
               {SHOE_SIZES_EU.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
             </SelectContent>
           </Select>
-        </div>
+        </FormRow>
       );
     }
     if (sizeMode === "hat") {
       return (
-        <div className="space-y-1">
-          <Label className="text-xs">Hat Size (cm)</Label>
+        <FormRow label="Sizes">
           <Select value={sizes["hat"] ?? ""} onValueChange={(val) => updateSize("hat", val)}>
             <SelectTrigger><SelectValue placeholder="Select hat size" /></SelectTrigger>
             <SelectContent>
               {HAT_SIZES_CM.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
             </SelectContent>
           </Select>
-        </div>
+        </FormRow>
       );
     }
     if (sizeMode === "measurements") {
       return (
-        <div className="space-y-3">
+        <>
           {[
             { key: "chest", label: "Chest", placeholder: "cm" },
             { key: "waist", label: "Waist", placeholder: "cm" },
@@ -290,54 +288,57 @@ export function ItemDetail({
               />
             </FormRow>
           ))}
-        </div>
+        </>
       );
     }
     // Generic
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <div className="space-y-1">
-          <Label className="text-xs">General Size</Label>
-          <Select value={sizes["size"] ?? ""} onValueChange={(val) => updateSize("size", val)}>
-            <SelectTrigger><SelectValue placeholder="Select size" /></SelectTrigger>
-            <SelectContent>
-              {CLOTHING_SIZES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        </div>
-        {[
-          { key: "chest", label: "Chest", placeholder: "e.g., 90cm" },
-          { key: "waist", label: "Waist", placeholder: "e.g., 75cm" },
-          { key: "hip", label: "Hip", placeholder: "e.g., 95cm" },
-        ].map(({ key, label, placeholder }) => (
-          <div key={key} className="space-y-1">
-            <Label className="text-xs">{label}</Label>
-            <Input
-              value={sizes[key] ?? ""}
-              onChange={(e) => updateSize(key, e.target.value)}
-              placeholder={placeholder}
-            />
+      <FormRow label="Sizes">
+        <div className="grid grid-cols-2 gap-2">
+          <div className="space-y-1">
+            <Label className="text-xs text-muted-foreground">General</Label>
+            <Select value={sizes["size"] ?? ""} onValueChange={(val) => updateSize("size", val)}>
+              <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="Size" /></SelectTrigger>
+              <SelectContent>
+                {CLOTHING_SIZES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+              </SelectContent>
+            </Select>
           </div>
-        ))}
-        <div className="space-y-1">
-          <Label className="text-xs">Shoe Size (EU)</Label>
-          <Select value={sizes["shoe"] ?? ""} onValueChange={(val) => updateSize("shoe", val)}>
-            <SelectTrigger><SelectValue placeholder="Select EU size" /></SelectTrigger>
-            <SelectContent>
-              {SHOE_SIZES_EU.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-            </SelectContent>
-          </Select>
+          <div className="space-y-1">
+            <Label className="text-xs text-muted-foreground">Shoe (EU)</Label>
+            <Select value={sizes["shoe"] ?? ""} onValueChange={(val) => updateSize("shoe", val)}>
+              <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="EU size" /></SelectTrigger>
+              <SelectContent>
+                {SHOE_SIZES_EU.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs text-muted-foreground">Hat (cm)</Label>
+            <Select value={sizes["hat"] ?? ""} onValueChange={(val) => updateSize("hat", val)}>
+              <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="Hat size" /></SelectTrigger>
+              <SelectContent>
+                {HAT_SIZES_CM.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          {[
+            { key: "chest", label: "Chest", placeholder: "e.g., 90cm" },
+            { key: "waist", label: "Waist", placeholder: "e.g., 75cm" },
+            { key: "hip", label: "Hip", placeholder: "e.g., 95cm" },
+          ].map(({ key, label, placeholder }) => (
+            <div key={key} className="space-y-1">
+              <Label className="text-xs text-muted-foreground">{label}</Label>
+              <Input
+                className="h-8 text-sm"
+                value={sizes[key] ?? ""}
+                onChange={(e) => updateSize(key, e.target.value)}
+                placeholder={placeholder}
+              />
+            </div>
+          ))}
         </div>
-        <div className="space-y-1">
-          <Label className="text-xs">Hat Size (cm)</Label>
-          <Select value={sizes["hat"] ?? ""} onValueChange={(val) => updateSize("hat", val)}>
-            <SelectTrigger><SelectValue placeholder="Select hat size" /></SelectTrigger>
-            <SelectContent>
-              {HAT_SIZES_CM.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
+      </FormRow>
     );
   }
 
@@ -404,10 +405,13 @@ export function ItemDetail({
             )}
 
             {/* Static info */}
-            <div className="space-y-1">
-              <InfoRow label="Product">{item.product.name}</InfoRow>
-              <InfoRow label="Category">{item.category.name}</InfoRow>
-            </div>
+            <InfoRow label="Product">{item.product.name}</InfoRow>
+            <InfoRow label="Category">
+              {item.category.name}
+              {item.subCategory && (
+                <span className="text-muted-foreground font-normal"> · {item.subCategory.name}</span>
+              )}
+            </InfoRow>
 
             {/* ── Status ─────────────────────────────────────── */}
             {editing ? (
