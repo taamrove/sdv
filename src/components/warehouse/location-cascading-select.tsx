@@ -143,7 +143,10 @@ export function LocationCascadingSelect({
     // Suppress the value-sync from reacting to our own onValueChange call —
     // the cascade selectors are already correct; we don't want them reset.
     suppressNextSync.current = true;
-    if (byBin.length === 1) {
+    // Only auto-select once the user has explicitly chosen at least a zone.
+    // Without this guard, selecting just a warehouse auto-matches the single
+    // location in it, showing a confirmed match even though no zone was picked.
+    if (selZone !== UNSET && byBin.length === 1) {
       onValueChange(byBin[0].id);
     } else {
       onValueChange(undefined);
@@ -346,7 +349,7 @@ export function LocationCascadingSelect({
               disabled={disabled}
             >
               <SelectTrigger className="h-8 text-sm w-32">
-                <SelectValue placeholder="—">
+                <SelectValue placeholder="Select…">
                   {selWarehouse !== UNSET
                     ? localWarehouses.find((w) => w.id === selWarehouse)?.name
                     : undefined}
@@ -381,7 +384,7 @@ export function LocationCascadingSelect({
               disabled={disabled}
             >
               <SelectTrigger className="h-8 text-sm w-28">
-                <SelectValue placeholder="—">
+                <SelectValue placeholder="Select…">
                   {selRoom !== UNSET ? selRoom : undefined}
                 </SelectValue>
               </SelectTrigger>
@@ -414,7 +417,7 @@ export function LocationCascadingSelect({
               disabled={disabled}
             >
               <SelectTrigger className="h-8 text-sm w-28">
-                <SelectValue placeholder="—">
+                <SelectValue placeholder="Select…">
                   {selZone !== UNSET ? selZone : undefined}
                 </SelectValue>
               </SelectTrigger>
@@ -447,7 +450,7 @@ export function LocationCascadingSelect({
               disabled={disabled}
             >
               <SelectTrigger className="h-8 text-sm w-[72px]">
-                <SelectValue placeholder="—">
+                <SelectValue placeholder="Select…">
                   {selRack !== UNSET ? selRack : undefined}
                 </SelectValue>
               </SelectTrigger>
@@ -480,7 +483,7 @@ export function LocationCascadingSelect({
               disabled={disabled}
             >
               <SelectTrigger className="h-8 text-sm w-[72px]">
-                <SelectValue placeholder="—">
+                <SelectValue placeholder="Select…">
                   {selShelf !== UNSET ? selShelf : undefined}
                 </SelectValue>
               </SelectTrigger>
@@ -512,7 +515,7 @@ export function LocationCascadingSelect({
               disabled={disabled}
             >
               <SelectTrigger className="h-8 text-sm w-[72px]">
-                <SelectValue placeholder="—">
+                <SelectValue placeholder="Select…">
                   {selBin !== UNSET ? selBin : undefined}
                 </SelectValue>
               </SelectTrigger>
