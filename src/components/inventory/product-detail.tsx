@@ -173,9 +173,9 @@ export function ProductDetail({
           </div>
         </CardHeader>
         <CardContent>
-          <div className="flex gap-6">
+          <div className="flex gap-4">
             {product.imageUrl && (
-              <div className="relative h-40 w-40 shrink-0 overflow-hidden rounded-lg border">
+              <div className="relative h-28 w-28 shrink-0 overflow-hidden rounded-lg border">
                 <Image
                   src={product.imageUrl}
                   alt={product.name}
@@ -184,7 +184,7 @@ export function ProductDetail({
                 />
               </div>
             )}
-            <div className="space-y-3">
+            <div className="space-y-2">
               {product.description && (
                 <p className="text-sm text-muted-foreground">
                   {product.description}
@@ -203,7 +203,7 @@ export function ProductDetail({
       </Card>
 
       {/* Items Section */}
-      <div className="space-y-4">
+      <div className="space-y-2">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold flex items-center gap-2">
             Items

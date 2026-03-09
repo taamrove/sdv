@@ -72,3 +72,27 @@ export function FormSection({ title, className }: FormSectionProps) {
     </div>
   );
 }
+
+interface InfoRowProps {
+  label: string;
+  children: React.ReactNode;
+  className?: string;
+}
+
+/**
+ * Compact horizontal label:value display for read-only detail views.
+ *
+ * Usage:
+ *   <InfoRow label="Product">Ballet Dress</InfoRow>
+ *
+ * Renders as:
+ *   Product   Ballet Dress
+ */
+export function InfoRow({ label, children, className }: InfoRowProps) {
+  return (
+    <div className={cn("grid grid-cols-[110px_1fr] gap-x-3 text-sm items-start", className)}>
+      <span className="text-muted-foreground text-right shrink-0 leading-5">{label}</span>
+      <span className="font-medium min-w-0 leading-5">{children}</span>
+    </div>
+  );
+}

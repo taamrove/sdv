@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/select";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { ImageUpload } from "@/components/shared/image-upload";
+import { InfoRow } from "@/components/shared/form-row";
 import {
   ITEM_STATUS_LABELS,
   ITEM_CONDITION_LABELS,
@@ -308,10 +309,10 @@ export function ItemDetail({
   return (
     <>
     <div className="grid gap-4 md:grid-cols-3">
-      <div className="md:col-span-2 space-y-4 order-2 md:order-1">
-        {/* Main Info */}
+      {/* Main column */}
+      <div className="md:col-span-2 space-y-3 order-2 md:order-1">
         <Card>
-          <CardHeader>
+          <CardHeader className="pb-3">
             <CardTitle className="flex items-center justify-between">
               <span>Item Details</span>
               <div className="flex items-center gap-2">
@@ -336,7 +337,7 @@ export function ItemDetail({
               </div>
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-3">
             {/* Image */}
             {editing ? (
               <div className="space-y-1">
@@ -345,51 +346,46 @@ export function ItemDetail({
               </div>
             ) : (
               item.imageUrl && (
-                <Image src={item.imageUrl} alt={item.humanReadableId} width={400} height={300} className="rounded-lg border object-cover" />
+                <Image
+                  src={item.imageUrl}
+                  alt={item.humanReadableId}
+                  width={400}
+                  height={240}
+                  className="rounded-lg border object-cover max-h-56 w-auto"
+                />
               )
             )}
 
             {/* Static info */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <p className="text-sm text-muted-foreground">Product</p>
-                <p className="font-medium">{item.product.name}</p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Category</p>
-                <p className="font-medium">{item.category.name}</p>
-              </div>
+            <div className="space-y-1">
+              <InfoRow label="Product">{item.product.name}</InfoRow>
+              <InfoRow label="Category">{item.category.name}</InfoRow>
               {item.purchaseDate && (
-                <div>
-                  <p className="text-sm text-muted-foreground">Purchase Date</p>
-                  <p className="font-medium">{new Date(item.purchaseDate).toLocaleDateString()}</p>
-                </div>
+                <InfoRow label="Purchased">
+                  {new Date(item.purchaseDate).toLocaleDateString()}
+                </InfoRow>
               )}
               {item.purchasePrice != null && (
-                <div>
-                  <p className="text-sm text-muted-foreground">Purchase Price</p>
-                  <p className="font-medium">${item.purchasePrice.toFixed(2)}</p>
-                </div>
+                <InfoRow label="Price">${item.purchasePrice.toFixed(2)}</InfoRow>
               )}
-              <div>
-                <p className="text-sm text-muted-foreground">Created</p>
-                <p className="font-medium">{new Date(item.createdAt).toLocaleDateString()}</p>
-              </div>
+              <InfoRow label="Created">
+                {new Date(item.createdAt).toLocaleDateString()}
+              </InfoRow>
             </div>
 
             {/* Color */}
             {editing ? (
               <div className="space-y-1">
                 <Label htmlFor="color">Color</Label>
-                <Input id="color" value={color} onChange={(e) => setColor(e.target.value)} placeholder="e.g., Red" />
+                <Input
+                  id="color"
+                  value={color}
+                  onChange={(e) => setColor(e.target.value)}
+                  placeholder="e.g., Red"
+                />
               </div>
             ) : (
-              item.color && (
-                <div>
-                  <p className="text-sm text-muted-foreground">Color</p>
-                  <p className="font-medium">{item.color}</p>
-                </div>
-              )
+              item.color && <InfoRow label="Color">{item.color}</InfoRow>
             )}
 
             {/* Sizes */}
@@ -397,45 +393,38 @@ export function ItemDetail({
               renderEditSizeFields()
             ) : (
               displaySizes && Object.keys(displaySizes).some((k) => displaySizes[k]) && (
-                <div>
-                  <p className="text-sm text-muted-foreground mb-2">Sizes</p>
-                  <div className="flex flex-wrap gap-2">
+                <InfoRow label="Sizes">
+                  <div className="flex flex-wrap gap-1.5">
                     {Object.entries(displaySizes).map(([key, value]) =>
                       value && (
-                        <Badge key={key} variant="secondary">
+                        <Badge key={key} variant="secondary" className="text-xs">
                           {key}: {value}
                         </Badge>
                       )
                     )}
                   </div>
-                </div>
+                </InfoRow>
               )
             )}
 
-            {/* Main performer display (read mode) */}
+            {/* Main performer (read mode) */}
             {!editing && item.mainPerformer && (
-              <div>
-                <p className="text-sm text-muted-foreground flex items-center gap-1">
-                  <UserCheck className="h-3.5 w-3.5" />
-                  Main Performer
-                </p>
-                <p className="font-medium">{getFullName(item.mainPerformer)}</p>
-              </div>
+              <InfoRow label="Performer">{getFullName(item.mainPerformer)}</InfoRow>
             )}
 
             {/* Notes */}
             {editing ? (
               <div className="space-y-1">
                 <Label htmlFor="notes">Notes</Label>
-                <Textarea id="notes" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Optional notes..." />
+                <Textarea
+                  id="notes"
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="Optional notes..."
+                />
               </div>
             ) : (
-              item.notes && (
-                <div>
-                  <p className="text-sm text-muted-foreground">Notes</p>
-                  <p className="text-sm">{item.notes}</p>
-                </div>
-              )
+              item.notes && <InfoRow label="Notes">{item.notes}</InfoRow>
             )}
 
             {editing && (
@@ -463,15 +452,15 @@ export function ItemDetail({
         </Card>
       </div>
 
-      {/* Sidebar — shown first on mobile via CSS order */}
-      <div className="space-y-4 order-1 md:order-2">
+      {/* Sidebar */}
+      <div className="space-y-3 order-1 md:order-2">
         <Card>
-          <CardHeader>
-            <CardTitle>Status & Location</CardTitle>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm">Status & Location</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-1">
-              <p className="text-sm font-medium">Status</p>
+          <CardContent className="space-y-2">
+            <div>
+              <p className="text-xs text-muted-foreground mb-1">Status</p>
               <Select value={status} onValueChange={setStatus}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -482,8 +471,8 @@ export function ItemDetail({
               </Select>
             </div>
 
-            <div className="space-y-1">
-              <p className="text-sm font-medium">Condition</p>
+            <div>
+              <p className="text-xs text-muted-foreground mb-1">Condition</p>
               <Select value={condition} onValueChange={setCondition}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -494,8 +483,8 @@ export function ItemDetail({
               </Select>
             </div>
 
-            <div className="space-y-1">
-              <p className="text-sm font-medium">Location</p>
+            <div>
+              <p className="text-xs text-muted-foreground mb-1">Location</p>
               <Select
                 value={locationId}
                 onValueChange={(val) => {
@@ -525,12 +514,16 @@ export function ItemDetail({
               </Select>
             </div>
 
-            <div className="space-y-1">
-              <p className="text-sm font-medium flex items-center gap-1">
-                <UserCheck className="h-4 w-4" />
+            <div>
+              <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
+                <UserCheck className="h-3 w-3" />
                 Main Performer
               </p>
-              <Select value={mainPerformerId} onValueChange={setMainPerformerId} disabled={performers.length === 0}>
+              <Select
+                value={mainPerformerId}
+                onValueChange={setMainPerformerId}
+                disabled={performers.length === 0}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder={performers.length === 0 ? "No performers added yet" : "Not assigned"} />
                 </SelectTrigger>
@@ -542,11 +535,13 @@ export function ItemDetail({
                 </SelectContent>
               </Select>
               {performers.length === 0 && (
-                <p className="text-xs text-muted-foreground">Add performers in the Performers section first.</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Add performers in the Performers section first.
+                </p>
               )}
             </div>
 
-            <Button onClick={handleSave} disabled={saving} className="w-full">
+            <Button onClick={handleSave} disabled={saving} className="w-full" size="sm">
               {saving ? "Saving..." : "Save Changes"}
             </Button>
           </CardContent>
@@ -554,8 +549,8 @@ export function ItemDetail({
 
         {/* QR Code */}
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2">
               <QrCode className="h-4 w-4" />
               QR Code
             </CardTitle>
@@ -573,14 +568,14 @@ export function ItemDetail({
 
         {/* Archive */}
         <Card>
-          <CardHeader>
+          <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">
               <Archive className="h-4 w-4" />
               {item.archived ? "Restore Item" : "Archive Item"}
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-xs text-muted-foreground mb-3">
+            <p className="text-xs text-muted-foreground mb-2">
               {item.archived
                 ? "This item is archived. Restore it to make it appear in normal views."
                 : "Archive this item when it is out of service. It will be hidden from normal views but can be restored."}
@@ -601,16 +596,19 @@ export function ItemDetail({
         {/* Project Bookings */}
         {bookings.length > 0 && (
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2">
                 <FolderOpen className="h-4 w-4" />
                 Project Bookings
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="space-y-2">
               {bookings.map((booking) => (
-                <div key={booking.bookingItemId} className="rounded-md border p-3 space-y-1">
-                  <Link href={`/projects/${booking.projectId}`} className="font-medium text-sm hover:underline">
+                <div key={booking.bookingItemId} className="rounded-md border p-2 space-y-1">
+                  <Link
+                    href={`/projects/${booking.projectId}`}
+                    className="font-medium text-sm hover:underline"
+                  >
                     {booking.projectName}
                   </Link>
                   <div className="flex items-center gap-2">
