@@ -321,13 +321,19 @@ export function LocationCascadingSelect({
     );
   }
 
-  // ── Show Zone level when: there are zones, or a parent level is selected, or adding ──
-  const showRoomLevel = rooms.length > 0 || selWarehouse !== UNSET || addingAt === "room";
-  // Zone appears once there's something to filter on (zones exist, room selected, or adding).
-  // When a warehouse is selected but has no locations yet, Zone is hidden until the user
-  // adds a room (which also collects the zone). Zone-only locations in a warehouse appear
-  // automatically once zones exist in the filtered set.
-  const showZoneLevel = zones.length > 0 || selRoom !== UNSET || addingAt === "zone";
+  // ── Progressive disclosure: each level appears only after the one above is chosen ──
+  // Room  → visible once a warehouse is selected
+  // Zone  → visible once a room is selected
+  //         (exception: if the filtered set has zones but no rooms, show zone directly)
+  // Rack  → visible once a zone is selected
+  // Shelf → visible once a rack is selected
+  // Bin   → visible once a shelf is selected
+  const showRoomLevel  = rooms.length > 0 || selWarehouse !== UNSET || addingAt === "room";
+  const showZoneLevel  = selRoom !== UNSET || addingAt === "zone"
+                        || (zones.length > 0 && rooms.length === 0);
+  const showRackLevel  = selZone  !== UNSET || racks.length  > 0 || addingAt === "rack";
+  const showShelfLevel = selRack  !== UNSET || shelves.length > 0 || addingAt === "shelf";
+  const showBinLevel   = selShelf !== UNSET || bins.length   > 0 || addingAt === "bin";
 
   return (
     <div className="space-y-2">
@@ -437,7 +443,7 @@ export function LocationCascadingSelect({
         )}
 
         {/* Rack */}
-        {(racks.length > 0 || addingAt === "rack") && (
+        {showRackLevel && (
           <div className="flex flex-col gap-0.5">
             <span className="text-xs text-muted-foreground">Rack</span>
             <Select
@@ -470,7 +476,7 @@ export function LocationCascadingSelect({
         )}
 
         {/* Shelf */}
-        {(shelves.length > 0 || addingAt === "shelf") && (
+        {showShelfLevel && (
           <div className="flex flex-col gap-0.5">
             <span className="text-xs text-muted-foreground">Shelf</span>
             <Select
@@ -503,7 +509,7 @@ export function LocationCascadingSelect({
         )}
 
         {/* Bin */}
-        {(bins.length > 0 || addingAt === "bin") && (
+        {showBinLevel && (
           <div className="flex flex-col gap-0.5">
             <span className="text-xs text-muted-foreground">Bin</span>
             <Select
