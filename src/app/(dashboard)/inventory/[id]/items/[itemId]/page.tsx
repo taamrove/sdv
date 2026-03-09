@@ -138,7 +138,7 @@ export default async function ItemDetailPage({
     <div className="space-y-6">
       <PageHeader
         title={item.humanReadableId}
-        description={`${item.product.name} — ${item.category.name}`}
+        description={`${item.product.name} — ${item.category.name}${item.product.subCategory ? ` · ${item.product.subCategory.name}` : ""}`}
       />
       <ItemDetail
         item={serializedItem}
