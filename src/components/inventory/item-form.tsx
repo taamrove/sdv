@@ -27,7 +27,6 @@ import {
   type CreateItemInput,
 } from "@/lib/validators/item";
 import { createItem, createItems } from "@/actions/items";
-import { LocationFormDialog } from "@/components/warehouse/location-form-dialog";
 import { LocationCascadingSelect, type FullLocation } from "@/components/warehouse/location-cascading-select";
 import { PerformerQuickCreateDialog } from "@/components/performers/performer-quick-create-dialog";
 import { ImageUpload } from "@/components/shared/image-upload";
@@ -61,6 +60,8 @@ interface Performer {
 interface ItemFormProps {
   products: Product[];
   locations: Location[];
+  /** All warehouses, including those not yet linked to any location */
+  warehouses?: { id: string; name: string }[];
   /** When set, pre-selects and locks the product dropdown */
   defaultProductId?: string;
   /** sizeMode from the product's sub-category — drives which size fields appear */
@@ -72,6 +73,7 @@ interface ItemFormProps {
 export function ItemForm({
   products,
   locations: locationsProp,
+  warehouses = [],
   defaultProductId,
   sizeMode,
   performers: performersProp = [],
@@ -80,7 +82,6 @@ export function ItemForm({
   const closeAfterSave = useRef(false);
   const [quantity, setQuantity] = useState(1);
   const [locations, setLocations] = useState(locationsProp);
-  const [locationDialogOpen, setLocationDialogOpen] = useState(false);
   const [performerDialogOpen, setPerformerDialogOpen] = useState(false);
   const [performers, setPerformers] = useState(performersProp);
 
@@ -404,9 +405,9 @@ export function ItemForm({
             >
               <LocationCascadingSelect
                 locations={locations}
+                warehouses={warehouses}
                 value={form.watch("warehouseLocationId") ?? undefined}
                 onValueChange={(id) => form.setValue("warehouseLocationId", id)}
-                onNewLocation={() => setLocationDialogOpen(true)}
               />
             </FormRow>
 
@@ -508,15 +509,6 @@ export function ItemForm({
           </form>
         </CardContent>
       </Card>
-
-      <LocationFormDialog
-        open={locationDialogOpen}
-        onOpenChange={setLocationDialogOpen}
-        onSuccess={(loc) => {
-          setLocations((prev) => [...prev, loc]);
-          form.setValue("warehouseLocationId", loc.id);
-        }}
-      />
 
       <PerformerQuickCreateDialog
         open={performerDialogOpen}

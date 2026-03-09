@@ -62,6 +62,7 @@ export async function getWarehouseLocations(
         where,
         include: {
           _count: { select: { items: true } },
+          warehouse: true,
         },
         orderBy: { label: "asc" },
         skip,
@@ -103,6 +104,7 @@ export async function getWarehouseLocationById(
       where: { id },
       include: {
         _count: { select: { items: true } },
+        warehouse: true,
       },
     });
 
@@ -153,6 +155,7 @@ export async function createWarehouseLocation(
       },
       include: {
         _count: { select: { items: true } },
+        warehouse: true,
       },
     });
 
@@ -222,6 +225,7 @@ export async function updateWarehouseLocation(
       },
       include: {
         _count: { select: { items: true } },
+        warehouse: true,
       },
     });
 

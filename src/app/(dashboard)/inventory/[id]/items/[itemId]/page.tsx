@@ -22,7 +22,7 @@ export default async function ItemDetailPage({
         include: { subCategory: true },
       },
       category: true,
-      warehouseLocation: true,
+      warehouseLocation: { include: { warehouse: true } },
       mainPerformer: {
         select: {
           id: true,
@@ -35,11 +35,13 @@ export default async function ItemDetailPage({
   if (!item || item.productId !== productId) notFound();
 
   // Run independent queries in parallel
-  const [activityResult, locations, bookingItems, performers] = await Promise.all([
+  const [activityResult, locations, warehouses, bookingItems, performers] = await Promise.all([
     getEntityActivity([{ entityType: "Item", entityId: itemId }], 50),
     prisma.warehouseLocation.findMany({
       orderBy: { label: "asc" },
+      include: { warehouse: true },
     }),
+    prisma.warehouse.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
     prisma.bookingItem.findMany({
       where: {
         itemId,
@@ -107,9 +109,15 @@ export default async function ItemDetailPage({
     createdAt: item.createdAt,
     product: { id: item.product.id, name: item.product.name, number: item.product.number },
     category: { id: item.category.id, code: item.category.code, name: item.category.name },
+    subCategory: item.product.subCategory
+      ? { name: item.product.subCategory.name }
+      : null,
     warehouseLocation: item.warehouseLocation
       ? {
           id: item.warehouseLocation.id,
+          warehouse: item.warehouseLocation.warehouse
+            ? { id: item.warehouseLocation.warehouse.id, name: item.warehouseLocation.warehouse.name }
+            : null,
           room: item.warehouseLocation.room,
           zone: item.warehouseLocation.zone,
           rack: item.warehouseLocation.rack,
@@ -130,13 +138,14 @@ export default async function ItemDetailPage({
   return (
     <div className="space-y-6">
       <PageHeader
-        title={item.humanReadableId}
-        description={`${item.product.name} — ${item.category.name}`}
+        title={`${item.humanReadableId} — ${item.product.name}`}
+        description={`${item.category.name}${item.product.subCategory ? ` · ${item.product.subCategory.name}` : ""}`}
       />
       <ItemDetail
         item={serializedItem}
         history={history}
         locations={locations}
+        warehouses={warehouses}
         bookings={serializedBookings}
         sizeMode={sizeMode}
         performers={performers.map((p) => ({

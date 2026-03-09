@@ -7,6 +7,12 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,12 +40,20 @@ import {
 import { updateItem } from "@/actions/items";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { Clock, Pencil, X, CalendarDays, FolderOpen, QrCode, Archive } from "lucide-react";
+import {
+  Clock,
+  Pencil,
+  X,
+  CalendarDays,
+  FolderOpen,
+  QrCode,
+  Archive,
+  MapPin,
+} from "lucide-react";
 import { QRCodeDisplay } from "@/components/shared/qr-code-display";
 import Image from "next/image";
 import Link from "next/link";
 import { getFullName } from "@/lib/format-name";
-import { LocationFormDialog } from "@/components/warehouse/location-form-dialog";
 import { LocationCascadingSelect, type FullLocation } from "@/components/warehouse/location-cascading-select";
 import { CompactActivityLog, type ActivityEntry } from "@/components/dashboard/activity-log";
 
@@ -64,6 +78,7 @@ interface Item {
   createdAt: Date;
   product: { id: string; name: string; number: number };
   category: { id: string; code: string; name: string };
+  subCategory: { name: string } | null;
   warehouseLocation: FullLocation | null;
   mainPerformer: Performer | null;
 }
@@ -84,6 +99,7 @@ interface ItemDetailProps {
   item: Item;
   history: ActivityEntry[];
   locations: Location[];
+  warehouses?: { id: string; name: string }[];
   bookings?: Booking[];
   sizeMode?: string | null;
   performers?: Performer[];
@@ -93,6 +109,7 @@ export function ItemDetail({
   item,
   history,
   locations,
+  warehouses = [],
   bookings = [],
   sizeMode,
   performers = [],
@@ -101,12 +118,12 @@ export function ItemDetail({
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [archiving, setArchiving] = useState(false);
-  const [locationDialogOpen, setLocationDialogOpen] = useState(false);
   const [performerDialogOpen, setPerformerDialogOpen] = useState(false);
+  const [qrDialogOpen, setQrDialogOpen] = useState(false);
   const [localLocations, setLocalLocations] = useState(locations);
   const [localPerformers, setLocalPerformers] = useState(performers);
 
-  // Status & location fields (always shown in sidebar)
+  // All editable fields — unified under the single Edit toggle
   const [status, setStatus] = useState(item.status);
   const [condition, setCondition] = useState(item.condition);
   const [locationId, setLocationId] = useState<string | undefined>(
@@ -115,8 +132,6 @@ export function ItemDetail({
   const [mainPerformerId, setMainPerformerId] = useState(
     item.mainPerformer?.id ?? "none"
   );
-
-  // Editable detail fields
   const [color, setColor] = useState(item.color ?? "");
   const [notes, setNotes] = useState(item.notes ?? "");
   const [imageUrl, setImageUrl] = useState(item.imageUrl);
@@ -133,6 +148,11 @@ export function ItemDetail({
 
   function cancelEdit() {
     setEditing(false);
+    // Reset ALL editable fields
+    setStatus(item.status);
+    setCondition(item.condition);
+    setLocationId(item.warehouseLocation?.id ?? undefined);
+    setMainPerformerId(item.mainPerformer?.id ?? "none");
     setColor(item.color ?? "");
     setNotes(item.notes ?? "");
     setImageUrl(item.imageUrl);
@@ -144,6 +164,7 @@ export function ItemDetail({
     try {
       const data: Record<string, unknown> = {};
 
+      // All fields checked unconditionally — no editing guard
       if (status !== item.status) data.status = status;
       if (condition !== item.condition) data.condition = condition;
       if (locationId !== (item.warehouseLocation?.id ?? undefined)) {
@@ -154,24 +175,22 @@ export function ItemDetail({
         data.mainPerformerId = newMainPerformerId;
       }
 
-      if (editing) {
-        const newColor = color.trim() || null;
-        if (newColor !== item.color) data.color = newColor;
+      const newColor = color.trim() || null;
+      if (newColor !== item.color) data.color = newColor;
 
-        const newNotes = notes.trim() || null;
-        if (newNotes !== item.notes) data.notes = newNotes;
+      const newNotes = notes.trim() || null;
+      if (newNotes !== item.notes) data.notes = newNotes;
 
-        if (imageUrl !== item.imageUrl) data.imageUrl = imageUrl;
+      if (imageUrl !== item.imageUrl) data.imageUrl = imageUrl;
 
-        const filteredSizes: Record<string, string> = {};
-        for (const [k, v] of Object.entries(sizes)) {
-          if (v.trim()) filteredSizes[k] = v.trim();
-        }
-        const sizesChanged =
-          JSON.stringify(filteredSizes) !== JSON.stringify(existingSizes);
-        if (sizesChanged) {
-          data.sizes = Object.keys(filteredSizes).length > 0 ? filteredSizes : undefined;
-        }
+      const filteredSizes: Record<string, string> = {};
+      for (const [k, v] of Object.entries(sizes)) {
+        if (v.trim()) filteredSizes[k] = v.trim();
+      }
+      const sizesChanged =
+        JSON.stringify(filteredSizes) !== JSON.stringify(existingSizes);
+      if (sizesChanged) {
+        data.sizes = Object.keys(filteredSizes).length > 0 ? filteredSizes : undefined;
       }
 
       if (Object.keys(data).length === 0) {
@@ -226,46 +245,43 @@ export function ItemDetail({
   function renderEditSizeFields() {
     if (sizeMode === "clothing") {
       return (
-        <div className="space-y-1">
-          <Label className="text-xs">Clothing Size</Label>
+        <FormRow label="Sizes">
           <Select value={sizes["size"] ?? ""} onValueChange={(val) => updateSize("size", val)}>
             <SelectTrigger><SelectValue placeholder="Select size" /></SelectTrigger>
             <SelectContent>
               {CLOTHING_SIZES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
             </SelectContent>
           </Select>
-        </div>
+        </FormRow>
       );
     }
     if (sizeMode === "shoes") {
       return (
-        <div className="space-y-1">
-          <Label className="text-xs">Shoe Size (EU)</Label>
+        <FormRow label="Sizes">
           <Select value={sizes["shoe"] ?? ""} onValueChange={(val) => updateSize("shoe", val)}>
             <SelectTrigger><SelectValue placeholder="Select EU size" /></SelectTrigger>
             <SelectContent>
               {SHOE_SIZES_EU.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
             </SelectContent>
           </Select>
-        </div>
+        </FormRow>
       );
     }
     if (sizeMode === "hat") {
       return (
-        <div className="space-y-1">
-          <Label className="text-xs">Hat Size (cm)</Label>
+        <FormRow label="Sizes">
           <Select value={sizes["hat"] ?? ""} onValueChange={(val) => updateSize("hat", val)}>
             <SelectTrigger><SelectValue placeholder="Select hat size" /></SelectTrigger>
             <SelectContent>
               {HAT_SIZES_CM.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
             </SelectContent>
           </Select>
-        </div>
+        </FormRow>
       );
     }
     if (sizeMode === "measurements") {
       return (
-        <div className="space-y-3">
+        <>
           {[
             { key: "chest", label: "Chest", placeholder: "cm" },
             { key: "waist", label: "Waist", placeholder: "cm" },
@@ -281,76 +297,100 @@ export function ItemDetail({
               />
             </FormRow>
           ))}
-        </div>
+        </>
       );
     }
-    // Generic — selects for standard sizes, inputs for measurements
+    // Generic
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <div className="space-y-1">
-          <Label className="text-xs">General Size</Label>
-          <Select value={sizes["size"] ?? ""} onValueChange={(val) => updateSize("size", val)}>
-            <SelectTrigger><SelectValue placeholder="Select size" /></SelectTrigger>
-            <SelectContent>
-              {CLOTHING_SIZES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        </div>
-        {[
-          { key: "chest", label: "Chest", placeholder: "e.g., 90cm" },
-          { key: "waist", label: "Waist", placeholder: "e.g., 75cm" },
-          { key: "hip", label: "Hip", placeholder: "e.g., 95cm" },
-        ].map(({ key, label, placeholder }) => (
-          <div key={key} className="space-y-1">
-            <Label className="text-xs">{label}</Label>
-            <Input
-              value={sizes[key] ?? ""}
-              onChange={(e) => updateSize(key, e.target.value)}
-              placeholder={placeholder}
-            />
+      <FormRow label="Sizes">
+        <div className="grid grid-cols-2 gap-2">
+          <div className="space-y-1">
+            <Label className="text-xs text-muted-foreground">General</Label>
+            <Select value={sizes["size"] ?? ""} onValueChange={(val) => updateSize("size", val)}>
+              <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="Size" /></SelectTrigger>
+              <SelectContent>
+                {CLOTHING_SIZES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+              </SelectContent>
+            </Select>
           </div>
-        ))}
-        <div className="space-y-1">
-          <Label className="text-xs">Shoe Size (EU)</Label>
-          <Select value={sizes["shoe"] ?? ""} onValueChange={(val) => updateSize("shoe", val)}>
-            <SelectTrigger><SelectValue placeholder="Select EU size" /></SelectTrigger>
-            <SelectContent>
-              {SHOE_SIZES_EU.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-            </SelectContent>
-          </Select>
+          <div className="space-y-1">
+            <Label className="text-xs text-muted-foreground">Shoe (EU)</Label>
+            <Select value={sizes["shoe"] ?? ""} onValueChange={(val) => updateSize("shoe", val)}>
+              <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="EU size" /></SelectTrigger>
+              <SelectContent>
+                {SHOE_SIZES_EU.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs text-muted-foreground">Hat (cm)</Label>
+            <Select value={sizes["hat"] ?? ""} onValueChange={(val) => updateSize("hat", val)}>
+              <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="Hat size" /></SelectTrigger>
+              <SelectContent>
+                {HAT_SIZES_CM.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          {[
+            { key: "chest", label: "Chest", placeholder: "e.g., 90cm" },
+            { key: "waist", label: "Waist", placeholder: "e.g., 75cm" },
+            { key: "hip", label: "Hip", placeholder: "e.g., 95cm" },
+          ].map(({ key, label, placeholder }) => (
+            <div key={key} className="space-y-1">
+              <Label className="text-xs text-muted-foreground">{label}</Label>
+              <Input
+                className="h-8 text-sm"
+                value={sizes[key] ?? ""}
+                onChange={(e) => updateSize(key, e.target.value)}
+                placeholder={placeholder}
+              />
+            </div>
+          ))}
         </div>
-        <div className="space-y-1">
-          <Label className="text-xs">Hat Size (cm)</Label>
-          <Select value={sizes["hat"] ?? ""} onValueChange={(val) => updateSize("hat", val)}>
-            <SelectTrigger><SelectValue placeholder="Select hat size" /></SelectTrigger>
-            <SelectContent>
-              {HAT_SIZES_CM.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
+      </FormRow>
     );
   }
 
   return (
     <>
     <div className="grid gap-4 md:grid-cols-3">
-      {/* Main column */}
+      {/* ── Main column ─────────────────────────────────────────────────── */}
       <div className="md:col-span-2 space-y-3 order-2 md:order-1">
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center justify-between">
               <span>Item Details</span>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1">
                 {item.archived && (
                   <Badge variant="outline" className="text-muted-foreground">
                     <Archive className="mr-1 h-3 w-3" />
                     Archived
                   </Badge>
                 )}
-                <Badge variant="outline" className="font-mono text-base">
-                  {item.humanReadableId}
-                </Badge>
+                {/* QR Code — icon in header, opens dialog (primary on mobile) */}
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 md:hidden"
+                  onClick={() => setQrDialogOpen(true)}
+                  title="QR Code"
+                >
+                  <QrCode className="h-4 w-4" />
+                </Button>
+                {/* Inline Archive / Restore button */}
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 text-muted-foreground"
+                  onClick={handleArchive}
+                  disabled={archiving}
+                  title={item.archived ? "Restore" : "Archive"}
+                >
+                  <Archive className="h-4 w-4" />
+                </Button>
+                {/* Edit / Cancel */}
                 {!editing ? (
                   <Button variant="ghost" size="icon" onClick={() => setEditing(true)}>
                     <Pencil className="h-4 w-4" />
@@ -381,24 +421,87 @@ export function ItemDetail({
               )
             )}
 
-            {/* Static info */}
-            <div className="space-y-1">
-              <InfoRow label="Product">{item.product.name}</InfoRow>
-              <InfoRow label="Category">{item.category.name}</InfoRow>
-              {item.purchaseDate && (
-                <InfoRow label="Purchased">
-                  {new Date(item.purchaseDate).toLocaleDateString()}
-                </InfoRow>
-              )}
-              {item.purchasePrice != null && (
-                <InfoRow label="Price">${item.purchasePrice.toFixed(2)}</InfoRow>
-              )}
-              <InfoRow label="Created">
-                {new Date(item.createdAt).toLocaleDateString()}
+            {/* ── Status ─────────────────────────────────────── */}
+            {editing ? (
+              <FormRow label="Status">
+                <Select value={status} onValueChange={setStatus}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(ITEM_STATUS_LABELS).map(([key, label]) => (
+                      <SelectItem key={key} value={key}>{label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </FormRow>
+            ) : (
+              <InfoRow label="Status">
+                <StatusBadge status={item.status} label={ITEM_STATUS_LABELS[item.status]} />
               </InfoRow>
-            </div>
+            )}
 
-            {/* Color */}
+            {/* ── Condition ──────────────────────────────────── */}
+            {editing ? (
+              <FormRow label="Condition">
+                <Select value={condition} onValueChange={setCondition}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(ITEM_CONDITION_LABELS).map(([key, label]) => (
+                      <SelectItem key={key} value={key}>{label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </FormRow>
+            ) : (
+              <InfoRow label="Condition">
+                <StatusBadge status={item.condition} label={ITEM_CONDITION_LABELS[item.condition]} />
+              </InfoRow>
+            )}
+
+            {/* ── Location ───────────────────────────────────── */}
+            {editing ? (
+              <FormRow label="Location">
+                <LocationCascadingSelect
+                  locations={localLocations}
+                  warehouses={warehouses}
+                  value={locationId}
+                  onValueChange={setLocationId}
+                />
+              </FormRow>
+            ) : (
+              item.warehouseLocation ? (
+                <InfoRow label="Location">
+                  <div className="space-y-0.5">
+                    {item.warehouseLocation.warehouse && (
+                      <p className="text-xs text-muted-foreground">
+                        {item.warehouseLocation.warehouse.name}
+                      </p>
+                    )}
+                    <div className="flex items-center gap-1">
+                      <MapPin className="h-3 w-3 text-muted-foreground" />
+                      <span className="font-mono text-sm">{item.warehouseLocation.label}</span>
+                    </div>
+                  </div>
+                </InfoRow>
+              ) : null
+            )}
+
+            {/* ── Performer ──────────────────────────────────── */}
+            {editing ? (
+              <FormRow label="Performer">
+                <PerformerCombobox
+                  performers={localPerformers}
+                  value={mainPerformerId === "none" ? undefined : mainPerformerId}
+                  onValueChange={(id) => setMainPerformerId(id ?? "none")}
+                  onNewPerformer={() => setPerformerDialogOpen(true)}
+                />
+              </FormRow>
+            ) : (
+              item.mainPerformer && (
+                <InfoRow label="Performer">{getFullName(item.mainPerformer)}</InfoRow>
+              )
+            )}
+
+            {/* ── Color ──────────────────────────────────────── */}
             {editing ? (
               <FormRow label="Color" htmlFor="color">
                 <Input
@@ -412,7 +515,7 @@ export function ItemDetail({
               item.color && <InfoRow label="Color">{item.color}</InfoRow>
             )}
 
-            {/* Sizes */}
+            {/* ── Sizes ──────────────────────────────────────── */}
             {editing ? (
               renderEditSizeFields()
             ) : (
@@ -422,7 +525,7 @@ export function ItemDetail({
                     {Object.entries(displaySizes).map(([key, value]) =>
                       value && (
                         <Badge key={key} variant="secondary" className="text-xs">
-                          {key}: {value}
+                          {value}
                         </Badge>
                       )
                     )}
@@ -431,12 +534,7 @@ export function ItemDetail({
               )
             )}
 
-            {/* Main performer (read mode) */}
-            {!editing && item.mainPerformer && (
-              <InfoRow label="Performer">{getFullName(item.mainPerformer)}</InfoRow>
-            )}
-
-            {/* Notes */}
+            {/* ── Notes ──────────────────────────────────────── */}
             {editing ? (
               <FormRow label="Notes" htmlFor="notes">
                 <Textarea
@@ -450,6 +548,24 @@ export function ItemDetail({
               item.notes && <InfoRow label="Notes">{item.notes}</InfoRow>
             )}
 
+            {/* ── Static metadata ────────────────────────────── */}
+            {!editing && (
+              <div className="space-y-1">
+                {item.purchaseDate && (
+                  <InfoRow label="Purchased">
+                    {new Date(item.purchaseDate).toLocaleDateString()}
+                  </InfoRow>
+                )}
+                {item.purchasePrice != null && (
+                  <InfoRow label="Price">${item.purchasePrice.toFixed(2)}</InfoRow>
+                )}
+                <InfoRow label="Created">
+                  {new Date(item.createdAt).toLocaleDateString()}
+                </InfoRow>
+              </div>
+            )}
+
+            {/* Save / Cancel */}
             {editing && (
               <div className="flex justify-end gap-2 pt-2">
                 <Button variant="outline" onClick={cancelEdit}>Cancel</Button>
@@ -475,61 +591,11 @@ export function ItemDetail({
         </Card>
       </div>
 
-      {/* Sidebar */}
+      {/* ── Sidebar ─────────────────────────────────────────────────────── */}
       <div className="space-y-3 order-1 md:order-2">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm">Status & Location</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <FormRow label="Status">
-              <Select value={status} onValueChange={setStatus}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {Object.entries(ITEM_STATUS_LABELS).map(([key, label]) => (
-                    <SelectItem key={key} value={key}>{label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </FormRow>
 
-            <FormRow label="Condition">
-              <Select value={condition} onValueChange={setCondition}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {Object.entries(ITEM_CONDITION_LABELS).map(([key, label]) => (
-                    <SelectItem key={key} value={key}>{label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </FormRow>
-
-            <FormRow label="Location">
-              <LocationCascadingSelect
-                locations={localLocations}
-                value={locationId}
-                onValueChange={setLocationId}
-                onNewLocation={() => setLocationDialogOpen(true)}
-              />
-            </FormRow>
-
-            <FormRow label="Performer">
-              <PerformerCombobox
-                performers={localPerformers}
-                value={mainPerformerId === "none" ? undefined : mainPerformerId}
-                onValueChange={(id) => setMainPerformerId(id ?? "none")}
-                onNewPerformer={() => setPerformerDialogOpen(true)}
-              />
-            </FormRow>
-
-            <Button onClick={handleSave} disabled={saving} className="w-full" size="sm">
-              {saving ? "Saving..." : "Save Changes"}
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* QR Code */}
-        <Card>
+        {/* QR Code — full card on desktop; icon in card header handles mobile */}
+        <Card className="hidden md:block">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">
               <QrCode className="h-4 w-4" />
@@ -544,33 +610,6 @@ export function ItemDetail({
               sizes={displaySizes ?? undefined}
               size={160}
             />
-          </CardContent>
-        </Card>
-
-        {/* Archive */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm flex items-center gap-2">
-              <Archive className="h-4 w-4" />
-              {item.archived ? "Restore Item" : "Archive Item"}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-xs text-muted-foreground mb-2">
-              {item.archived
-                ? "This item is archived. Restore it to make it appear in normal views."
-                : "Archive this item when it is out of service. It will be hidden from normal views but can be restored."}
-            </p>
-            <Button
-              variant={item.archived ? "outline" : "destructive"}
-              size="sm"
-              className="w-full"
-              onClick={handleArchive}
-              disabled={archiving}
-            >
-              <Archive className="mr-2 h-4 w-4" />
-              {archiving ? "..." : item.archived ? "Restore Item" : "Archive Item"}
-            </Button>
           </CardContent>
         </Card>
 
@@ -612,14 +651,6 @@ export function ItemDetail({
       </div>
     </div>
 
-    <LocationFormDialog
-      open={locationDialogOpen}
-      onOpenChange={setLocationDialogOpen}
-      onSuccess={(loc) => {
-        setLocalLocations((prev) => [...prev, loc]);
-        setLocationId(loc.id);
-      }}
-    />
     <PerformerQuickCreateDialog
       open={performerDialogOpen}
       onOpenChange={setPerformerDialogOpen}
@@ -628,6 +659,25 @@ export function ItemDetail({
         setMainPerformerId(p.id);
       }}
     />
+
+    {/* QR Code dialog — shown on mobile when the icon button is tapped */}
+    <Dialog open={qrDialogOpen} onOpenChange={setQrDialogOpen}>
+      <DialogContent className="sm:max-w-xs">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <QrCode className="h-4 w-4" />
+            QR Code
+          </DialogTitle>
+        </DialogHeader>
+        <QRCodeDisplay
+          itemId={item.id}
+          humanReadableId={item.humanReadableId}
+          productName={item.product.name}
+          sizes={displaySizes ?? undefined}
+          size={200}
+        />
+      </DialogContent>
+    </Dialog>
     </>
   );
 }

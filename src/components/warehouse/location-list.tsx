@@ -18,6 +18,8 @@ import { useRouter } from "next/navigation";
 
 interface Location {
   id: string;
+  warehouseId?: string | null;
+  warehouse?: { id: string; name: string } | null;
   room: string | null;
   zone: string;
   rack: string | null;
@@ -30,9 +32,10 @@ interface Location {
 
 interface LocationListProps {
   locations: Location[];
+  warehouses?: { id: string; name: string }[];
 }
 
-export function WarehouseLocationList({ locations }: LocationListProps) {
+export function WarehouseLocationList({ locations, warehouses = [] }: LocationListProps) {
   const router = useRouter();
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Location | null>(null);
@@ -80,10 +83,10 @@ export function WarehouseLocationList({ locations }: LocationListProps) {
           {locations.map((loc) => (
             <Card key={loc.id}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-base flex flex-col gap-1">
-                  {loc.room && (
+                <CardTitle className="text-base flex flex-col gap-0.5">
+                  {(loc.warehouse || loc.room) && (
                     <span className="text-xs text-muted-foreground font-normal">
-                      {loc.room}
+                      {[loc.warehouse?.name, loc.room].filter(Boolean).join(" · ")}
                     </span>
                   )}
                   <Badge variant="outline" className="font-mono text-sm w-fit">
@@ -126,8 +129,9 @@ export function WarehouseLocationList({ locations }: LocationListProps) {
 
       <LocationFormDialog
         open={formOpen}
-        onOpenChange={setFormOpen}
+        onOpenChange={(open) => { setFormOpen(open); if (!open) setEditing(null); }}
         location={editing}
+        warehouses={warehouses}
       />
 
       <ConfirmDialog
