@@ -221,15 +221,20 @@ export function LocationCascadingSelect({
 
       const locationData = {
         warehouseId: selWarehouse !== UNSET ? selWarehouse : null,
-        room: room || null,
+        room:  room  || undefined,
         zone,
-        rack:  level === "rack"  ? addVal.trim() : null,
-        shelf: level === "shelf" ? addVal.trim() : null,
-        bin:   level === "bin"   ? addVal.trim() : null,
+        // Preserve parent context for deeper levels; use undefined (not null) for
+        // fields the Zod schema marks .optional() but not .nullable()
+        rack:  level === "rack"  ? addVal.trim()
+             : (level === "shelf" || level === "bin") && selRack  !== UNSET ? selRack
+             : undefined,
+        shelf: level === "shelf" ? addVal.trim()
+             : level === "bin"   && selShelf !== UNSET ? selShelf
+             : undefined,
+        bin:   level === "bin"   ? addVal.trim() : undefined,
       };
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const result = await createWarehouseLocation(locationData as any);
+      const result = await createWarehouseLocation(locationData);
       if ("error" in result) { toast.error(result.error); return; }
 
       const d = result.data as {
