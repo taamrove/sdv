@@ -60,6 +60,8 @@ interface Performer {
 interface ItemFormProps {
   products: Product[];
   locations: Location[];
+  /** All warehouses, including those not yet linked to any location */
+  warehouses?: { id: string; name: string }[];
   /** When set, pre-selects and locks the product dropdown */
   defaultProductId?: string;
   /** sizeMode from the product's sub-category — drives which size fields appear */
@@ -71,6 +73,7 @@ interface ItemFormProps {
 export function ItemForm({
   products,
   locations: locationsProp,
+  warehouses = [],
   defaultProductId,
   sizeMode,
   performers: performersProp = [],
@@ -402,6 +405,7 @@ export function ItemForm({
             >
               <LocationCascadingSelect
                 locations={locations}
+                warehouses={warehouses}
                 value={form.watch("warehouseLocationId") ?? undefined}
                 onValueChange={(id) => form.setValue("warehouseLocationId", id)}
               />

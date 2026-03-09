@@ -35,12 +35,13 @@ export default async function ItemDetailPage({
   if (!item || item.productId !== productId) notFound();
 
   // Run independent queries in parallel
-  const [activityResult, locations, bookingItems, performers] = await Promise.all([
+  const [activityResult, locations, warehouses, bookingItems, performers] = await Promise.all([
     getEntityActivity([{ entityType: "Item", entityId: itemId }], 50),
     prisma.warehouseLocation.findMany({
       orderBy: { label: "asc" },
       include: { warehouse: true },
     }),
+    prisma.warehouse.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
     prisma.bookingItem.findMany({
       where: {
         itemId,
@@ -144,6 +145,7 @@ export default async function ItemDetailPage({
         item={serializedItem}
         history={history}
         locations={locations}
+        warehouses={warehouses}
         bookings={serializedBookings}
         sizeMode={sizeMode}
         performers={performers.map((p) => ({

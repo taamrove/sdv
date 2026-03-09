@@ -28,6 +28,8 @@ export interface FullLocation {
 
 interface LocationCascadingSelectProps {
   locations: FullLocation[];
+  /** All warehouses, including those not yet linked to any location */
+  warehouses?: { id: string; name: string }[];
   value: string | undefined;
   onValueChange: (id: string | undefined) => void;
   disabled?: boolean;
@@ -50,6 +52,7 @@ type AddingLevel = "warehouse" | "room" | "zone" | "rack" | "shelf" | "bin" | nu
 
 export function LocationCascadingSelect({
   locations,
+  warehouses: warehousesProp = [],
   value,
   onValueChange,
   disabled = false,
@@ -62,9 +65,10 @@ export function LocationCascadingSelect({
     setLocalLocations(locations);
   }, [locations]);
 
-  // Maintain warehouse list: derived from locations + any inline-created warehouses
+  // Maintain warehouse list: all passed warehouses + those derived from locations + inline-created
   const [localWarehouses, setLocalWarehouses] = useState<{ id: string; name: string }[]>(() => {
     const map = new Map<string, { id: string; name: string }>();
+    for (const w of warehousesProp) map.set(w.id, w);
     for (const l of locations) {
       if (l.warehouse) map.set(l.warehouse.id, l.warehouse);
     }
@@ -75,12 +79,14 @@ export function LocationCascadingSelect({
     setLocalWarehouses((prev) => {
       const map = new Map<string, { id: string; name: string }>();
       for (const w of prev) map.set(w.id, w); // keep inline-added
+      for (const w of warehousesProp) map.set(w.id, w);
       for (const l of locations) {
         if (l.warehouse) map.set(l.warehouse.id, l.warehouse);
       }
       return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
     });
-  }, [locations]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [locations, warehousesProp]);
 
   // Initialise cascade from the currently selected location (if any)
   const selected = localLocations.find((l) => l.id === value);

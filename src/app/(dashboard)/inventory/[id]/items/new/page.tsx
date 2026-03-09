@@ -25,8 +25,9 @@ export default async function NewItemPage({
 
   if (!product) notFound();
 
-  const [locations, performers] = await Promise.all([
+  const [locations, warehouses, performers] = await Promise.all([
     prisma.warehouseLocation.findMany({ orderBy: { label: "asc" }, include: { warehouse: true } }),
+    prisma.warehouse.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
     prisma.performer.findMany({
       where: { active: true },
       orderBy: [{ contact: { lastName: "asc" } }, { contact: { firstName: "asc" } }],
@@ -48,6 +49,7 @@ export default async function NewItemPage({
       <ItemForm
         products={[product]}
         locations={locations}
+        warehouses={warehouses}
         defaultProductId={id}
         sizeMode={product.subCategory?.sizeMode ?? null}
         performers={performers.map((p) => ({

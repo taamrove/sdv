@@ -99,6 +99,7 @@ interface ItemDetailProps {
   item: Item;
   history: ActivityEntry[];
   locations: Location[];
+  warehouses?: { id: string; name: string }[];
   bookings?: Booking[];
   sizeMode?: string | null;
   performers?: Performer[];
@@ -108,6 +109,7 @@ export function ItemDetail({
   item,
   history,
   locations,
+  warehouses = [],
   bookings = [],
   sizeMode,
   performers = [],
@@ -460,6 +462,7 @@ export function ItemDetail({
               <FormRow label="Location">
                 <LocationCascadingSelect
                   locations={localLocations}
+                  warehouses={warehouses}
                   value={locationId}
                   onValueChange={setLocationId}
                 />
