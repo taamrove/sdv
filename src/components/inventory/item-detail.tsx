@@ -7,6 +7,12 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -111,6 +117,7 @@ export function ItemDetail({
   const [saving, setSaving] = useState(false);
   const [archiving, setArchiving] = useState(false);
   const [performerDialogOpen, setPerformerDialogOpen] = useState(false);
+  const [qrDialogOpen, setQrDialogOpen] = useState(false);
   const [localLocations, setLocalLocations] = useState(locations);
   const [localPerformers, setLocalPerformers] = useState(performers);
 
@@ -603,8 +610,18 @@ export function ItemDetail({
       {/* ── Sidebar ─────────────────────────────────────────────────────── */}
       <div className="space-y-3 order-1 md:order-2">
 
-        {/* QR Code */}
-        <Card>
+        {/* QR Code — icon button on mobile, full card on desktop */}
+        <Button
+          variant="outline"
+          size="sm"
+          className="w-full md:hidden"
+          onClick={() => setQrDialogOpen(true)}
+        >
+          <QrCode className="mr-2 h-4 w-4" />
+          QR Code
+        </Button>
+
+        <Card className="hidden md:block">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">
               <QrCode className="h-4 w-4" />
@@ -668,6 +685,25 @@ export function ItemDetail({
         setMainPerformerId(p.id);
       }}
     />
+
+    {/* QR Code dialog — shown on mobile when the icon button is tapped */}
+    <Dialog open={qrDialogOpen} onOpenChange={setQrDialogOpen}>
+      <DialogContent className="sm:max-w-xs">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <QrCode className="h-4 w-4" />
+            QR Code
+          </DialogTitle>
+        </DialogHeader>
+        <QRCodeDisplay
+          itemId={item.id}
+          humanReadableId={item.humanReadableId}
+          productName={item.product.name}
+          sizes={displaySizes ?? undefined}
+          size={200}
+        />
+      </DialogContent>
+    </Dialog>
     </>
   );
 }
