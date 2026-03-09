@@ -319,6 +319,7 @@ export function LocationCascadingSelect({
   }
 
   // ── Show Zone level when: there are zones, or a parent level is selected, or adding ──
+  const showRoomLevel = rooms.length > 0 || selWarehouse !== UNSET || addingAt === "room";
   const showZoneLevel = zones.length > 0 || selRoom !== UNSET || selWarehouse !== UNSET || addingAt === "zone";
 
   return (
@@ -363,7 +364,7 @@ export function LocationCascadingSelect({
         )}
 
         {/* Room */}
-        {(rooms.length > 0 || addingAt === "room") && (
+        {showRoomLevel && (
           <div className="flex flex-col gap-0.5">
             <span className="text-xs text-muted-foreground">Room</span>
             <Select
