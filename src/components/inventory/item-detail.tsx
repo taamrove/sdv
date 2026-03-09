@@ -383,13 +383,13 @@ export function ItemDetail({
                 <Button
                   type="button"
                   variant="ghost"
-                  size="sm"
-                  className="h-7 px-2 text-xs text-muted-foreground"
+                  size="icon"
+                  className="h-7 w-7 text-muted-foreground"
                   onClick={handleArchive}
                   disabled={archiving}
+                  title={item.archived ? "Restore" : "Archive"}
                 >
-                  <Archive className="mr-1 h-3 w-3" />
-                  {archiving ? "…" : item.archived ? "Restore" : "Archive"}
+                  <Archive className="h-4 w-4" />
                 </Button>
                 {/* Edit / Cancel */}
                 {!editing ? (
