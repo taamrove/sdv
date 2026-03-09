@@ -522,7 +522,7 @@ export function ItemDetail({
                     {Object.entries(displaySizes).map(([key, value]) =>
                       value && (
                         <Badge key={key} variant="secondary" className="text-xs">
-                          {key}: {value}
+                          {value}
                         </Badge>
                       )
                     )}
