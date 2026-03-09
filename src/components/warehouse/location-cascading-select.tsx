@@ -215,7 +215,11 @@ export function LocationCascadingSelect({
       let room: string | null = selRoom !== UNSET ? selRoom : null;
 
       if (level === "zone")  { zone = addVal.trim(); }
-      if (level === "room")  { room = addVal.trim(); zone = addVal2.trim(); }
+      if (level === "room")  {
+        room = addVal.trim();
+        // Only override zone from the input when no zone is already selected
+        if (selZone === UNSET) zone = addVal2.trim();
+      }
 
       if (!zone) { toast.error("Zone is required"); return; }
 
@@ -535,27 +539,33 @@ export function LocationCascadingSelect({
             placeholder="Room name…"
             value={addVal}
             onChange={(e) => setAddVal(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Escape") cancelAdding(); }}
-            className="h-8 text-sm"
-            disabled={addCreating}
-          />
-          <Input
-            placeholder="Zone (required)…"
-            value={addVal2}
-            onChange={(e) => setAddVal2(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === "Enter") { e.preventDefault(); handleAdd("room"); }
+              if (e.key === "Enter" && selZone !== UNSET) { e.preventDefault(); handleAdd("room"); }
               if (e.key === "Escape") cancelAdding();
             }}
             className="h-8 text-sm"
             disabled={addCreating}
           />
+          {/* Only ask for zone when none is already selected in the cascade */}
+          {selZone === UNSET && (
+            <Input
+              placeholder="Zone (required)…"
+              value={addVal2}
+              onChange={(e) => setAddVal2(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") { e.preventDefault(); handleAdd("room"); }
+                if (e.key === "Escape") cancelAdding();
+              }}
+              className="h-8 text-sm"
+              disabled={addCreating}
+            />
+          )}
           <div className="flex gap-1">
             <Button
               type="button" size="sm"
               className="h-7 text-xs px-2"
               onClick={() => handleAdd("room")}
-              disabled={addCreating || !addVal.trim() || !addVal2.trim()}
+              disabled={addCreating || !addVal.trim() || (selZone === UNSET && !addVal2.trim())}
             >
               {addCreating ? <Loader2 className="h-3 w-3 animate-spin" /> : "Add"}
             </Button>
