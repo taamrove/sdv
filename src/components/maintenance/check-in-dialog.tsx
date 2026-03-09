@@ -23,6 +23,7 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { MAINTENANCE_SEVERITY_LABELS } from "@/lib/constants";
 import { checkInItem } from "@/actions/check-in";
+import { LocationCascadingSelect, type FullLocation } from "@/components/warehouse/location-cascading-select";
 import { Package, Wrench } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
@@ -37,10 +38,7 @@ interface CheckInDialogProps {
     humanReadableId: string;
     productName: string;
   };
-  locations: {
-    id: string;
-    label: string;
-  }[];
+  locations: FullLocation[];
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
@@ -59,7 +57,7 @@ export function CheckInDialog({
   const [action, setAction] = useState<"INVENTORY" | "MAINTENANCE" | null>(
     null
   );
-  const [warehouseLocationId, setWarehouseLocationId] = useState<string>("");
+  const [warehouseLocationId, setWarehouseLocationId] = useState<string | undefined>(undefined);
   const [maintenanceTitle, setMaintenanceTitle] = useState("");
   const [maintenanceSeverity, setMaintenanceSeverity] = useState<string>("");
   const [notes, setNotes] = useState("");
@@ -67,7 +65,7 @@ export function CheckInDialog({
 
   function resetForm() {
     setAction(null);
-    setWarehouseLocationId("");
+    setWarehouseLocationId(undefined);
     setMaintenanceTitle("");
     setMaintenanceSeverity("");
     setNotes("");
@@ -81,7 +79,7 @@ export function CheckInDialog({
       const result = await checkInItem({
         itemId: item.id,
         action,
-        warehouseLocationId: warehouseLocationId || null,
+        warehouseLocationId: warehouseLocationId ?? null,
         maintenanceTitle: maintenanceTitle || undefined,
         maintenanceSeverity:
           (maintenanceSeverity as "MINOR" | "MODERATE" | "UNUSABLE") ||
@@ -159,22 +157,12 @@ export function CheckInDialog({
         {action === "INVENTORY" && (
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="warehouseLocation">Warehouse Location</Label>
-              <Select
+              <Label>Warehouse Location</Label>
+              <LocationCascadingSelect
+                locations={locations}
                 value={warehouseLocationId}
                 onValueChange={setWarehouseLocationId}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a location (optional)" />
-                </SelectTrigger>
-                <SelectContent>
-                  {locations.map((loc) => (
-                    <SelectItem key={loc.id} value={loc.id}>
-                      {loc.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              />
             </div>
 
             <div className="space-y-2">

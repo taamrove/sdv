@@ -180,6 +180,23 @@ export async function createItem(
       ? `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim()
       : null;
 
+    // Resolve human-readable names for the creation snapshot
+    const initialLocationLabel = parsed.data.warehouseLocationId
+      ? (await prisma.warehouseLocation.findUnique({
+          where: { id: parsed.data.warehouseLocationId },
+          select: { label: true },
+        }))?.label ?? null
+      : null;
+
+    let initialPerformerName: string | null = null;
+    if (parsed.data.mainPerformerId) {
+      const p = await prisma.performer.findUnique({
+        where: { id: parsed.data.mainPerformerId },
+        select: { contact: { select: { firstName: true, lastName: true } } },
+      });
+      if (p) initialPerformerName = getFullName(p.contact) || null;
+    }
+
     const item = await prisma.$transaction(async (tx) => {
       // Get next sequence within the transaction for safety
       const lastItem = await tx.item.findFirst({
@@ -221,7 +238,7 @@ export async function createItem(
         },
       });
 
-      // Record activity log
+      // Record activity log — full creation snapshot
       await tx.activityLog.create({
         data: {
           entityType: "Item",
@@ -233,6 +250,10 @@ export async function createItem(
           changes: {
             status: { from: null, to: created.status },
             condition: { from: null, to: created.condition },
+            ...(initialLocationLabel ? { location: { from: null, to: initialLocationLabel } } : {}),
+            ...(initialPerformerName ? { performer: { from: null, to: initialPerformerName } } : {}),
+            ...(created.color ? { color: { from: null, to: created.color } } : {}),
+            ...(created.notes ? { notes: { from: null, to: created.notes } } : {}),
           },
           details: { productId: created.productId },
         },
@@ -281,6 +302,23 @@ export async function createItems(
     const userName = user
       ? `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim()
       : null;
+
+    // Resolve human-readable names for the creation snapshot (shared across all items in batch)
+    const initialLocationLabel = parsed.data.warehouseLocationId
+      ? (await prisma.warehouseLocation.findUnique({
+          where: { id: parsed.data.warehouseLocationId },
+          select: { label: true },
+        }))?.label ?? null
+      : null;
+
+    let initialPerformerName: string | null = null;
+    if (parsed.data.mainPerformerId) {
+      const p = await prisma.performer.findUnique({
+        where: { id: parsed.data.mainPerformerId },
+        select: { contact: { select: { firstName: true, lastName: true } } },
+      });
+      if (p) initialPerformerName = getFullName(p.contact) || null;
+    }
 
     const created = await prisma.$transaction(async (tx) => {
       const lastItem = await tx.item.findFirst({
@@ -333,6 +371,10 @@ export async function createItems(
             changes: {
               status: { from: null, to: item.status },
               condition: { from: null, to: item.condition },
+              ...(initialLocationLabel ? { location: { from: null, to: initialLocationLabel } } : {}),
+              ...(initialPerformerName ? { performer: { from: null, to: initialPerformerName } } : {}),
+              ...(parsed.data.color ? { color: { from: null, to: parsed.data.color } } : {}),
+              ...(parsed.data.notes ? { notes: { from: null, to: parsed.data.notes } } : {}),
             },
             details: { productId: item.productId },
           },

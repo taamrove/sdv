@@ -16,7 +16,6 @@ import {
   Select,
   SelectContent,
   SelectItem,
-  SelectSeparator,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -35,12 +34,13 @@ import {
 import { updateItem } from "@/actions/items";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { MapPin, Clock, Pencil, X, CalendarDays, FolderOpen, QrCode, Archive, Plus } from "lucide-react";
+import { Clock, Pencil, X, CalendarDays, FolderOpen, QrCode, Archive } from "lucide-react";
 import { QRCodeDisplay } from "@/components/shared/qr-code-display";
 import Image from "next/image";
 import Link from "next/link";
 import { getFullName } from "@/lib/format-name";
 import { LocationFormDialog } from "@/components/warehouse/location-form-dialog";
+import { LocationCascadingSelect, type FullLocation } from "@/components/warehouse/location-cascading-select";
 import { CompactActivityLog, type ActivityEntry } from "@/components/dashboard/activity-log";
 
 interface Performer {
@@ -64,14 +64,11 @@ interface Item {
   createdAt: Date;
   product: { id: string; name: string; number: number };
   category: { id: string; code: string; name: string };
-  warehouseLocation: { id: string; label: string } | null;
+  warehouseLocation: FullLocation | null;
   mainPerformer: Performer | null;
 }
 
-interface Location {
-  id: string;
-  label: string;
-}
+type Location = FullLocation;
 
 interface Booking {
   bookingItemId: string;
@@ -112,8 +109,8 @@ export function ItemDetail({
   // Status & location fields (always shown in sidebar)
   const [status, setStatus] = useState(item.status);
   const [condition, setCondition] = useState(item.condition);
-  const [locationId, setLocationId] = useState(
-    item.warehouseLocation?.id ?? "none"
+  const [locationId, setLocationId] = useState<string | undefined>(
+    item.warehouseLocation?.id ?? undefined
   );
   const [mainPerformerId, setMainPerformerId] = useState(
     item.mainPerformer?.id ?? "none"
@@ -149,8 +146,8 @@ export function ItemDetail({
 
       if (status !== item.status) data.status = status;
       if (condition !== item.condition) data.condition = condition;
-      if (locationId !== (item.warehouseLocation?.id ?? "none")) {
-        data.warehouseLocationId = locationId === "none" ? null : locationId;
+      if (locationId !== (item.warehouseLocation?.id ?? undefined)) {
+        data.warehouseLocationId = locationId ?? null;
       }
       const newMainPerformerId = mainPerformerId === "none" ? null : mainPerformerId;
       if (newMainPerformerId !== (item.mainPerformer?.id ?? null)) {
@@ -268,20 +265,21 @@ export function ItemDetail({
     }
     if (sizeMode === "measurements") {
       return (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="space-y-3">
           {[
-            { key: "chest", label: "Chest", placeholder: "e.g., 90cm" },
-            { key: "waist", label: "Waist", placeholder: "e.g., 75cm" },
-            { key: "hip", label: "Hip", placeholder: "e.g., 95cm" },
+            { key: "chest", label: "Chest", placeholder: "cm" },
+            { key: "waist", label: "Waist", placeholder: "cm" },
+            { key: "hip", label: "Hip", placeholder: "cm" },
+            { key: "length", label: "Length", placeholder: "cm" },
           ].map(({ key, label, placeholder }) => (
-            <div key={key} className="space-y-1">
-              <Label className="text-xs">{label}</Label>
+            <FormRow key={key} label={label} htmlFor={`size-${key}`}>
               <Input
+                id={`size-${key}`}
                 value={sizes[key] ?? ""}
                 onChange={(e) => updateSize(key, e.target.value)}
                 placeholder={placeholder}
               />
-            </div>
+            </FormRow>
           ))}
         </div>
       );
@@ -507,33 +505,12 @@ export function ItemDetail({
             </FormRow>
 
             <FormRow label="Location">
-              <Select
+              <LocationCascadingSelect
+                locations={localLocations}
                 value={locationId}
-                onValueChange={(val) => {
-                  if (val === "__new_location__") {
-                    setLocationDialogOpen(true);
-                    return;
-                  }
-                  setLocationId(val);
-                }}
-              >
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">No location</SelectItem>
-                  {localLocations.map((loc) => (
-                    <SelectItem key={loc.id} value={loc.id}>
-                      <span className="flex items-center gap-1">
-                        <MapPin className="h-3 w-3" />
-                        {loc.label}
-                      </span>
-                    </SelectItem>
-                  ))}
-                  <SelectSeparator />
-                  <SelectItem value="__new_location__">
-                    <Plus className="mr-1 h-3 w-3 inline-block" /> New location
-                  </SelectItem>
-                </SelectContent>
-              </Select>
+                onValueChange={setLocationId}
+                onNewLocation={() => setLocationDialogOpen(true)}
+              />
             </FormRow>
 
             <FormRow label="Performer">

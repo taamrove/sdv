@@ -18,6 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { cn } from "@/lib/utils";
 import { useState } from "react";
 
 interface DataTableProps<TData, TValue> {
@@ -26,6 +27,8 @@ interface DataTableProps<TData, TValue> {
   searchKey?: string;
   /** Called when a row is clicked. Makes the row visually clickable. */
   onRowClick?: (row: TData) => void;
+  /** Optional per-row className — use for dimming inactive rows etc. */
+  rowClassName?: (row: TData) => string | undefined;
 }
 
 export function DataTable<TData, TValue>({
@@ -33,6 +36,7 @@ export function DataTable<TData, TValue>({
   data,
   searchKey,
   onRowClick,
+  rowClassName,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -73,7 +77,10 @@ export function DataTable<TData, TValue>({
               <TableRow
                 key={row.id}
                 onClick={onRowClick ? () => onRowClick(row.original) : undefined}
-                className={onRowClick ? "cursor-pointer" : undefined}
+                className={cn(
+                  onRowClick ? "cursor-pointer" : undefined,
+                  rowClassName?.(row.original)
+                )}
               >
                 {row.getVisibleCells().map((cell) => (
                   <TableCell key={cell.id}>

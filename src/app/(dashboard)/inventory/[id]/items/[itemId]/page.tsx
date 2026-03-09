@@ -108,7 +108,15 @@ export default async function ItemDetailPage({
     product: { id: item.product.id, name: item.product.name, number: item.product.number },
     category: { id: item.category.id, code: item.category.code, name: item.category.name },
     warehouseLocation: item.warehouseLocation
-      ? { id: item.warehouseLocation.id, label: item.warehouseLocation.label }
+      ? {
+          id: item.warehouseLocation.id,
+          room: item.warehouseLocation.room,
+          zone: item.warehouseLocation.zone,
+          rack: item.warehouseLocation.rack,
+          shelf: item.warehouseLocation.shelf,
+          bin: item.warehouseLocation.bin,
+          label: item.warehouseLocation.label,
+        }
       : null,
     mainPerformer: item.mainPerformer
       ? {

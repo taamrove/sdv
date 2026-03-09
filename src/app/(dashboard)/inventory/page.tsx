@@ -45,13 +45,51 @@ export default async function InventoryPage({
         subCategory: true,
         _count: { select: { items: true } },
       },
-      orderBy: [{ category: { code: "asc" } }, { number: "asc" }],
+      // Active products first, then sorted by category + number within each group
+      orderBy: [{ active: "desc" }, { category: { code: "asc" } }, { number: "asc" }],
       skip,
       take: limit,
     }),
     prisma.product.count({ where }),
     prisma.category.findMany({ orderBy: { code: "asc" } }),
   ]);
+
+  // Fetch the most recent activity log entry per product (via their items)
+  const productIds = products.map((p) => p.id);
+  const itemsForProducts = productIds.length
+    ? await prisma.item.findMany({
+        where: { productId: { in: productIds } },
+        select: { id: true, productId: true },
+      })
+    : [];
+
+  const itemToProduct: Record<string, string> = {};
+  for (const i of itemsForProducts) itemToProduct[i.id] = i.productId;
+  const allItemIds = itemsForProducts.map((i) => i.id);
+
+  const recentLogRows = allItemIds.length
+    ? await prisma.activityLog.findMany({
+        where: { entityType: "Item", entityId: { in: allItemIds } },
+        orderBy: { createdAt: "desc" },
+        distinct: ["entityId"],
+        select: { entityId: true, action: true, createdAt: true, userName: true },
+      })
+    : [];
+
+  // productId → most recent log (pick freshest across all items of that product)
+  const recentActivity: Record<string, { action: string; createdAt: string; userName: string | null }> = {};
+  for (const log of recentLogRows) {
+    const productId = itemToProduct[log.entityId];
+    if (!productId) continue;
+    const existing = recentActivity[productId];
+    if (!existing || log.createdAt > new Date(existing.createdAt)) {
+      recentActivity[productId] = {
+        action: log.action,
+        createdAt: log.createdAt.toISOString(),
+        userName: log.userName,
+      };
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -71,6 +109,7 @@ export default async function InventoryPage({
         products={products}
         categories={categories}
         pagination={{ page, limit, total, totalPages: Math.ceil(total / limit) }}
+        recentActivity={recentActivity}
       />
     </div>
   );

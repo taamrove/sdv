@@ -18,6 +18,7 @@ import { useRouter } from "next/navigation";
 
 interface Location {
   id: string;
+  room: string | null;
   zone: string;
   rack: string | null;
   shelf: string | null;
@@ -79,8 +80,13 @@ export function WarehouseLocationList({ locations }: LocationListProps) {
           {locations.map((loc) => (
             <Card key={loc.id}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-base">
-                  <Badge variant="outline" className="font-mono text-sm">
+                <CardTitle className="text-base flex flex-col gap-1">
+                  {loc.room && (
+                    <span className="text-xs text-muted-foreground font-normal">
+                      {loc.room}
+                    </span>
+                  )}
+                  <Badge variant="outline" className="font-mono text-sm w-fit">
                     {loc.label}
                   </Badge>
                 </CardTitle>

@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 export const createWarehouseLocationSchema = z.object({
+  room: z.string().max(50).optional(),
   zone: z.string().min(1, "Zone is required").max(20),
   rack: z.string().max(20).optional(),
   shelf: z.string().max(20).optional(),
@@ -13,6 +14,7 @@ export type CreateWarehouseLocationInput = z.infer<
 >;
 
 export const updateWarehouseLocationSchema = z.object({
+  room: z.string().max(50).optional().nullable(),
   zone: z.string().min(1, "Zone is required").max(20).optional(),
   rack: z.string().max(20).optional().nullable(),
   shelf: z.string().max(20).optional().nullable(),
@@ -25,14 +27,13 @@ export type UpdateWarehouseLocationInput = z.infer<
 >;
 
 export function buildLocationLabel(data: {
+  room?: string | null;
   zone: string;
   rack?: string | null;
   shelf?: string | null;
   bin?: string | null;
 }): string {
-  const parts = [data.zone];
-  if (data.rack) parts.push(data.rack);
-  if (data.shelf) parts.push(data.shelf);
-  if (data.bin) parts.push(data.bin);
-  return parts.join("-");
+  return [data.room, data.zone, data.rack, data.shelf, data.bin]
+    .filter(Boolean)
+    .join("-");
 }

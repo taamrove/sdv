@@ -9,7 +9,6 @@ import {
   Select,
   SelectContent,
   SelectItem,
-  SelectSeparator,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -29,6 +28,7 @@ import {
 } from "@/lib/validators/item";
 import { createItem, createItems } from "@/actions/items";
 import { LocationFormDialog } from "@/components/warehouse/location-form-dialog";
+import { LocationCascadingSelect, type FullLocation } from "@/components/warehouse/location-cascading-select";
 import { PerformerQuickCreateDialog } from "@/components/performers/performer-quick-create-dialog";
 import { ImageUpload } from "@/components/shared/image-upload";
 import {
@@ -41,7 +41,7 @@ import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertTriangle, Plus } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 
 interface Product {
   id: string;
@@ -50,10 +50,7 @@ interface Product {
   category: { id: string; code: string; name: string };
 }
 
-interface Location {
-  id: string;
-  label: string;
-}
+type Location = FullLocation;
 
 interface Performer {
   id: string;
@@ -209,14 +206,14 @@ export function ItemForm({
 
     if (sizeMode === "measurements") {
       return (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="space-y-3">
           {[
-            { key: "chest", label: "Chest", placeholder: "e.g., 90cm" },
-            { key: "waist", label: "Waist", placeholder: "e.g., 75cm" },
-            { key: "hip", label: "Hip", placeholder: "e.g., 95cm" },
+            { key: "chest", label: "Chest", placeholder: "cm" },
+            { key: "waist", label: "Waist", placeholder: "cm" },
+            { key: "hip", label: "Hip", placeholder: "cm" },
+            { key: "length", label: "Length", placeholder: "cm" },
           ].map(({ key, label, placeholder }) => (
-            <div key={key} className="space-y-1">
-              <Label htmlFor={key} className="text-xs">{label}</Label>
+            <FormRow key={key} label={label} htmlFor={key}>
               <Input
                 id={key}
                 placeholder={placeholder}
@@ -225,7 +222,7 @@ export function ItemForm({
                   form.setValue("sizes", { ...sizes, [key]: e.target.value });
                 }}
               />
-            </div>
+            </FormRow>
           ))}
         </div>
       );
@@ -405,35 +402,12 @@ export function ItemForm({
             <FormRow
               label={`Location${form.watch("isExternal") ? " (optional)" : ""}`}
             >
-              <Select
-                value={form.watch("warehouseLocationId") ?? "none"}
-                onValueChange={(val) => {
-                  if (val === "__new_location__") {
-                    setLocationDialogOpen(true);
-                    return;
-                  }
-                  form.setValue(
-                    "warehouseLocationId",
-                    val === "none" ? undefined : val
-                  );
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="No location" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">No location</SelectItem>
-                  {locations.map((loc) => (
-                    <SelectItem key={loc.id} value={loc.id}>
-                      {loc.label}
-                    </SelectItem>
-                  ))}
-                  <SelectSeparator />
-                  <SelectItem value="__new_location__">
-                    <Plus className="mr-1 h-3 w-3 inline-block" /> New location
-                  </SelectItem>
-                </SelectContent>
-              </Select>
+              <LocationCascadingSelect
+                locations={locations}
+                value={form.watch("warehouseLocationId") ?? undefined}
+                onValueChange={(id) => form.setValue("warehouseLocationId", id)}
+                onNewLocation={() => setLocationDialogOpen(true)}
+              />
             </FormRow>
 
             {!form.watch("isExternal") && !form.watch("warehouseLocationId") && (

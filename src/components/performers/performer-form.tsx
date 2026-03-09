@@ -14,7 +14,13 @@ import {
   createPerformerSchema, type CreatePerformerInput,
 } from "@/lib/validators/performer";
 import { createPerformer, updatePerformer } from "@/actions/performers";
-import { PERFORMER_TYPE_LABELS, SIZE_FLEX_DIRECTION_LABELS } from "@/lib/constants";
+import {
+  PERFORMER_TYPE_LABELS,
+  SIZE_FLEX_DIRECTION_LABELS,
+  CLOTHING_SIZES,
+  SHOE_SIZES_EU,
+  HAT_SIZES_CM,
+} from "@/lib/constants";
 import { FormRow, FormSection } from "@/components/shared/form-row";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
@@ -49,13 +55,12 @@ interface PerformerFormProps {
   };
 }
 
-const SIZE_FIELDS = [
-  { key: "size",   label: "General",  placeholder: "M, L, XL" },
-  { key: "chest",  label: "Chest",    placeholder: "90 cm" },
-  { key: "waist",  label: "Waist",    placeholder: "75 cm" },
-  { key: "hip",    label: "Hip",      placeholder: "95 cm" },
-  { key: "shoe",   label: "Shoe",     placeholder: "42 EU" },
-  { key: "hat",    label: "Hat",      placeholder: "58 cm" },
+// Measurement fields that stay as free-text inputs (body measurements in cm)
+const MEASUREMENT_FIELDS = [
+  { key: "chest",  label: "Chest",  placeholder: "cm" },
+  { key: "waist",  label: "Waist",  placeholder: "cm" },
+  { key: "hip",    label: "Hip",    placeholder: "cm" },
+  { key: "height", label: "Height", placeholder: "cm" },
 ];
 
 export function PerformerForm({ performer }: PerformerFormProps) {
@@ -140,23 +145,70 @@ export function PerformerForm({ performer }: PerformerFormProps) {
 
             <FormSection title="Sizes (optional)" />
 
-            <FormRow label="Measurements">
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {SIZE_FIELDS.map(({ key, label, placeholder }) => (
-                  <div key={key}>
-                    <p className="text-xs text-muted-foreground mb-1">{label}</p>
-                    <Input
-                      placeholder={placeholder}
-                      defaultValue={existingSizes[key] ?? ""}
-                      onChange={(e) => {
-                        const s = form.getValues("sizes") ?? {};
-                        form.setValue("sizes", { ...s, [key]: e.target.value });
-                      }}
-                    />
-                  </div>
-                ))}
-              </div>
+            <FormRow label="Clothing Size">
+              <Select
+                value={form.watch("sizes")?.size ?? ""}
+                onValueChange={(val) => {
+                  const s = form.getValues("sizes") ?? {};
+                  form.setValue("sizes", { ...s, size: val });
+                }}
+              >
+                <SelectTrigger><SelectValue placeholder="Select size" /></SelectTrigger>
+                <SelectContent>
+                  {CLOTHING_SIZES.map((s) => (
+                    <SelectItem key={s} value={s}>{s}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </FormRow>
+
+            <FormRow label="Shoe Size (EU)">
+              <Select
+                value={form.watch("sizes")?.shoe ?? ""}
+                onValueChange={(val) => {
+                  const s = form.getValues("sizes") ?? {};
+                  form.setValue("sizes", { ...s, shoe: val });
+                }}
+              >
+                <SelectTrigger><SelectValue placeholder="Select EU size" /></SelectTrigger>
+                <SelectContent>
+                  {SHOE_SIZES_EU.map((s) => (
+                    <SelectItem key={s} value={s}>{s}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </FormRow>
+
+            <FormRow label="Hat Size (cm)">
+              <Select
+                value={form.watch("sizes")?.hat ?? ""}
+                onValueChange={(val) => {
+                  const s = form.getValues("sizes") ?? {};
+                  form.setValue("sizes", { ...s, hat: val });
+                }}
+              >
+                <SelectTrigger><SelectValue placeholder="Select hat size" /></SelectTrigger>
+                <SelectContent>
+                  {HAT_SIZES_CM.map((s) => (
+                    <SelectItem key={s} value={s}>{s}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </FormRow>
+
+            {MEASUREMENT_FIELDS.map(({ key, label, placeholder }) => (
+              <FormRow key={key} label={label} htmlFor={`size-${key}`}>
+                <Input
+                  id={`size-${key}`}
+                  placeholder={placeholder}
+                  defaultValue={existingSizes[key] ?? ""}
+                  onChange={(e) => {
+                    const s = form.getValues("sizes") ?? {};
+                    form.setValue("sizes", { ...s, [key]: e.target.value });
+                  }}
+                />
+              </FormRow>
+            ))}
 
             <FormRow label="Exact Size" align="center">
               <Switch

@@ -26,6 +26,7 @@ import { useEffect } from "react";
 
 interface Location {
   id: string;
+  room: string | null;
   zone: string;
   rack: string | null;
   shelf: string | null;
@@ -38,7 +39,15 @@ interface LocationFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   location?: Location | null;
-  onSuccess?: (location: { id: string; label: string }) => void;
+  onSuccess?: (location: {
+    id: string;
+    room: string | null;
+    zone: string;
+    rack: string | null;
+    shelf: string | null;
+    bin: string | null;
+    label: string;
+  }) => void;
 }
 
 export function LocationFormDialog({
@@ -53,6 +62,7 @@ export function LocationFormDialog({
   const form = useForm<CreateWarehouseLocationInput>({
     resolver: zodResolver(createWarehouseLocationSchema),
     defaultValues: {
+      room: "",
       zone: "",
       rack: "",
       shelf: "",
@@ -64,6 +74,7 @@ export function LocationFormDialog({
   useEffect(() => {
     if (open && location) {
       form.reset({
+        room: location.room ?? "",
         zone: location.zone,
         rack: location.rack ?? "",
         shelf: location.shelf ?? "",
@@ -71,7 +82,7 @@ export function LocationFormDialog({
         description: location.description ?? "",
       });
     } else if (open && !location) {
-      form.reset({ zone: "", rack: "", shelf: "", bin: "", description: "" });
+      form.reset({ room: "", zone: "", rack: "", shelf: "", bin: "", description: "" });
     }
   }, [open, location, form]);
 
@@ -92,8 +103,16 @@ export function LocationFormDialog({
         }
         toast.success("Location created");
         if (onSuccess && "data" in result && result.data) {
-          const created = result.data as { id: string; label: string };
-          onSuccess({ id: created.id, label: created.label });
+          const created = result.data as {
+            id: string;
+            room: string | null;
+            zone: string;
+            rack: string | null;
+            shelf: string | null;
+            bin: string | null;
+            label: string;
+          };
+          onSuccess(created);
         }
       }
       onOpenChange(false);
@@ -113,6 +132,14 @@ export function LocationFormDialog({
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <div className="space-y-1">
+            <Label htmlFor="room">Room</Label>
+            <Input
+              id="room"
+              placeholder="e.g., Costume Room"
+              {...form.register("room")}
+            />
+          </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
               <Label htmlFor="zone">Zone *</Label>
