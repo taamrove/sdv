@@ -320,7 +320,11 @@ export function LocationCascadingSelect({
 
   // ── Show Zone level when: there are zones, or a parent level is selected, or adding ──
   const showRoomLevel = rooms.length > 0 || selWarehouse !== UNSET || addingAt === "room";
-  const showZoneLevel = zones.length > 0 || selRoom !== UNSET || selWarehouse !== UNSET || addingAt === "zone";
+  // Zone appears once there's something to filter on (zones exist, room selected, or adding).
+  // When a warehouse is selected but has no locations yet, Zone is hidden until the user
+  // adds a room (which also collects the zone). Zone-only locations in a warehouse appear
+  // automatically once zones exist in the filtered set.
+  const showZoneLevel = zones.length > 0 || selRoom !== UNSET || addingAt === "zone";
 
   return (
     <div className="space-y-2">
@@ -549,17 +553,32 @@ export function LocationCascadingSelect({
           />
           {/* Only ask for zone when none is already selected in the cascade */}
           {selZone === UNSET && (
-            <Input
-              placeholder="Zone (required)…"
-              value={addVal2}
-              onChange={(e) => setAddVal2(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") { e.preventDefault(); handleAdd("room"); }
-                if (e.key === "Escape") cancelAdding();
-              }}
-              className="h-8 text-sm"
-              disabled={addCreating}
-            />
+            zones.length > 0 ? (
+              /* Existing zones available — let the user pick or add new */
+              <Select value={addVal2} onValueChange={setAddVal2}>
+                <SelectTrigger className="h-8 text-sm">
+                  <SelectValue placeholder="Select zone (required)…" />
+                </SelectTrigger>
+                <SelectContent>
+                  {zones.map((z) => (
+                    <SelectItem key={z} value={z}>{z}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              /* No zones yet — free-text input */
+              <Input
+                placeholder="Zone (required)…"
+                value={addVal2}
+                onChange={(e) => setAddVal2(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") { e.preventDefault(); handleAdd("room"); }
+                  if (e.key === "Escape") cancelAdding();
+                }}
+                className="h-8 text-sm"
+                disabled={addCreating}
+              />
+            )
           )}
           <div className="flex gap-1">
             <Button

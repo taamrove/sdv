@@ -140,8 +140,9 @@ export async function createWarehouseLocation(
 
     const label = buildLocationLabel(parsed.data);
 
+    // Uniqueness is scoped to the same warehouse (or the same "no warehouse" context)
     const existing = await prisma.warehouseLocation.findFirst({
-      where: { label },
+      where: { label, warehouseId: parsed.data.warehouseId ?? null },
     });
 
     if (existing) {
@@ -205,10 +206,10 @@ export async function updateWarehouseLocation(
 
     const newLabel = buildLocationLabel(merged);
 
-    // Check for label uniqueness if it changed
+    // Check for label uniqueness (scoped to same warehouse) if it changed
     if (newLabel !== existing.label) {
       const duplicate = await prisma.warehouseLocation.findFirst({
-        where: { label: newLabel, id: { not: id } },
+        where: { label: newLabel, id: { not: id }, warehouseId: existing.warehouseId },
       });
       if (duplicate) {
         return {
