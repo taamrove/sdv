@@ -297,249 +297,248 @@ export function LocationCascadingSelect({
   return (
     <div className="space-y-2">
 
-      {/* Warehouse */}
-      {showWarehouseLevel && (
-        <div>
-          <p className="text-xs text-muted-foreground mb-1">Warehouse</p>
-          <Select
-            value={addingAt === "warehouse" ? UNSET : selWarehouse}
-            onValueChange={(val) => {
-              if (val === ADD) { setAddingAt("warehouse"); setAddVal(""); return; }
-              setSelWarehouse(val);
-              clearFrom("warehouse");
+      {/* ── Cascade selects — one compact inline row ─────────────────────── */}
+      <div className="flex flex-wrap items-end gap-2">
+
+        {/* Warehouse */}
+        {showWarehouseLevel && (
+          <div className="flex flex-col gap-0.5">
+            <span className="text-xs text-muted-foreground">Warehouse</span>
+            <Select
+              value={addingAt === "warehouse" ? UNSET : selWarehouse}
+              onValueChange={(val) => {
+                if (val === ADD) { setAddingAt("warehouse"); setAddVal(""); return; }
+                setSelWarehouse(val);
+                clearFrom("warehouse");
+              }}
+              disabled={disabled}
+            >
+              <SelectTrigger className="h-8 text-sm w-32">
+                <SelectValue placeholder="—" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={UNSET}>— Any —</SelectItem>
+                {localWarehouses.map((w) => (
+                  <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>
+                ))}
+                <SelectItem value={ADD}>
+                  <span className="flex items-center gap-1 text-muted-foreground">
+                    <Plus className="h-3 w-3" /> Add warehouse…
+                  </span>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
+        {/* Room */}
+        {(rooms.length > 0 || addingAt === "room") && (
+          <div className="flex flex-col gap-0.5">
+            <span className="text-xs text-muted-foreground">Room</span>
+            <Select
+              value={addingAt === "room" ? UNSET : selRoom}
+              onValueChange={(val) => {
+                if (val === ADD) { setAddingAt("room"); setAddVal(""); setAddVal2(""); return; }
+                setSelRoom(val);
+                clearFrom("room");
+              }}
+              disabled={disabled}
+            >
+              <SelectTrigger className="h-8 text-sm w-28">
+                <SelectValue placeholder="—" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={UNSET}>— Any —</SelectItem>
+                {rooms.map((r) => (
+                  <SelectItem key={r} value={r}>{r}</SelectItem>
+                ))}
+                <SelectItem value={ADD}>
+                  <span className="flex items-center gap-1 text-muted-foreground">
+                    <Plus className="h-3 w-3" /> Add room…
+                  </span>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
+        {/* Zone */}
+        {showZoneLevel && (
+          <div className="flex flex-col gap-0.5">
+            <span className="text-xs text-muted-foreground">Zone</span>
+            <Select
+              value={addingAt === "zone" ? UNSET : selZone}
+              onValueChange={(val) => {
+                if (val === ADD) { setAddingAt("zone"); setAddVal(""); return; }
+                setSelZone(val);
+                clearFrom("zone");
+              }}
+              disabled={disabled}
+            >
+              <SelectTrigger className="h-8 text-sm w-28">
+                <SelectValue placeholder="—" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={UNSET}>— Any —</SelectItem>
+                {zones.map((z) => (
+                  <SelectItem key={z} value={z}>{z}</SelectItem>
+                ))}
+                <SelectItem value={ADD}>
+                  <span className="flex items-center gap-1 text-muted-foreground">
+                    <Plus className="h-3 w-3" /> Add zone…
+                  </span>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
+        {/* Rack */}
+        {(racks.length > 0 || addingAt === "rack") && (
+          <div className="flex flex-col gap-0.5">
+            <span className="text-xs text-muted-foreground">Rack</span>
+            <Select
+              value={addingAt === "rack" ? UNSET : selRack}
+              onValueChange={(val) => {
+                if (val === ADD) { setAddingAt("rack"); setAddVal(""); return; }
+                setSelRack(val);
+                clearFrom("rack");
+              }}
+              disabled={disabled}
+            >
+              <SelectTrigger className="h-8 text-sm w-[72px]">
+                <SelectValue placeholder="—" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={UNSET}>— Any —</SelectItem>
+                {racks.map((r) => (
+                  <SelectItem key={r} value={r}>{r}</SelectItem>
+                ))}
+                <SelectItem value={ADD}>
+                  <span className="flex items-center gap-1 text-muted-foreground">
+                    <Plus className="h-3 w-3" /> Add…
+                  </span>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
+        {/* Shelf */}
+        {(shelves.length > 0 || addingAt === "shelf") && (
+          <div className="flex flex-col gap-0.5">
+            <span className="text-xs text-muted-foreground">Shelf</span>
+            <Select
+              value={addingAt === "shelf" ? UNSET : selShelf}
+              onValueChange={(val) => {
+                if (val === ADD) { setAddingAt("shelf"); setAddVal(""); return; }
+                setSelShelf(val);
+                clearFrom("shelf");
+              }}
+              disabled={disabled}
+            >
+              <SelectTrigger className="h-8 text-sm w-[72px]">
+                <SelectValue placeholder="—" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={UNSET}>— Any —</SelectItem>
+                {shelves.map((s) => (
+                  <SelectItem key={s} value={s}>{s}</SelectItem>
+                ))}
+                <SelectItem value={ADD}>
+                  <span className="flex items-center gap-1 text-muted-foreground">
+                    <Plus className="h-3 w-3" /> Add…
+                  </span>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
+        {/* Bin */}
+        {(bins.length > 0 || addingAt === "bin") && (
+          <div className="flex flex-col gap-0.5">
+            <span className="text-xs text-muted-foreground">Bin</span>
+            <Select
+              value={addingAt === "bin" ? UNSET : selBin}
+              onValueChange={(val) => {
+                if (val === ADD) { setAddingAt("bin"); setAddVal(""); return; }
+                setSelBin(val);
+              }}
+              disabled={disabled}
+            >
+              <SelectTrigger className="h-8 text-sm w-[72px]">
+                <SelectValue placeholder="—" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={UNSET}>— Any —</SelectItem>
+                {bins.map((b) => (
+                  <SelectItem key={b} value={b}>{b}</SelectItem>
+                ))}
+                <SelectItem value={ADD}>
+                  <span className="flex items-center gap-1 text-muted-foreground">
+                    <Plus className="h-3 w-3" /> Add…
+                  </span>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
+      </div>
+
+      {/* ── Inline add forms — rendered below the row when active ─────────── */}
+      {addingAt === "warehouse" && (
+        <InlineAddForm level="warehouse" placeholder="Warehouse name…" />
+      )}
+      {addingAt === "room" && (
+        <div className="space-y-1">
+          <Input
+            autoFocus
+            placeholder="Room name…"
+            value={addVal}
+            onChange={(e) => setAddVal(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Escape") cancelAdding(); }}
+            className="h-8 text-sm"
+            disabled={addCreating}
+          />
+          <Input
+            placeholder="Zone (required)…"
+            value={addVal2}
+            onChange={(e) => setAddVal2(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") { e.preventDefault(); handleAdd("room"); }
+              if (e.key === "Escape") cancelAdding();
             }}
-            disabled={disabled}
-          >
-            <SelectTrigger className="h-8 text-sm">
-              <SelectValue placeholder="— Any warehouse —" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={UNSET}>— Any warehouse —</SelectItem>
-              {localWarehouses.map((w) => (
-                <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>
-              ))}
-              <SelectItem value={ADD}>
-                <span className="flex items-center gap-1 text-muted-foreground">
-                  <Plus className="h-3 w-3" /> Add warehouse…
-                </span>
-              </SelectItem>
-            </SelectContent>
-          </Select>
-          {addingAt === "warehouse" && (
-            <InlineAddForm level="warehouse" placeholder="Warehouse name…" />
-          )}
+            className="h-8 text-sm"
+            disabled={addCreating}
+          />
+          <div className="flex gap-1">
+            <Button
+              type="button" size="sm"
+              className="h-7 text-xs px-2"
+              onClick={() => handleAdd("room")}
+              disabled={addCreating || !addVal.trim() || !addVal2.trim()}
+            >
+              {addCreating ? <Loader2 className="h-3 w-3 animate-spin" /> : "Add"}
+            </Button>
+            <Button
+              type="button" size="sm" variant="ghost"
+              className="h-7 text-xs px-2"
+              onClick={cancelAdding}
+              disabled={addCreating}
+            >
+              Cancel
+            </Button>
+          </div>
         </div>
       )}
+      {addingAt === "zone"  && <InlineAddForm level="zone"  placeholder="Zone name…" />}
+      {addingAt === "rack"  && <InlineAddForm level="rack"  placeholder="Rack…" />}
+      {addingAt === "shelf" && <InlineAddForm level="shelf" placeholder="Shelf…" />}
+      {addingAt === "bin"   && <InlineAddForm level="bin"   placeholder="Bin…" />}
 
-      {/* Room — shown when any locations have rooms */}
-      {(rooms.length > 0 || addingAt === "room") && (
-        <div>
-          <p className="text-xs text-muted-foreground mb-1">Room</p>
-          <Select
-            value={addingAt === "room" ? UNSET : selRoom}
-            onValueChange={(val) => {
-              if (val === ADD) { setAddingAt("room"); setAddVal(""); setAddVal2(""); return; }
-              setSelRoom(val);
-              clearFrom("room");
-            }}
-            disabled={disabled}
-          >
-            <SelectTrigger className="h-8 text-sm">
-              <SelectValue placeholder="— Any room —" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={UNSET}>— Any room —</SelectItem>
-              {rooms.map((r) => (
-                <SelectItem key={r} value={r}>{r}</SelectItem>
-              ))}
-              <SelectItem value={ADD}>
-                <span className="flex items-center gap-1 text-muted-foreground">
-                  <Plus className="h-3 w-3" /> Add room…
-                </span>
-              </SelectItem>
-            </SelectContent>
-          </Select>
-          {addingAt === "room" && (
-            <div className="space-y-1 mt-1">
-              <Input
-                autoFocus
-                placeholder="Room name…"
-                value={addVal}
-                onChange={(e) => setAddVal(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Escape") cancelAdding(); }}
-                className="h-8 text-sm"
-                disabled={addCreating}
-              />
-              <Input
-                placeholder="Zone (required)…"
-                value={addVal2}
-                onChange={(e) => setAddVal2(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") { e.preventDefault(); handleAdd("room"); }
-                  if (e.key === "Escape") cancelAdding();
-                }}
-                className="h-8 text-sm"
-                disabled={addCreating}
-              />
-              <div className="flex gap-1">
-                <Button
-                  type="button" size="sm"
-                  className="h-7 text-xs px-2"
-                  onClick={() => handleAdd("room")}
-                  disabled={addCreating || !addVal.trim() || !addVal2.trim()}
-                >
-                  {addCreating ? <Loader2 className="h-3 w-3 animate-spin" /> : "Add"}
-                </Button>
-                <Button
-                  type="button" size="sm" variant="ghost"
-                  className="h-7 text-xs px-2"
-                  onClick={cancelAdding}
-                  disabled={addCreating}
-                >
-                  Cancel
-                </Button>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Zone */}
-      {showZoneLevel && (
-        <div>
-          <p className="text-xs text-muted-foreground mb-1">Zone</p>
-          <Select
-            value={addingAt === "zone" ? UNSET : selZone}
-            onValueChange={(val) => {
-              if (val === ADD) { setAddingAt("zone"); setAddVal(""); return; }
-              setSelZone(val);
-              clearFrom("zone");
-            }}
-            disabled={disabled}
-          >
-            <SelectTrigger className="h-8 text-sm">
-              <SelectValue placeholder="— Any zone —" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={UNSET}>— Any zone —</SelectItem>
-              {zones.map((z) => (
-                <SelectItem key={z} value={z}>{z}</SelectItem>
-              ))}
-              <SelectItem value={ADD}>
-                <span className="flex items-center gap-1 text-muted-foreground">
-                  <Plus className="h-3 w-3" /> Add zone…
-                </span>
-              </SelectItem>
-            </SelectContent>
-          </Select>
-          {addingAt === "zone" && (
-            <InlineAddForm level="zone" placeholder="Zone name…" />
-          )}
-        </div>
-      )}
-
-      {/* Rack */}
-      {(racks.length > 0 || addingAt === "rack") && (
-        <div>
-          <p className="text-xs text-muted-foreground mb-1">Rack</p>
-          <Select
-            value={addingAt === "rack" ? UNSET : selRack}
-            onValueChange={(val) => {
-              if (val === ADD) { setAddingAt("rack"); setAddVal(""); return; }
-              setSelRack(val);
-              clearFrom("rack");
-            }}
-            disabled={disabled}
-          >
-            <SelectTrigger className="h-8 text-sm">
-              <SelectValue placeholder="— Any rack —" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={UNSET}>— Any rack —</SelectItem>
-              {racks.map((r) => (
-                <SelectItem key={r} value={r}>{r}</SelectItem>
-              ))}
-              <SelectItem value={ADD}>
-                <span className="flex items-center gap-1 text-muted-foreground">
-                  <Plus className="h-3 w-3" /> Add rack…
-                </span>
-              </SelectItem>
-            </SelectContent>
-          </Select>
-          {addingAt === "rack" && (
-            <InlineAddForm level="rack" placeholder="Rack name…" />
-          )}
-        </div>
-      )}
-
-      {/* Shelf */}
-      {(shelves.length > 0 || addingAt === "shelf") && (
-        <div>
-          <p className="text-xs text-muted-foreground mb-1">Shelf</p>
-          <Select
-            value={addingAt === "shelf" ? UNSET : selShelf}
-            onValueChange={(val) => {
-              if (val === ADD) { setAddingAt("shelf"); setAddVal(""); return; }
-              setSelShelf(val);
-              clearFrom("shelf");
-            }}
-            disabled={disabled}
-          >
-            <SelectTrigger className="h-8 text-sm">
-              <SelectValue placeholder="— Any shelf —" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={UNSET}>— Any shelf —</SelectItem>
-              {shelves.map((s) => (
-                <SelectItem key={s} value={s}>{s}</SelectItem>
-              ))}
-              <SelectItem value={ADD}>
-                <span className="flex items-center gap-1 text-muted-foreground">
-                  <Plus className="h-3 w-3" /> Add shelf…
-                </span>
-              </SelectItem>
-            </SelectContent>
-          </Select>
-          {addingAt === "shelf" && (
-            <InlineAddForm level="shelf" placeholder="Shelf name…" />
-          )}
-        </div>
-      )}
-
-      {/* Bin */}
-      {(bins.length > 0 || addingAt === "bin") && (
-        <div>
-          <p className="text-xs text-muted-foreground mb-1">Bin</p>
-          <Select
-            value={addingAt === "bin" ? UNSET : selBin}
-            onValueChange={(val) => {
-              if (val === ADD) { setAddingAt("bin"); setAddVal(""); return; }
-              setSelBin(val);
-            }}
-            disabled={disabled}
-          >
-            <SelectTrigger className="h-8 text-sm">
-              <SelectValue placeholder="— Any bin —" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={UNSET}>— Any bin —</SelectItem>
-              {bins.map((b) => (
-                <SelectItem key={b} value={b}>{b}</SelectItem>
-              ))}
-              <SelectItem value={ADD}>
-                <span className="flex items-center gap-1 text-muted-foreground">
-                  <Plus className="h-3 w-3" /> Add bin…
-                </span>
-              </SelectItem>
-            </SelectContent>
-          </Select>
-          {addingAt === "bin" && (
-            <InlineAddForm level="bin" placeholder="Bin name…" />
-          )}
-        </div>
-      )}
-
-      {/* "Add zone" shortcut — shown when no locations exist at all */}
+      {/* "Add first location" shortcut — only when no data exists at all */}
       {!showWarehouseLevel && zones.length === 0 && rooms.length === 0 && addingAt !== "zone" && addingAt !== "room" && (
         <Button
           type="button"
