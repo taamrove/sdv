@@ -581,34 +581,6 @@ export function ItemDetail({
       {/* ── Sidebar ─────────────────────────────────────────────────────── */}
       <div className="space-y-3 order-1 md:order-2">
 
-        {/* Read-only info strip */}
-        <Card>
-          <CardContent className="pt-4 space-y-2.5">
-            <div className="flex flex-wrap gap-1.5">
-              <StatusBadge status={item.status} label={ITEM_STATUS_LABELS[item.status]} />
-              <StatusBadge status={item.condition} label={ITEM_CONDITION_LABELS[item.condition]} />
-            </div>
-            {item.warehouseLocation ? (
-              <div className="space-y-0.5">
-                {item.warehouseLocation.warehouse && (
-                  <p className="text-xs text-muted-foreground">
-                    {item.warehouseLocation.warehouse.name}
-                  </p>
-                )}
-                <div className="flex items-center gap-1.5 text-sm">
-                  <MapPin className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                  <span className="font-mono text-xs">{item.warehouseLocation.label}</span>
-                </div>
-              </div>
-            ) : (
-              <span className="text-xs text-muted-foreground">No location assigned</span>
-            )}
-            {item.mainPerformer && (
-              <p className="text-sm text-muted-foreground">{getFullName(item.mainPerformer)}</p>
-            )}
-          </CardContent>
-        </Card>
-
         {/* QR Code */}
         <Card>
           <CardHeader className="pb-2">
