@@ -404,14 +404,32 @@ export function ItemDetail({
               )
             )}
 
-            {/* Static info */}
-            <InfoRow label="Product">{item.product.name}</InfoRow>
-            <InfoRow label="Category">
-              {item.category.name}
-              {item.subCategory && (
-                <span className="text-muted-foreground font-normal"> · {item.subCategory.name}</span>
-              )}
-            </InfoRow>
+            {/* Static info — use FormRow in edit mode so label column aligns */}
+            {editing ? (
+              <>
+                <FormRow label="Product">
+                  <span className="text-sm">{item.product.name}</span>
+                </FormRow>
+                <FormRow label="Category">
+                  <span className="text-sm">
+                    {item.category.name}
+                    {item.subCategory && (
+                      <span className="text-muted-foreground"> · {item.subCategory.name}</span>
+                    )}
+                  </span>
+                </FormRow>
+              </>
+            ) : (
+              <>
+                <InfoRow label="Product">{item.product.name}</InfoRow>
+                <InfoRow label="Category">
+                  {item.category.name}
+                  {item.subCategory && (
+                    <span className="text-muted-foreground font-normal"> · {item.subCategory.name}</span>
+                  )}
+                </InfoRow>
+              </>
+            )}
 
             {/* ── Status ─────────────────────────────────────── */}
             {editing ? (
