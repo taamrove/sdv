@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Check, MapPin, Plus, Loader2, X } from "lucide-react";
 import {
   Select,
@@ -98,8 +98,17 @@ export function LocationCascadingSelect({
   const [selShelf, setSelShelf] = useState<string>(selected?.shelf ?? UNSET);
   const [selBin, setSelBin]     = useState<string>(selected?.bin   ?? UNSET);
 
-  // Sync cascade state when the external value changes (e.g. form reset)
+  // When the auto-select effect calls onValueChange it triggers a value prop change.
+  // This ref prevents the value-sync effect from resetting the cascade in response
+  // to our own internal onValueChange calls (mid-selection, multiple matches).
+  const suppressNextSync = useRef(false);
+
+  // Sync cascade state when the external value changes (e.g. form reset / cancelEdit)
   useEffect(() => {
+    if (suppressNextSync.current) {
+      suppressNextSync.current = false;
+      return;
+    }
     const loc = localLocations.find((l) => l.id === value);
     if (loc) {
       setSelWarehouse(loc.warehouse?.id ?? UNSET);
@@ -131,6 +140,9 @@ export function LocationCascadingSelect({
 
   // ── Auto-select ────────────────────────────────────────────────────────────
   useEffect(() => {
+    // Suppress the value-sync from reacting to our own onValueChange call —
+    // the cascade selectors are already correct; we don't want them reset.
+    suppressNextSync.current = true;
     if (byBin.length === 1) {
       onValueChange(byBin[0].id);
     } else {
