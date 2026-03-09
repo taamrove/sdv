@@ -553,14 +553,14 @@ export function ItemDetail({
               <div className="space-y-1">
                 {item.purchaseDate && (
                   <InfoRow label="Purchased">
-                    {new Date(item.purchaseDate).toLocaleDateString()}
+                    {new Date(item.purchaseDate).toLocaleDateString("en-GB")}
                   </InfoRow>
                 )}
                 {item.purchasePrice != null && (
                   <InfoRow label="Price">${item.purchasePrice.toFixed(2)}</InfoRow>
                 )}
                 <InfoRow label="Created">
-                  {new Date(item.createdAt).toLocaleDateString()}
+                  {new Date(item.createdAt).toLocaleDateString("en-GB")}
                 </InfoRow>
               </div>
             )}
@@ -638,9 +638,9 @@ export function ItemDetail({
                   {(booking.startDate || booking.endDate) && (
                     <div className="flex items-center gap-1 text-xs text-muted-foreground">
                       <CalendarDays className="h-3 w-3" />
-                      {booking.startDate ? new Date(booking.startDate).toLocaleDateString() : "?"}
+                      {booking.startDate ? new Date(booking.startDate).toLocaleDateString("en-GB") : "?"}
                       {" - "}
-                      {booking.endDate ? new Date(booking.endDate).toLocaleDateString() : "?"}
+                      {booking.endDate ? new Date(booking.endDate).toLocaleDateString("en-GB") : "?"}
                     </div>
                   )}
                 </div>
