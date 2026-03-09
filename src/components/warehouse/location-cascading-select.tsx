@@ -7,7 +7,6 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -314,7 +313,11 @@ export function LocationCascadingSelect({
               disabled={disabled}
             >
               <SelectTrigger className="h-8 text-sm w-32">
-                <SelectValue placeholder="—" />
+                <span className="truncate text-sm">
+                  {selWarehouse !== UNSET
+                    ? (localWarehouses.find((w) => w.id === selWarehouse)?.name ?? "—")
+                    : <span className="text-muted-foreground">—</span>}
+                </span>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value={UNSET}>— Any —</SelectItem>
@@ -345,7 +348,11 @@ export function LocationCascadingSelect({
               disabled={disabled}
             >
               <SelectTrigger className="h-8 text-sm w-28">
-                <SelectValue placeholder="—" />
+                <span className="truncate text-sm">
+                  {selRoom !== UNSET
+                    ? selRoom
+                    : <span className="text-muted-foreground">—</span>}
+                </span>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value={UNSET}>— Any —</SelectItem>
@@ -376,7 +383,11 @@ export function LocationCascadingSelect({
               disabled={disabled}
             >
               <SelectTrigger className="h-8 text-sm w-28">
-                <SelectValue placeholder="—" />
+                <span className="truncate text-sm">
+                  {selZone !== UNSET
+                    ? selZone
+                    : <span className="text-muted-foreground">—</span>}
+                </span>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value={UNSET}>— Any —</SelectItem>
@@ -407,7 +418,11 @@ export function LocationCascadingSelect({
               disabled={disabled}
             >
               <SelectTrigger className="h-8 text-sm w-[72px]">
-                <SelectValue placeholder="—" />
+                <span className="truncate text-sm">
+                  {selRack !== UNSET
+                    ? selRack
+                    : <span className="text-muted-foreground">—</span>}
+                </span>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value={UNSET}>— Any —</SelectItem>
@@ -438,7 +453,11 @@ export function LocationCascadingSelect({
               disabled={disabled}
             >
               <SelectTrigger className="h-8 text-sm w-[72px]">
-                <SelectValue placeholder="—" />
+                <span className="truncate text-sm">
+                  {selShelf !== UNSET
+                    ? selShelf
+                    : <span className="text-muted-foreground">—</span>}
+                </span>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value={UNSET}>— Any —</SelectItem>
@@ -468,7 +487,11 @@ export function LocationCascadingSelect({
               disabled={disabled}
             >
               <SelectTrigger className="h-8 text-sm w-[72px]">
-                <SelectValue placeholder="—" />
+                <span className="truncate text-sm">
+                  {selBin !== UNSET
+                    ? selBin
+                    : <span className="text-muted-foreground">—</span>}
+                </span>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value={UNSET}>— Any —</SelectItem>
