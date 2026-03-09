@@ -13,6 +13,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   createWarehouseLocationSchema,
   type CreateWarehouseLocationInput,
 } from "@/lib/validators/warehouse";
@@ -23,9 +30,11 @@ import {
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
+import type { FullLocation } from "./location-cascading-select";
 
 interface Location {
   id: string;
+  warehouseId?: string | null;
   room: string | null;
   zone: string;
   rack: string | null;
@@ -39,21 +48,17 @@ interface LocationFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   location?: Location | null;
-  onSuccess?: (location: {
-    id: string;
-    room: string | null;
-    zone: string;
-    rack: string | null;
-    shelf: string | null;
-    bin: string | null;
-    label: string;
-  }) => void;
+  warehouses?: { id: string; name: string }[];
+  onSuccess?: (location: FullLocation) => void;
 }
+
+const NO_WAREHOUSE = "__none__";
 
 export function LocationFormDialog({
   open,
   onOpenChange,
   location,
+  warehouses = [],
   onSuccess,
 }: LocationFormDialogProps) {
   const router = useRouter();
@@ -62,6 +67,7 @@ export function LocationFormDialog({
   const form = useForm<CreateWarehouseLocationInput>({
     resolver: zodResolver(createWarehouseLocationSchema),
     defaultValues: {
+      warehouseId: null,
       room: "",
       zone: "",
       rack: "",
@@ -74,6 +80,7 @@ export function LocationFormDialog({
   useEffect(() => {
     if (open && location) {
       form.reset({
+        warehouseId: location.warehouseId ?? null,
         room: location.room ?? "",
         zone: location.zone,
         rack: location.rack ?? "",
@@ -82,7 +89,7 @@ export function LocationFormDialog({
         description: location.description ?? "",
       });
     } else if (open && !location) {
-      form.reset({ room: "", zone: "", rack: "", shelf: "", bin: "", description: "" });
+      form.reset({ warehouseId: null, room: "", zone: "", rack: "", shelf: "", bin: "", description: "" });
     }
   }, [open, location, form]);
 
@@ -105,6 +112,7 @@ export function LocationFormDialog({
         if (onSuccess && "data" in result && result.data) {
           const created = result.data as {
             id: string;
+            warehouse: { id: string; name: string } | null;
             room: string | null;
             zone: string;
             rack: string | null;
@@ -112,7 +120,16 @@ export function LocationFormDialog({
             bin: string | null;
             label: string;
           };
-          onSuccess(created);
+          onSuccess({
+            id: created.id,
+            warehouse: created.warehouse,
+            room: created.room,
+            zone: created.zone,
+            rack: created.rack,
+            shelf: created.shelf,
+            bin: created.bin,
+            label: created.label,
+          });
         }
       }
       onOpenChange(false);
@@ -123,6 +140,8 @@ export function LocationFormDialog({
     }
   }
 
+  const warehouseValue = form.watch("warehouseId") ?? NO_WAREHOUSE;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
@@ -132,6 +151,31 @@ export function LocationFormDialog({
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          {/* Warehouse */}
+          {warehouses.length > 0 && (
+            <div className="space-y-1">
+              <Label htmlFor="warehouseId">Warehouse</Label>
+              <Select
+                value={warehouseValue ?? NO_WAREHOUSE}
+                onValueChange={(val) =>
+                  form.setValue("warehouseId", val === NO_WAREHOUSE ? null : val)
+                }
+              >
+                <SelectTrigger id="warehouseId">
+                  <SelectValue placeholder="— None —" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={NO_WAREHOUSE}>— None —</SelectItem>
+                  {warehouses.map((w) => (
+                    <SelectItem key={w.id} value={w.id}>
+                      {w.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
           <div className="space-y-1">
             <Label htmlFor="room">Room</Label>
             <Input
@@ -188,7 +232,7 @@ export function LocationFormDialog({
             />
           </div>
           <p className="text-sm text-muted-foreground">
-            Label will be auto-generated from zone, rack, shelf, and bin.
+            Label will be auto-generated from room, zone, rack, shelf, and bin.
           </p>
           <div className="flex justify-end gap-2">
             <Button

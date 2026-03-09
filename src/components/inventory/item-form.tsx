@@ -27,7 +27,6 @@ import {
   type CreateItemInput,
 } from "@/lib/validators/item";
 import { createItem, createItems } from "@/actions/items";
-import { LocationFormDialog } from "@/components/warehouse/location-form-dialog";
 import { LocationCascadingSelect, type FullLocation } from "@/components/warehouse/location-cascading-select";
 import { PerformerQuickCreateDialog } from "@/components/performers/performer-quick-create-dialog";
 import { ImageUpload } from "@/components/shared/image-upload";
@@ -80,7 +79,6 @@ export function ItemForm({
   const closeAfterSave = useRef(false);
   const [quantity, setQuantity] = useState(1);
   const [locations, setLocations] = useState(locationsProp);
-  const [locationDialogOpen, setLocationDialogOpen] = useState(false);
   const [performerDialogOpen, setPerformerDialogOpen] = useState(false);
   const [performers, setPerformers] = useState(performersProp);
 
@@ -406,7 +404,6 @@ export function ItemForm({
                 locations={locations}
                 value={form.watch("warehouseLocationId") ?? undefined}
                 onValueChange={(id) => form.setValue("warehouseLocationId", id)}
-                onNewLocation={() => setLocationDialogOpen(true)}
               />
             </FormRow>
 
@@ -508,15 +505,6 @@ export function ItemForm({
           </form>
         </CardContent>
       </Card>
-
-      <LocationFormDialog
-        open={locationDialogOpen}
-        onOpenChange={setLocationDialogOpen}
-        onSuccess={(loc) => {
-          setLocations((prev) => [...prev, loc]);
-          form.setValue("warehouseLocationId", loc.id);
-        }}
-      />
 
       <PerformerQuickCreateDialog
         open={performerDialogOpen}

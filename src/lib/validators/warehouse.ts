@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 export const createWarehouseLocationSchema = z.object({
+  warehouseId: z.string().uuid().optional().nullable(),
   room: z.string().max(50).optional(),
   zone: z.string().min(1, "Zone is required").max(20),
   rack: z.string().max(20).optional(),
@@ -14,6 +15,7 @@ export type CreateWarehouseLocationInput = z.infer<
 >;
 
 export const updateWarehouseLocationSchema = z.object({
+  warehouseId: z.string().uuid().optional().nullable(),
   room: z.string().max(50).optional().nullable(),
   zone: z.string().min(1, "Zone is required").max(20).optional(),
   rack: z.string().max(20).optional().nullable(),

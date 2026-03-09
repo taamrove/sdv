@@ -22,7 +22,7 @@ export default async function ItemDetailPage({
         include: { subCategory: true },
       },
       category: true,
-      warehouseLocation: true,
+      warehouseLocation: { include: { warehouse: true } },
       mainPerformer: {
         select: {
           id: true,
@@ -39,6 +39,7 @@ export default async function ItemDetailPage({
     getEntityActivity([{ entityType: "Item", entityId: itemId }], 50),
     prisma.warehouseLocation.findMany({
       orderBy: { label: "asc" },
+      include: { warehouse: true },
     }),
     prisma.bookingItem.findMany({
       where: {
@@ -110,6 +111,9 @@ export default async function ItemDetailPage({
     warehouseLocation: item.warehouseLocation
       ? {
           id: item.warehouseLocation.id,
+          warehouse: item.warehouseLocation.warehouse
+            ? { id: item.warehouseLocation.warehouse.id, name: item.warehouseLocation.warehouse.name }
+            : null,
           room: item.warehouseLocation.room,
           zone: item.warehouseLocation.zone,
           rack: item.warehouseLocation.rack,

@@ -342,8 +342,22 @@ model PackItem {
 // WAREHOUSE DOMAIN
 // ============================================================
 
+/// Warehouse = a named physical building or storage space (e.g. "Main Warehouse", "Props Annex").
+model Warehouse {
+  id          String              @id @default(uuid())
+  name        String              @unique
+  address     String?
+  description String?
+  locations   WarehouseLocation[]
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  @@schema("public")
+}
+
 model WarehouseLocation {
   id          String   @id @default(uuid())
+  warehouseId String?
   room        String?
   zone        String
   rack        String?
@@ -354,7 +368,8 @@ model WarehouseLocation {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  items Item[]
+  warehouse Warehouse? @relation(fields: [warehouseId], references: [id])
+  items     Item[]
 
   @@schema("public")
 }

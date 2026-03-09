@@ -26,7 +26,7 @@ export default async function NewItemPage({
   if (!product) notFound();
 
   const [locations, performers] = await Promise.all([
-    prisma.warehouseLocation.findMany({ orderBy: { label: "asc" } }),
+    prisma.warehouseLocation.findMany({ orderBy: { label: "asc" }, include: { warehouse: true } }),
     prisma.performer.findMany({
       where: { active: true },
       orderBy: [{ contact: { lastName: "asc" } }, { contact: { firstName: "asc" } }],
