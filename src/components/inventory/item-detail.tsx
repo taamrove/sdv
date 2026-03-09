@@ -368,6 +368,17 @@ export function ItemDetail({
                 <Badge variant="outline" className="font-mono text-base">
                   {item.humanReadableId}
                 </Badge>
+                {/* QR Code — icon in header, opens dialog (primary on mobile) */}
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 md:hidden"
+                  onClick={() => setQrDialogOpen(true)}
+                  title="QR Code"
+                >
+                  <QrCode className="h-4 w-4" />
+                </Button>
                 {/* Inline Archive / Restore button */}
                 <Button
                   type="button"
@@ -610,17 +621,7 @@ export function ItemDetail({
       {/* ── Sidebar ─────────────────────────────────────────────────────── */}
       <div className="space-y-3 order-1 md:order-2">
 
-        {/* QR Code — icon button on mobile, full card on desktop */}
-        <Button
-          variant="outline"
-          size="sm"
-          className="w-full md:hidden"
-          onClick={() => setQrDialogOpen(true)}
-        >
-          <QrCode className="mr-2 h-4 w-4" />
-          QR Code
-        </Button>
-
+        {/* QR Code — full card on desktop; icon in card header handles mobile */}
         <Card className="hidden md:block">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">
