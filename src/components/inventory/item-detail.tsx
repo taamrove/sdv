@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/select";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { ImageUpload } from "@/components/shared/image-upload";
-import { InfoRow } from "@/components/shared/form-row";
+import { InfoRow, FormRow } from "@/components/shared/form-row";
 import {
   ITEM_STATUS_LABELS,
   ITEM_CONDITION_LABELS,
@@ -33,7 +33,7 @@ import {
 import { updateItem } from "@/actions/items";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { MapPin, Clock, Pencil, X, CalendarDays, FolderOpen, QrCode, Archive, UserCheck, Plus } from "lucide-react";
+import { MapPin, Clock, Pencil, X, CalendarDays, FolderOpen, QrCode, Archive, Plus } from "lucide-react";
 import { QRCodeDisplay } from "@/components/shared/qr-code-display";
 import Image from "next/image";
 import Link from "next/link";
@@ -340,10 +340,9 @@ export function ItemDetail({
           <CardContent className="space-y-3">
             {/* Image */}
             {editing ? (
-              <div className="space-y-1">
-                <Label>Image</Label>
+              <FormRow label="Image">
                 <ImageUpload value={imageUrl} onChange={(url) => setImageUrl(url)} folder="items" />
-              </div>
+              </FormRow>
             ) : (
               item.imageUrl && (
                 <Image
@@ -375,15 +374,14 @@ export function ItemDetail({
 
             {/* Color */}
             {editing ? (
-              <div className="space-y-1">
-                <Label htmlFor="color">Color</Label>
+              <FormRow label="Color" htmlFor="color">
                 <Input
                   id="color"
                   value={color}
                   onChange={(e) => setColor(e.target.value)}
                   placeholder="e.g., Red"
                 />
-              </div>
+              </FormRow>
             ) : (
               item.color && <InfoRow label="Color">{item.color}</InfoRow>
             )}
@@ -414,15 +412,14 @@ export function ItemDetail({
 
             {/* Notes */}
             {editing ? (
-              <div className="space-y-1">
-                <Label htmlFor="notes">Notes</Label>
+              <FormRow label="Notes" htmlFor="notes">
                 <Textarea
                   id="notes"
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   placeholder="Optional notes..."
                 />
-              </div>
+              </FormRow>
             ) : (
               item.notes && <InfoRow label="Notes">{item.notes}</InfoRow>
             )}
@@ -459,8 +456,7 @@ export function ItemDetail({
             <CardTitle className="text-sm">Status & Location</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
-            <div>
-              <p className="text-xs text-muted-foreground mb-1">Status</p>
+            <FormRow label="Status">
               <Select value={status} onValueChange={setStatus}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -469,10 +465,9 @@ export function ItemDetail({
                   ))}
                 </SelectContent>
               </Select>
-            </div>
+            </FormRow>
 
-            <div>
-              <p className="text-xs text-muted-foreground mb-1">Condition</p>
+            <FormRow label="Condition">
               <Select value={condition} onValueChange={setCondition}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -481,10 +476,9 @@ export function ItemDetail({
                   ))}
                 </SelectContent>
               </Select>
-            </div>
+            </FormRow>
 
-            <div>
-              <p className="text-xs text-muted-foreground mb-1">Location</p>
+            <FormRow label="Location">
               <Select
                 value={locationId}
                 onValueChange={(val) => {
@@ -512,20 +506,19 @@ export function ItemDetail({
                   </SelectItem>
                 </SelectContent>
               </Select>
-            </div>
+            </FormRow>
 
-            <div>
-              <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
-                <UserCheck className="h-3 w-3" />
-                Main Performer
-              </p>
+            <FormRow
+              label="Performer"
+              hint={performers.length === 0 ? "Add performers in the Performers section first." : undefined}
+            >
               <Select
                 value={mainPerformerId}
                 onValueChange={setMainPerformerId}
                 disabled={performers.length === 0}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder={performers.length === 0 ? "No performers added yet" : "Not assigned"} />
+                  <SelectValue placeholder={performers.length === 0 ? "None yet" : "Not assigned"} />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">Not assigned</SelectItem>
@@ -534,12 +527,7 @@ export function ItemDetail({
                   ))}
                 </SelectContent>
               </Select>
-              {performers.length === 0 && (
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  Add performers in the Performers section first.
-                </p>
-              )}
-            </div>
+            </FormRow>
 
             <Button onClick={handleSave} disabled={saving} className="w-full" size="sm">
               {saving ? "Saving..." : "Save Changes"}
