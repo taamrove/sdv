@@ -4,7 +4,6 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
@@ -14,6 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { FormRow } from "@/components/shared/form-row";
 import {
   createProjectSchema,
   type CreateProjectInput,
@@ -101,86 +101,73 @@ export function ProjectForm({ themes, project }: ProjectFormProps) {
       </CardHeader>
       <CardContent>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-          <div className="space-y-1">
-            <Label htmlFor="name">Project Name *</Label>
+          <FormRow
+            label="Project Name"
+            required
+            htmlFor="name"
+            error={form.formState.errors.name?.message}
+          >
             <Input
               id="name"
               placeholder="e.g., Summer Tour 2026"
               {...form.register("name")}
             />
-            {form.formState.errors.name && (
-              <p className="text-sm text-destructive">
-                {form.formState.errors.name.message}
-              </p>
-            )}
-          </div>
+          </FormRow>
 
-          <div className="space-y-1">
-            <Label htmlFor="description">Description</Label>
+          <FormRow label="Description" htmlFor="description">
             <Textarea
               id="description"
               placeholder="Optional description..."
               {...form.register("description")}
             />
-          </div>
+          </FormRow>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-1">
-              <Label htmlFor="venue">Venue</Label>
-              <Input
-                id="venue"
-                placeholder="e.g., Grand Theatre"
-                {...form.register("venue")}
-              />
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="city">City</Label>
-              <Input
-                id="city"
-                placeholder="e.g., Vienna"
-                {...form.register("city")}
-              />
-            </div>
-          </div>
+          <FormRow label="Venue" htmlFor="venue">
+            <Input
+              id="venue"
+              placeholder="e.g., Grand Theatre"
+              {...form.register("venue")}
+            />
+          </FormRow>
 
-          <div className="space-y-1">
-            <Label htmlFor="country">Country</Label>
+          <FormRow label="City" htmlFor="city">
+            <Input
+              id="city"
+              placeholder="e.g., Vienna"
+              {...form.register("city")}
+            />
+          </FormRow>
+
+          <FormRow label="Country" htmlFor="country">
             <Input
               id="country"
               placeholder="e.g., Austria"
               {...form.register("country")}
             />
-          </div>
+          </FormRow>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-1">
-              <Label htmlFor="startDate">Start Date</Label>
-              <Input
-                id="startDate"
-                type="date"
-                {...form.register("startDate")}
-              />
+          <FormRow label="Dates">
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">Start</p>
+                <Input type="date" {...form.register("startDate")} />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">End</p>
+                <Input type="date" {...form.register("endDate")} />
+              </div>
             </div>
-            <div className="space-y-1">
-              <Label htmlFor="endDate">End Date</Label>
-              <Input
-                id="endDate"
-                type="date"
-                {...form.register("endDate")}
-              />
-            </div>
-          </div>
+          </FormRow>
 
           {isEditing && (
-            <div className="space-y-1">
-              <Label htmlFor="status">Status</Label>
+            <FormRow label="Status" htmlFor="status">
               <Select
                 value={form.watch("status") ?? "PLANNING"}
                 onValueChange={(val) =>
                   form.setValue("status", val as CreateProjectInput["status"])
                 }
               >
-                <SelectTrigger>
+                <SelectTrigger id="status">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -191,17 +178,16 @@ export function ProjectForm({ themes, project }: ProjectFormProps) {
                   ))}
                 </SelectContent>
               </Select>
-            </div>
+            </FormRow>
           )}
 
-          <div className="space-y-1">
-            <Label htmlFor="notes">Notes</Label>
+          <FormRow label="Notes" htmlFor="notes">
             <Textarea
               id="notes"
               placeholder="Optional notes..."
               {...form.register("notes")}
             />
-          </div>
+          </FormRow>
 
           <div className="flex justify-end gap-2">
             <Button

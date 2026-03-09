@@ -4,7 +4,6 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
@@ -21,12 +20,15 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { FormRow } from "@/components/shared/form-row";
 import {
   createItemSchema,
   type CreateItemInput,
 } from "@/lib/validators/item";
 import { createItem, createItems } from "@/actions/items";
 import { LocationFormDialog } from "@/components/warehouse/location-form-dialog";
+import { PerformerQuickCreateDialog } from "@/components/performers/performer-quick-create-dialog";
 import { ImageUpload } from "@/components/shared/image-upload";
 import {
   ITEM_CONDITION_LABELS,
@@ -40,6 +42,7 @@ import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertTriangle, Plus } from "lucide-react";
+
 interface Product {
   id: string;
   name: string;
@@ -74,13 +77,15 @@ export function ItemForm({
   locations: locationsProp,
   defaultProductId,
   sizeMode,
-  performers = [],
+  performers: performersProp = [],
 }: ItemFormProps) {
   const router = useRouter();
   const closeAfterSave = useRef(false);
   const [quantity, setQuantity] = useState(1);
   const [locations, setLocations] = useState(locationsProp);
   const [locationDialogOpen, setLocationDialogOpen] = useState(false);
+  const [performerDialogOpen, setPerformerDialogOpen] = useState(false);
+  const [performers, setPerformers] = useState(performersProp);
 
   const form = useForm<CreateItemInput>({
     resolver: zodResolver(createItemSchema),
@@ -261,8 +266,12 @@ export function ItemForm({
         </CardHeader>
         <CardContent>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <div className="space-y-1">
-              <Label htmlFor="productId">Product *</Label>
+            <FormRow
+              label="Product"
+              required
+              error={form.formState.errors.productId?.message}
+              hint={selectedProduct ? `Category: ${selectedProduct.category.name}` : undefined}
+            >
               <Select
                 value={form.watch("productId")}
                 onValueChange={(val) => form.setValue("productId", val)}
@@ -279,97 +288,84 @@ export function ItemForm({
                   ))}
                 </SelectContent>
               </Select>
-              {form.formState.errors.productId && (
-                <p className="text-sm text-destructive">
-                  {form.formState.errors.productId.message}
-                </p>
-              )}
-              {selectedProduct && (
-                <p className="text-sm text-muted-foreground">
-                  Category: {selectedProduct.category.name}
-                </p>
-              )}
-            </div>
+            </FormRow>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <Label htmlFor="quantity">Quantity</Label>
-                <Input
-                  id="quantity"
-                  type="number"
-                  min={1}
-                  max={20}
-                  value={quantity}
-                  onChange={(e) =>
-                    setQuantity(Math.min(20, Math.max(1, Number(e.target.value) || 1)))
-                  }
-                />
-                {quantity > 1 && (
-                  <p className="text-xs text-muted-foreground">
-                    Creates {quantity} identical items.
-                  </p>
-                )}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <Label htmlFor="condition">Condition</Label>
-                <Select
-                  value={form.watch("condition") ?? "NEW"}
-                  onValueChange={(val) =>
-                    form.setValue(
-                      "condition",
-                      val as CreateItemInput["condition"]
-                    )
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Object.entries(ITEM_CONDITION_LABELS).map(
-                      ([key, label]) => (
-                        <SelectItem key={key} value={key}>
-                          {label}
-                        </SelectItem>
-                      )
-                    )}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-1">
-                <Label htmlFor="color">Color</Label>
-                <Input
-                  id="color"
-                  placeholder="e.g., Red"
-                  {...form.register("color")}
-                />
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <Switch
-                id="isExternal"
-                checked={form.watch("isExternal") ?? false}
-                onCheckedChange={(checked) =>
-                  form.setValue("isExternal", checked)
+            <FormRow label="Quantity" htmlFor="quantity">
+              <Input
+                id="quantity"
+                type="number"
+                min={1}
+                max={20}
+                value={quantity}
+                onChange={(e) =>
+                  setQuantity(Math.min(20, Math.max(1, Number(e.target.value) || 1)))
                 }
               />
-              <Label htmlFor="isExternal">External / Private Item</Label>
-            </div>
-            {form.watch("isExternal") && (
-              <p className="text-xs text-muted-foreground">
-                This item is externally owned. Warehouse location is optional.
-              </p>
-            )}
+              {quantity > 1 && (
+                <p className="text-xs text-muted-foreground">
+                  Creates {quantity} identical items.
+                </p>
+              )}
+            </FormRow>
 
-            <div className="space-y-1">
-              <Label htmlFor="warehouseLocationId">
-                Warehouse Location
-                {form.watch("isExternal") ? " (optional)" : ""}
-              </Label>
+            <FormRow label="Details">
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Condition</p>
+                  <Select
+                    value={form.watch("condition") ?? "NEW"}
+                    onValueChange={(val) =>
+                      form.setValue(
+                        "condition",
+                        val as CreateItemInput["condition"]
+                      )
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(ITEM_CONDITION_LABELS).map(
+                        ([key, label]) => (
+                          <SelectItem key={key} value={key}>
+                            {label}
+                          </SelectItem>
+                        )
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Color</p>
+                  <Input
+                    id="color"
+                    placeholder="e.g., Red"
+                    {...form.register("color")}
+                  />
+                </div>
+              </div>
+            </FormRow>
+
+            <FormRow label="External Item" htmlFor="isExternal" align="center">
+              <div className="flex items-center gap-3">
+                <Switch
+                  id="isExternal"
+                  checked={form.watch("isExternal") ?? false}
+                  onCheckedChange={(checked) =>
+                    form.setValue("isExternal", checked)
+                  }
+                />
+                <span className="text-sm text-muted-foreground">
+                  {form.watch("isExternal")
+                    ? "Externally owned — warehouse location is optional"
+                    : "Company-owned item"}
+                </span>
+              </div>
+            </FormRow>
+
+            <FormRow
+              label={`Location${form.watch("isExternal") ? " (optional)" : ""}`}
+            >
               <Select
                 value={form.watch("warehouseLocationId") ?? "none"}
                 onValueChange={(val) => {
@@ -399,7 +395,7 @@ export function ItemForm({
                   </SelectItem>
                 </SelectContent>
               </Select>
-            </div>
+            </FormRow>
 
             {!form.watch("isExternal") && !form.watch("warehouseLocationId") && (
               <Alert variant="default" className="border-yellow-300 bg-yellow-50 text-yellow-800 dark:border-yellow-800 dark:bg-yellow-950/30 dark:text-yellow-300">
@@ -410,21 +406,26 @@ export function ItemForm({
               </Alert>
             )}
 
-            {/* Size fields driven by sizeMode */}
-            {renderSizeFields()}
+            <FormRow label="Sizes">
+              {renderSizeFields()}
+            </FormRow>
 
-            {/* Main performer */}
-            <div className="space-y-1">
-              <Label htmlFor="mainPerformerId">Main Performer (optional)</Label>
+            <FormRow
+              label="Main Performer"
+              hint={performers.length === 0 ? "Add performers in the Performers section first." : undefined}
+            >
               <Select
                 value={form.watch("mainPerformerId") ?? "none"}
-                onValueChange={(val) =>
-                  form.setValue("mainPerformerId", val === "none" ? undefined : val)
-                }
-                disabled={performers.length === 0}
+                onValueChange={(val) => {
+                  if (val === "__new_performer__") {
+                    setPerformerDialogOpen(true);
+                    return;
+                  }
+                  form.setValue("mainPerformerId", val === "none" ? undefined : val);
+                }}
               >
                 <SelectTrigger id="mainPerformerId">
-                  <SelectValue placeholder={performers.length === 0 ? "No performers added yet" : "No performer assigned"} />
+                  <SelectValue placeholder="No performer assigned" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">No performer assigned</SelectItem>
@@ -433,57 +434,58 @@ export function ItemForm({
                       {getFullName(p)}
                     </SelectItem>
                   ))}
+                  <SelectSeparator />
+                  <SelectItem value="__new_performer__">
+                    <Plus className="mr-1 h-3 w-3 inline-block" /> New performer
+                  </SelectItem>
                 </SelectContent>
               </Select>
-              {performers.length === 0 && (
-                <p className="text-xs text-muted-foreground">Add performers in the Performers section first.</p>
-              )}
-            </div>
+            </FormRow>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <Label htmlFor="purchaseDate">Purchase Date</Label>
-                <Input
-                  id="purchaseDate"
-                  type="date"
-                  {...form.register("purchaseDate")}
-                />
+            <FormRow label="Purchase">
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Date</p>
+                  <Input
+                    id="purchaseDate"
+                    type="date"
+                    {...form.register("purchaseDate")}
+                  />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Price</p>
+                  <Input
+                    id="purchasePrice"
+                    type="number"
+                    step="0.01"
+                    placeholder="0.00"
+                    {...form.register("purchasePrice", {
+                      setValueAs: (v) => {
+                        if (v === "" || v === null || v === undefined) return undefined;
+                        const n = Number(v);
+                        return isNaN(n) ? undefined : n;
+                      },
+                    })}
+                  />
+                </div>
               </div>
-              <div className="space-y-1">
-                <Label htmlFor="purchasePrice">Purchase Price</Label>
-                <Input
-                  id="purchasePrice"
-                  type="number"
-                  step="0.01"
-                  placeholder="0.00"
-                  {...form.register("purchasePrice", {
-                    setValueAs: (v) => {
-                      if (v === "" || v === null || v === undefined) return undefined;
-                      const n = Number(v);
-                      return isNaN(n) ? undefined : n;
-                    },
-                  })}
-                />
-              </div>
-            </div>
+            </FormRow>
 
-            <div className="space-y-1">
-              <Label>Item Image</Label>
+            <FormRow label="Image">
               <ImageUpload
                 value={form.watch("imageUrl")}
                 onChange={(url) => form.setValue("imageUrl", url ?? undefined)}
                 folder="items"
               />
-            </div>
+            </FormRow>
 
-            <div className="space-y-1">
-              <Label htmlFor="notes">Notes</Label>
+            <FormRow label="Notes" htmlFor="notes">
               <Textarea
                 id="notes"
                 placeholder="Optional notes..."
                 {...form.register("notes")}
               />
-            </div>
+            </FormRow>
 
             <div className="flex justify-end gap-2">
               <Button
@@ -519,6 +521,15 @@ export function ItemForm({
         onSuccess={(loc) => {
           setLocations((prev) => [...prev, loc]);
           form.setValue("warehouseLocationId", loc.id);
+        }}
+      />
+
+      <PerformerQuickCreateDialog
+        open={performerDialogOpen}
+        onOpenChange={setPerformerDialogOpen}
+        onSuccess={(p) => {
+          setPerformers((prev) => [...prev, p]);
+          form.setValue("mainPerformerId", p.id);
         }}
       />
     </div>
