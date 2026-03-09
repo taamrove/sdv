@@ -344,6 +344,7 @@ model PackItem {
 
 model WarehouseLocation {
   id          String   @id @default(uuid())
+  room        String?
   zone        String
   rack        String?
   shelf       String?

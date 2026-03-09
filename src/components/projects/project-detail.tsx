@@ -229,7 +229,7 @@ export function ProjectDetail({
               </Button>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
+              <div className="space-y-2">
                 <div className="flex items-center gap-2">
                   <Badge variant={statusVariant(project.status)}>
                     {PROJECT_STATUS_LABELS[project.status] ?? project.status}
@@ -237,10 +237,10 @@ export function ProjectDetail({
                 </div>
 
                 {project.description && (
-                  <p className="text-muted-foreground">{project.description}</p>
+                  <p className="text-sm text-muted-foreground">{project.description}</p>
                 )}
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
                   {(project.startDate || project.endDate) && (
                     <div className="flex items-center gap-2">
                       <Calendar className="h-4 w-4 text-muted-foreground" />
@@ -272,7 +272,7 @@ export function ProjectDetail({
                   </div>
                 )}
 
-                <div className="flex gap-4 pt-2">
+                <div className="flex gap-4">
                   <div className="flex items-center gap-1 text-sm text-muted-foreground">
                     <Users className="h-4 w-4" />
                     {project.assignments.length} performer{project.assignments.length !== 1 ? "s" : ""}
@@ -302,51 +302,47 @@ export function ProjectDetail({
             </div>
 
             {project.assignments.length === 0 ? (
-              <div className="flex flex-col items-center justify-center rounded-lg border border-dashed p-12 text-center">
-                <Users className="h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-medium">No performers assigned</h3>
-                <p className="text-sm text-muted-foreground mt-1">
+              <div className="flex flex-col items-center justify-center rounded-lg border border-dashed p-6 text-center">
+                <Users className="h-8 w-8 text-muted-foreground mb-2" />
+                <h3 className="text-sm font-medium">No performers assigned</h3>
+                <p className="text-sm text-muted-foreground mt-0.5">
                   Add performers to this project.
                 </p>
               </div>
             ) : (
               <div className="space-y-2">
                 {project.assignments.map((assignment) => (
-                  <Card key={assignment.id}>
-                    <CardContent className="py-4">
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-center gap-3">
-                          <div>
-                            <div className="font-medium">
-                              {getFullName(assignment.performer.contact)}
-                            </div>
-                            <div className="flex items-center gap-2 mt-1">
-                              <Badge variant="outline" className="text-xs">
-                                {PERFORMER_TYPE_LABELS[assignment.performer.type] ??
-                                  assignment.performer.type}
-                              </Badge>
-                              {assignment.role && (
-                                <span className="text-xs text-muted-foreground">
-                                  Role: {assignment.role}
-                                </span>
-                              )}
-                            </div>
-                          </div>
+                  <div key={assignment.id} className="rounded-md border px-3 py-2.5">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <div className="font-medium text-sm">
+                          {getFullName(assignment.performer.contact)}
                         </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => setRemovingAssignment(assignment)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <Badge variant="outline" className="text-xs">
+                            {PERFORMER_TYPE_LABELS[assignment.performer.type] ??
+                              assignment.performer.type}
+                          </Badge>
+                          {assignment.role && (
+                            <span className="text-xs text-muted-foreground">
+                              Role: {assignment.role}
+                            </span>
+                          )}
+                        </div>
                       </div>
-                      <PerformerNotesPanel
-                        assignmentId={assignment.id}
-                        notes={assignment.bookingNotes}
-                      />
-                    </CardContent>
-                  </Card>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setRemovingAssignment(assignment)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <PerformerNotesPanel
+                      assignmentId={assignment.id}
+                      notes={assignment.bookingNotes}
+                    />
+                  </div>
                 ))}
               </div>
             )}
@@ -357,10 +353,10 @@ export function ProjectDetail({
         <TabsContent value="bookings">
           <div className="space-y-4">
             {project.bookings.length === 0 ? (
-              <div className="flex flex-col items-center justify-center rounded-lg border border-dashed p-12 text-center">
-                <ShoppingBag className="h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-medium">No bookings yet</h3>
-                <p className="text-sm text-muted-foreground mt-1">
+              <div className="flex flex-col items-center justify-center rounded-lg border border-dashed p-6 text-center">
+                <ShoppingBag className="h-8 w-8 text-muted-foreground mb-2" />
+                <h3 className="text-sm font-medium">No bookings yet</h3>
+                <p className="text-sm text-muted-foreground mt-0.5">
                   Bookings are created to reserve kits for this project.
                 </p>
               </div>
@@ -444,10 +440,10 @@ export function ProjectDetail({
             )}
 
             {allItems.length === 0 ? (
-              <div className="flex flex-col items-center justify-center rounded-lg border border-dashed p-12 text-center">
-                <Package className="h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-medium">No inventory items</h3>
-                <p className="text-sm text-muted-foreground mt-1">
+              <div className="flex flex-col items-center justify-center rounded-lg border border-dashed p-6 text-center">
+                <Package className="h-8 w-8 text-muted-foreground mb-2" />
+                <h3 className="text-sm font-medium">No inventory items</h3>
+                <p className="text-sm text-muted-foreground mt-0.5">
                   Items are assigned through bookings.
                 </p>
               </div>

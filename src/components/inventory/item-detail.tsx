@@ -16,12 +16,14 @@ import {
   Select,
   SelectContent,
   SelectItem,
-  SelectSeparator,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { ImageUpload } from "@/components/shared/image-upload";
+import { InfoRow, FormRow } from "@/components/shared/form-row";
+import { PerformerCombobox } from "@/components/shared/performer-combobox";
+import { PerformerQuickCreateDialog } from "@/components/performers/performer-quick-create-dialog";
 import {
   ITEM_STATUS_LABELS,
   ITEM_CONDITION_LABELS,
@@ -32,12 +34,13 @@ import {
 import { updateItem } from "@/actions/items";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { MapPin, Clock, Pencil, X, CalendarDays, FolderOpen, QrCode, Archive, UserCheck, Plus } from "lucide-react";
+import { Clock, Pencil, X, CalendarDays, FolderOpen, QrCode, Archive } from "lucide-react";
 import { QRCodeDisplay } from "@/components/shared/qr-code-display";
 import Image from "next/image";
 import Link from "next/link";
 import { getFullName } from "@/lib/format-name";
 import { LocationFormDialog } from "@/components/warehouse/location-form-dialog";
+import { LocationCascadingSelect, type FullLocation } from "@/components/warehouse/location-cascading-select";
 import { CompactActivityLog, type ActivityEntry } from "@/components/dashboard/activity-log";
 
 interface Performer {
@@ -61,14 +64,11 @@ interface Item {
   createdAt: Date;
   product: { id: string; name: string; number: number };
   category: { id: string; code: string; name: string };
-  warehouseLocation: { id: string; label: string } | null;
+  warehouseLocation: FullLocation | null;
   mainPerformer: Performer | null;
 }
 
-interface Location {
-  id: string;
-  label: string;
-}
+type Location = FullLocation;
 
 interface Booking {
   bookingItemId: string;
@@ -102,13 +102,15 @@ export function ItemDetail({
   const [saving, setSaving] = useState(false);
   const [archiving, setArchiving] = useState(false);
   const [locationDialogOpen, setLocationDialogOpen] = useState(false);
+  const [performerDialogOpen, setPerformerDialogOpen] = useState(false);
   const [localLocations, setLocalLocations] = useState(locations);
+  const [localPerformers, setLocalPerformers] = useState(performers);
 
   // Status & location fields (always shown in sidebar)
   const [status, setStatus] = useState(item.status);
   const [condition, setCondition] = useState(item.condition);
-  const [locationId, setLocationId] = useState(
-    item.warehouseLocation?.id ?? "none"
+  const [locationId, setLocationId] = useState<string | undefined>(
+    item.warehouseLocation?.id ?? undefined
   );
   const [mainPerformerId, setMainPerformerId] = useState(
     item.mainPerformer?.id ?? "none"
@@ -144,8 +146,8 @@ export function ItemDetail({
 
       if (status !== item.status) data.status = status;
       if (condition !== item.condition) data.condition = condition;
-      if (locationId !== (item.warehouseLocation?.id ?? "none")) {
-        data.warehouseLocationId = locationId === "none" ? null : locationId;
+      if (locationId !== (item.warehouseLocation?.id ?? undefined)) {
+        data.warehouseLocationId = locationId ?? null;
       }
       const newMainPerformerId = mainPerformerId === "none" ? null : mainPerformerId;
       if (newMainPerformerId !== (item.mainPerformer?.id ?? null)) {
@@ -263,34 +265,41 @@ export function ItemDetail({
     }
     if (sizeMode === "measurements") {
       return (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="space-y-3">
           {[
-            { key: "chest", label: "Chest", placeholder: "e.g., 90cm" },
-            { key: "waist", label: "Waist", placeholder: "e.g., 75cm" },
-            { key: "hip", label: "Hip", placeholder: "e.g., 95cm" },
+            { key: "chest", label: "Chest", placeholder: "cm" },
+            { key: "waist", label: "Waist", placeholder: "cm" },
+            { key: "hip", label: "Hip", placeholder: "cm" },
+            { key: "length", label: "Length", placeholder: "cm" },
           ].map(({ key, label, placeholder }) => (
-            <div key={key} className="space-y-1">
-              <Label className="text-xs">{label}</Label>
+            <FormRow key={key} label={label} htmlFor={`size-${key}`}>
               <Input
+                id={`size-${key}`}
                 value={sizes[key] ?? ""}
                 onChange={(e) => updateSize(key, e.target.value)}
                 placeholder={placeholder}
               />
-            </div>
+            </FormRow>
           ))}
         </div>
       );
     }
-    // Generic
+    // Generic — selects for standard sizes, inputs for measurements
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="space-y-1">
+          <Label className="text-xs">General Size</Label>
+          <Select value={sizes["size"] ?? ""} onValueChange={(val) => updateSize("size", val)}>
+            <SelectTrigger><SelectValue placeholder="Select size" /></SelectTrigger>
+            <SelectContent>
+              {CLOTHING_SIZES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
         {[
-          { key: "size", label: "Size", placeholder: "e.g., M, L, XL" },
           { key: "chest", label: "Chest", placeholder: "e.g., 90cm" },
           { key: "waist", label: "Waist", placeholder: "e.g., 75cm" },
           { key: "hip", label: "Hip", placeholder: "e.g., 95cm" },
-          { key: "shoe", label: "Shoe Size", placeholder: "e.g., 42" },
-          { key: "hat", label: "Hat Size", placeholder: "e.g., 58" },
         ].map(({ key, label, placeholder }) => (
           <div key={key} className="space-y-1">
             <Label className="text-xs">{label}</Label>
@@ -301,6 +310,24 @@ export function ItemDetail({
             />
           </div>
         ))}
+        <div className="space-y-1">
+          <Label className="text-xs">Shoe Size (EU)</Label>
+          <Select value={sizes["shoe"] ?? ""} onValueChange={(val) => updateSize("shoe", val)}>
+            <SelectTrigger><SelectValue placeholder="Select EU size" /></SelectTrigger>
+            <SelectContent>
+              {SHOE_SIZES_EU.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs">Hat Size (cm)</Label>
+          <Select value={sizes["hat"] ?? ""} onValueChange={(val) => updateSize("hat", val)}>
+            <SelectTrigger><SelectValue placeholder="Select hat size" /></SelectTrigger>
+            <SelectContent>
+              {HAT_SIZES_CM.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
     );
   }
@@ -308,10 +335,10 @@ export function ItemDetail({
   return (
     <>
     <div className="grid gap-4 md:grid-cols-3">
-      <div className="md:col-span-2 space-y-4 order-2 md:order-1">
-        {/* Main Info */}
+      {/* Main column */}
+      <div className="md:col-span-2 space-y-3 order-2 md:order-1">
         <Card>
-          <CardHeader>
+          <CardHeader className="pb-3">
             <CardTitle className="flex items-center justify-between">
               <span>Item Details</span>
               <div className="flex items-center gap-2">
@@ -336,60 +363,53 @@ export function ItemDetail({
               </div>
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-3">
             {/* Image */}
             {editing ? (
-              <div className="space-y-1">
-                <Label>Image</Label>
+              <FormRow label="Image">
                 <ImageUpload value={imageUrl} onChange={(url) => setImageUrl(url)} folder="items" />
-              </div>
+              </FormRow>
             ) : (
               item.imageUrl && (
-                <Image src={item.imageUrl} alt={item.humanReadableId} width={400} height={300} className="rounded-lg border object-cover" />
+                <Image
+                  src={item.imageUrl}
+                  alt={item.humanReadableId}
+                  width={400}
+                  height={240}
+                  className="rounded-lg border object-cover max-h-56 w-auto"
+                />
               )
             )}
 
             {/* Static info */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <p className="text-sm text-muted-foreground">Product</p>
-                <p className="font-medium">{item.product.name}</p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Category</p>
-                <p className="font-medium">{item.category.name}</p>
-              </div>
+            <div className="space-y-1">
+              <InfoRow label="Product">{item.product.name}</InfoRow>
+              <InfoRow label="Category">{item.category.name}</InfoRow>
               {item.purchaseDate && (
-                <div>
-                  <p className="text-sm text-muted-foreground">Purchase Date</p>
-                  <p className="font-medium">{new Date(item.purchaseDate).toLocaleDateString()}</p>
-                </div>
+                <InfoRow label="Purchased">
+                  {new Date(item.purchaseDate).toLocaleDateString()}
+                </InfoRow>
               )}
               {item.purchasePrice != null && (
-                <div>
-                  <p className="text-sm text-muted-foreground">Purchase Price</p>
-                  <p className="font-medium">${item.purchasePrice.toFixed(2)}</p>
-                </div>
+                <InfoRow label="Price">${item.purchasePrice.toFixed(2)}</InfoRow>
               )}
-              <div>
-                <p className="text-sm text-muted-foreground">Created</p>
-                <p className="font-medium">{new Date(item.createdAt).toLocaleDateString()}</p>
-              </div>
+              <InfoRow label="Created">
+                {new Date(item.createdAt).toLocaleDateString()}
+              </InfoRow>
             </div>
 
             {/* Color */}
             {editing ? (
-              <div className="space-y-1">
-                <Label htmlFor="color">Color</Label>
-                <Input id="color" value={color} onChange={(e) => setColor(e.target.value)} placeholder="e.g., Red" />
-              </div>
+              <FormRow label="Color" htmlFor="color">
+                <Input
+                  id="color"
+                  value={color}
+                  onChange={(e) => setColor(e.target.value)}
+                  placeholder="e.g., Red"
+                />
+              </FormRow>
             ) : (
-              item.color && (
-                <div>
-                  <p className="text-sm text-muted-foreground">Color</p>
-                  <p className="font-medium">{item.color}</p>
-                </div>
-              )
+              item.color && <InfoRow label="Color">{item.color}</InfoRow>
             )}
 
             {/* Sizes */}
@@ -397,45 +417,37 @@ export function ItemDetail({
               renderEditSizeFields()
             ) : (
               displaySizes && Object.keys(displaySizes).some((k) => displaySizes[k]) && (
-                <div>
-                  <p className="text-sm text-muted-foreground mb-2">Sizes</p>
-                  <div className="flex flex-wrap gap-2">
+                <InfoRow label="Sizes">
+                  <div className="flex flex-wrap gap-1.5">
                     {Object.entries(displaySizes).map(([key, value]) =>
                       value && (
-                        <Badge key={key} variant="secondary">
+                        <Badge key={key} variant="secondary" className="text-xs">
                           {key}: {value}
                         </Badge>
                       )
                     )}
                   </div>
-                </div>
+                </InfoRow>
               )
             )}
 
-            {/* Main performer display (read mode) */}
+            {/* Main performer (read mode) */}
             {!editing && item.mainPerformer && (
-              <div>
-                <p className="text-sm text-muted-foreground flex items-center gap-1">
-                  <UserCheck className="h-3.5 w-3.5" />
-                  Main Performer
-                </p>
-                <p className="font-medium">{getFullName(item.mainPerformer)}</p>
-              </div>
+              <InfoRow label="Performer">{getFullName(item.mainPerformer)}</InfoRow>
             )}
 
             {/* Notes */}
             {editing ? (
-              <div className="space-y-1">
-                <Label htmlFor="notes">Notes</Label>
-                <Textarea id="notes" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Optional notes..." />
-              </div>
+              <FormRow label="Notes" htmlFor="notes">
+                <Textarea
+                  id="notes"
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="Optional notes..."
+                />
+              </FormRow>
             ) : (
-              item.notes && (
-                <div>
-                  <p className="text-sm text-muted-foreground">Notes</p>
-                  <p className="text-sm">{item.notes}</p>
-                </div>
-              )
+              item.notes && <InfoRow label="Notes">{item.notes}</InfoRow>
             )}
 
             {editing && (
@@ -463,15 +475,14 @@ export function ItemDetail({
         </Card>
       </div>
 
-      {/* Sidebar — shown first on mobile via CSS order */}
-      <div className="space-y-4 order-1 md:order-2">
+      {/* Sidebar */}
+      <div className="space-y-3 order-1 md:order-2">
         <Card>
-          <CardHeader>
-            <CardTitle>Status & Location</CardTitle>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm">Status & Location</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-1">
-              <p className="text-sm font-medium">Status</p>
+          <CardContent className="space-y-2">
+            <FormRow label="Status">
               <Select value={status} onValueChange={setStatus}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -480,10 +491,9 @@ export function ItemDetail({
                   ))}
                 </SelectContent>
               </Select>
-            </div>
+            </FormRow>
 
-            <div className="space-y-1">
-              <p className="text-sm font-medium">Condition</p>
+            <FormRow label="Condition">
               <Select value={condition} onValueChange={setCondition}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -492,61 +502,27 @@ export function ItemDetail({
                   ))}
                 </SelectContent>
               </Select>
-            </div>
+            </FormRow>
 
-            <div className="space-y-1">
-              <p className="text-sm font-medium">Location</p>
-              <Select
+            <FormRow label="Location">
+              <LocationCascadingSelect
+                locations={localLocations}
                 value={locationId}
-                onValueChange={(val) => {
-                  if (val === "__new_location__") {
-                    setLocationDialogOpen(true);
-                    return;
-                  }
-                  setLocationId(val);
-                }}
-              >
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">No location</SelectItem>
-                  {localLocations.map((loc) => (
-                    <SelectItem key={loc.id} value={loc.id}>
-                      <span className="flex items-center gap-1">
-                        <MapPin className="h-3 w-3" />
-                        {loc.label}
-                      </span>
-                    </SelectItem>
-                  ))}
-                  <SelectSeparator />
-                  <SelectItem value="__new_location__">
-                    <Plus className="mr-1 h-3 w-3 inline-block" /> New location
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+                onValueChange={setLocationId}
+                onNewLocation={() => setLocationDialogOpen(true)}
+              />
+            </FormRow>
 
-            <div className="space-y-1">
-              <p className="text-sm font-medium flex items-center gap-1">
-                <UserCheck className="h-4 w-4" />
-                Main Performer
-              </p>
-              <Select value={mainPerformerId} onValueChange={setMainPerformerId} disabled={performers.length === 0}>
-                <SelectTrigger>
-                  <SelectValue placeholder={performers.length === 0 ? "No performers added yet" : "Not assigned"} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Not assigned</SelectItem>
-                  {performers.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>{getFullName(p)}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {performers.length === 0 && (
-                <p className="text-xs text-muted-foreground">Add performers in the Performers section first.</p>
-              )}
-            </div>
+            <FormRow label="Performer">
+              <PerformerCombobox
+                performers={localPerformers}
+                value={mainPerformerId === "none" ? undefined : mainPerformerId}
+                onValueChange={(id) => setMainPerformerId(id ?? "none")}
+                onNewPerformer={() => setPerformerDialogOpen(true)}
+              />
+            </FormRow>
 
-            <Button onClick={handleSave} disabled={saving} className="w-full">
+            <Button onClick={handleSave} disabled={saving} className="w-full" size="sm">
               {saving ? "Saving..." : "Save Changes"}
             </Button>
           </CardContent>
@@ -554,8 +530,8 @@ export function ItemDetail({
 
         {/* QR Code */}
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2">
               <QrCode className="h-4 w-4" />
               QR Code
             </CardTitle>
@@ -573,14 +549,14 @@ export function ItemDetail({
 
         {/* Archive */}
         <Card>
-          <CardHeader>
+          <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">
               <Archive className="h-4 w-4" />
               {item.archived ? "Restore Item" : "Archive Item"}
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-xs text-muted-foreground mb-3">
+            <p className="text-xs text-muted-foreground mb-2">
               {item.archived
                 ? "This item is archived. Restore it to make it appear in normal views."
                 : "Archive this item when it is out of service. It will be hidden from normal views but can be restored."}
@@ -601,16 +577,19 @@ export function ItemDetail({
         {/* Project Bookings */}
         {bookings.length > 0 && (
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2">
                 <FolderOpen className="h-4 w-4" />
                 Project Bookings
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="space-y-2">
               {bookings.map((booking) => (
-                <div key={booking.bookingItemId} className="rounded-md border p-3 space-y-1">
-                  <Link href={`/projects/${booking.projectId}`} className="font-medium text-sm hover:underline">
+                <div key={booking.bookingItemId} className="rounded-md border p-2 space-y-1">
+                  <Link
+                    href={`/projects/${booking.projectId}`}
+                    className="font-medium text-sm hover:underline"
+                  >
                     {booking.projectName}
                   </Link>
                   <div className="flex items-center gap-2">
@@ -639,6 +618,14 @@ export function ItemDetail({
       onSuccess={(loc) => {
         setLocalLocations((prev) => [...prev, loc]);
         setLocationId(loc.id);
+      }}
+    />
+    <PerformerQuickCreateDialog
+      open={performerDialogOpen}
+      onOpenChange={setPerformerDialogOpen}
+      onSuccess={(p) => {
+        setLocalPerformers((prev) => [...prev, p]);
+        setMainPerformerId(p.id);
       }}
     />
     </>
