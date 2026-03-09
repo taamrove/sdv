@@ -23,6 +23,8 @@ import {
 import { StatusBadge } from "@/components/shared/status-badge";
 import { ImageUpload } from "@/components/shared/image-upload";
 import { InfoRow, FormRow } from "@/components/shared/form-row";
+import { PerformerCombobox } from "@/components/shared/performer-combobox";
+import { PerformerQuickCreateDialog } from "@/components/performers/performer-quick-create-dialog";
 import {
   ITEM_STATUS_LABELS,
   ITEM_CONDITION_LABELS,
@@ -103,7 +105,9 @@ export function ItemDetail({
   const [saving, setSaving] = useState(false);
   const [archiving, setArchiving] = useState(false);
   const [locationDialogOpen, setLocationDialogOpen] = useState(false);
+  const [performerDialogOpen, setPerformerDialogOpen] = useState(false);
   const [localLocations, setLocalLocations] = useState(locations);
+  const [localPerformers, setLocalPerformers] = useState(performers);
 
   // Status & location fields (always shown in sidebar)
   const [status, setStatus] = useState(item.status);
@@ -282,16 +286,22 @@ export function ItemDetail({
         </div>
       );
     }
-    // Generic
+    // Generic — selects for standard sizes, inputs for measurements
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="space-y-1">
+          <Label className="text-xs">General Size</Label>
+          <Select value={sizes["size"] ?? ""} onValueChange={(val) => updateSize("size", val)}>
+            <SelectTrigger><SelectValue placeholder="Select size" /></SelectTrigger>
+            <SelectContent>
+              {CLOTHING_SIZES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
         {[
-          { key: "size", label: "Size", placeholder: "e.g., M, L, XL" },
           { key: "chest", label: "Chest", placeholder: "e.g., 90cm" },
           { key: "waist", label: "Waist", placeholder: "e.g., 75cm" },
           { key: "hip", label: "Hip", placeholder: "e.g., 95cm" },
-          { key: "shoe", label: "Shoe Size", placeholder: "e.g., 42" },
-          { key: "hat", label: "Hat Size", placeholder: "e.g., 58" },
         ].map(({ key, label, placeholder }) => (
           <div key={key} className="space-y-1">
             <Label className="text-xs">{label}</Label>
@@ -302,6 +312,24 @@ export function ItemDetail({
             />
           </div>
         ))}
+        <div className="space-y-1">
+          <Label className="text-xs">Shoe Size (EU)</Label>
+          <Select value={sizes["shoe"] ?? ""} onValueChange={(val) => updateSize("shoe", val)}>
+            <SelectTrigger><SelectValue placeholder="Select EU size" /></SelectTrigger>
+            <SelectContent>
+              {SHOE_SIZES_EU.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs">Hat Size (cm)</Label>
+          <Select value={sizes["hat"] ?? ""} onValueChange={(val) => updateSize("hat", val)}>
+            <SelectTrigger><SelectValue placeholder="Select hat size" /></SelectTrigger>
+            <SelectContent>
+              {HAT_SIZES_CM.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
     );
   }
@@ -508,25 +536,13 @@ export function ItemDetail({
               </Select>
             </FormRow>
 
-            <FormRow
-              label="Performer"
-              hint={performers.length === 0 ? "Add performers in the Performers section first." : undefined}
-            >
-              <Select
-                value={mainPerformerId}
-                onValueChange={setMainPerformerId}
-                disabled={performers.length === 0}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder={performers.length === 0 ? "None yet" : "Not assigned"} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Not assigned</SelectItem>
-                  {performers.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>{getFullName(p)}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <FormRow label="Performer">
+              <PerformerCombobox
+                performers={localPerformers}
+                value={mainPerformerId === "none" ? undefined : mainPerformerId}
+                onValueChange={(id) => setMainPerformerId(id ?? "none")}
+                onNewPerformer={() => setPerformerDialogOpen(true)}
+              />
             </FormRow>
 
             <Button onClick={handleSave} disabled={saving} className="w-full" size="sm">
@@ -625,6 +641,14 @@ export function ItemDetail({
       onSuccess={(loc) => {
         setLocalLocations((prev) => [...prev, loc]);
         setLocationId(loc.id);
+      }}
+    />
+    <PerformerQuickCreateDialog
+      open={performerDialogOpen}
+      onOpenChange={setPerformerDialogOpen}
+      onSuccess={(p) => {
+        setLocalPerformers((prev) => [...prev, p]);
+        setMainPerformerId(p.id);
       }}
     />
     </>

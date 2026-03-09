@@ -22,6 +22,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { FormRow } from "@/components/shared/form-row";
+import { PerformerCombobox } from "@/components/shared/performer-combobox";
 import {
   createItemSchema,
   type CreateItemInput,
@@ -36,7 +37,6 @@ import {
   SHOE_SIZES_EU,
   HAT_SIZES_CM,
 } from "@/lib/constants";
-import { getFullName } from "@/lib/format-name";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
@@ -231,16 +231,27 @@ export function ItemForm({
       );
     }
 
-    // No sizeMode — show all fields as free text
+    // No sizeMode — selects for standard sizes, free text for measurements
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="space-y-1">
+          <Label htmlFor="size" className="text-xs">General Size</Label>
+          <Select
+            onValueChange={(val) => {
+              const sizes = form.getValues("sizes") ?? {};
+              form.setValue("sizes", { ...sizes, size: val });
+            }}
+          >
+            <SelectTrigger id="size"><SelectValue placeholder="Select size" /></SelectTrigger>
+            <SelectContent>
+              {CLOTHING_SIZES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
         {[
-          { key: "size", label: "General Size", placeholder: "e.g., M, L, XL" },
           { key: "chest", label: "Chest", placeholder: "e.g., 90cm" },
           { key: "waist", label: "Waist", placeholder: "e.g., 75cm" },
           { key: "hip", label: "Hip", placeholder: "e.g., 95cm" },
-          { key: "shoe", label: "Shoe Size", placeholder: "e.g., 42" },
-          { key: "hat", label: "Hat Size", placeholder: "e.g., 58" },
         ].map(({ key, label, placeholder }) => (
           <div key={key} className="space-y-1">
             <Label htmlFor={key} className="text-xs">{label}</Label>
@@ -254,6 +265,34 @@ export function ItemForm({
             />
           </div>
         ))}
+        <div className="space-y-1">
+          <Label htmlFor="shoe" className="text-xs">Shoe Size (EU)</Label>
+          <Select
+            onValueChange={(val) => {
+              const sizes = form.getValues("sizes") ?? {};
+              form.setValue("sizes", { ...sizes, shoe: val });
+            }}
+          >
+            <SelectTrigger id="shoe"><SelectValue placeholder="Select EU size" /></SelectTrigger>
+            <SelectContent>
+              {SHOE_SIZES_EU.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1">
+          <Label htmlFor="hat" className="text-xs">Hat Size (cm)</Label>
+          <Select
+            onValueChange={(val) => {
+              const sizes = form.getValues("sizes") ?? {};
+              form.setValue("sizes", { ...sizes, hat: val });
+            }}
+          >
+            <SelectTrigger id="hat"><SelectValue placeholder="Select hat size" /></SelectTrigger>
+            <SelectContent>
+              {HAT_SIZES_CM.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
     );
   }
@@ -414,32 +453,13 @@ export function ItemForm({
               label="Main Performer"
               hint={performers.length === 0 ? "Add performers in the Performers section first." : undefined}
             >
-              <Select
-                value={form.watch("mainPerformerId") ?? "none"}
-                onValueChange={(val) => {
-                  if (val === "__new_performer__") {
-                    setPerformerDialogOpen(true);
-                    return;
-                  }
-                  form.setValue("mainPerformerId", val === "none" ? undefined : val);
-                }}
-              >
-                <SelectTrigger id="mainPerformerId">
-                  <SelectValue placeholder="No performer assigned" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">No performer assigned</SelectItem>
-                  {performers.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>
-                      {getFullName(p)}
-                    </SelectItem>
-                  ))}
-                  <SelectSeparator />
-                  <SelectItem value="__new_performer__">
-                    <Plus className="mr-1 h-3 w-3 inline-block" /> New performer
-                  </SelectItem>
-                </SelectContent>
-              </Select>
+              <PerformerCombobox
+                performers={performers}
+                value={form.watch("mainPerformerId") ?? undefined}
+                onValueChange={(id) => form.setValue("mainPerformerId", id)}
+                onNewPerformer={() => setPerformerDialogOpen(true)}
+                disabled={performers.length === 0}
+              />
             </FormRow>
 
             <FormRow label="Purchase">
